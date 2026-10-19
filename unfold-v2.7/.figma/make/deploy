@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+echo "unfold v2.7 is a Node.js server with SQLite. Figma publish only accepts a static build or Next.js standalone, and this app has neither." >&2
+exit 1

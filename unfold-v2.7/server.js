@@ -279,7 +279,19 @@ function requireAdmin(req){if(!isAdmin(req))fail(401,'Sign in as an admin first'
 function checkOrigin(req){const origin=req.headers.origin;if(!origin)return;let u;try{u=new URL(origin);}catch{fail(403,'Invalid origin');}
   const host=req.headers.host;if(u.host!==host||!['http:','https:'].includes(u.protocol))fail(403,'Cross-origin requests are not allowed');
 }
-function checkHost(req){const host=(req.headers.host||'').toLowerCase();if(!/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host))fail(403,'This local server accepts localhost only');}
+function checkHost(req){
+  const host=(req.headers.host||'').toLowerCase();
+  if(/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host))return;
+  // Figma's preview proxy is the only extra host. Local runs stay on localhost.
+  if(process.env.FIGMA){
+    const bare=host.replace(/:\d+$/,'');
+    const bind=(process.env.FIGMA_DEV_SERVER_HOST||'0.0.0.0').toLowerCase();
+    if(bare===bind)return;
+    const pub=process.env.FIGMA_PUBLIC_URL;
+    if(pub){try{if(new URL(pub).host.toLowerCase()===host)return;}catch{/* ignore a bad preview URL */}}
+  }
+  fail(403,'This local server accepts localhost only');
+}
 async function jsonBody(req){
   if(!String(req.headers['content-type']||'').startsWith('application/json'))fail(415,'Send application/json');
   let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>8_000_000)fail(413,'Request too large');chunks.push(chunk);}
@@ -812,13 +824,14 @@ function staticFile(req,res,u,adminImageAccess=false){
   if(req.method==='HEAD')return res.end();fs.createReadStream(filePath).pipe(res);
 }
 const server=http.createServer(async(req,res)=>{
-  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');
+  res.setHeader('X-Content-Type-Options','nosniff');if(!process.env.FIGMA)res.setHeader('X-Frame-Options','DENY');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');
   try{checkHost(req);const url=new URL(req.url,'http://localhost');if(url.pathname.startsWith('/api/'))await api(req,res,url);else staticFile(req,res,url);}
   catch(error){const status=error.status||500;if(status===500)console.error('[server error]',error);if(!res.headersSent)reply(res,status,{error:status===500?'Server error':error.message});else res.end();}
 });
 function listen(port,remaining=12){
- server.once('error',err=>{if(err.code==='EADDRINUSE'&&remaining>0)listen(port+1,remaining-1);else{console.error('Cannot start:',err.message);process.exitCode=1;}});
- server.listen(port,'127.0.0.1',()=>{
+ const bind=process.env.FIGMA?(process.env.FIGMA_DEV_SERVER_HOST||'0.0.0.0'):'127.0.0.1';
+ server.once('error',err=>{if(err.code==='EADDRINUSE'&&remaining>0&&!process.env.FIGMA)listen(port+1,remaining-1);else{console.error('Cannot start:',err.message);process.exitCode=1;}});
+ server.listen(port,bind,()=>{
    console.log('');console.log(`[READY] unfold v2.7  http://127.0.0.1:${server.address().port}/`);
    console.log(`[ADMIN] http://127.0.0.1:${server.address().port}/admin.html`);
    console.log(`[BUSINESS] http://127.0.0.1:${server.address().port}/business.html`);

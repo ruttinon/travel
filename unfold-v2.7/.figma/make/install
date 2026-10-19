@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+node -e "const p=process.versions.node.split('.').map(Number); if(p[0]<22||(p[0]===22&&p[1]<16)){console.error('Node >=22.16.0 required, got '+process.versions.node); process.exit(1)}"
+if [[ -f package-lock.json ]]; then
+  npm ci --ignore-scripts
+fi
