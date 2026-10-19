@@ -191,3 +191,169 @@ img{display:block;max-width:100%}svg{flex-shrink:0}::selection{background:#d5ff9
 }
 
 .planner-quicklink{display:flex;justify-content:flex-end;padding:8px 0 19px}.planner-quicklink a{color:#143d2a;border:1px solid #d5dfd0;border-radius:999px;background:#f4f8f0;padding:10px 17px;font-size:12px;font-weight:700;text-decoration:none}.planner-quicklink a:hover{background:#e5f0df}
+
+/* ==========================================================================
+   TRAVAL — LOCAL DISCOVERY DESIGN SYSTEM (USER / MAP SCOPE)
+   Merged from traval-user-frontend/traval-design-system.css + the prototype's
+   Home / Map / Collection styles. Every component rule is scoped under
+   .traval-shell so the existing unfold screens are never affected.
+   Palette: Forest Deep #0D2C1C · Accent Lime #8DE026 · SME Gold #E5A836
+            Base Surface #F8F7F3 · Live Blue Dot #2563EB
+   ========================================================================== */
+:root{
+  --color-forest:#0D2C1C;--color-forest-light:#16462D;--color-forest-surface:#1E5538;
+  --color-lime:#8DE026;--color-lime-glow:rgba(141,224,38,.28);--color-lime-hover:#7acc1e;
+  --color-sme-gold:#E5A836;--color-sme-glow:rgba(229,168,54,.25);
+  --color-base:#F8F7F3;--color-surface:#FFFFFF;--color-surface-translucent:rgba(255,255,255,.88);
+  --color-subtle-border:#E8ECE6;--color-divider:#EFF2ED;
+  --color-ink:#111D15;--color-ink-secondary:#57685D;--color-ink-muted:#88998E;
+  --color-bluedot:#2563EB;--color-bluedot-pulse:rgba(37,99,235,.35);
+  --traval-font:'Prompt','Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --font-size-xs:.75rem;--font-size-sm:.875rem;--font-size-md:1rem;--font-size-lg:1.125rem;--font-size-xl:1.35rem;
+  --shadow-sm:0 2px 8px rgba(13,44,28,.05);--shadow-md:0 6px 20px rgba(13,44,28,.08);
+  --shadow-lg:0 12px 36px rgba(13,44,28,.12);--shadow-bottomsheet:0 -10px 40px rgba(0,0,0,.14);
+  --radius-sm:8px;--radius-md:14px;--radius-lg:20px;--radius-xl:28px;--radius-full:9999px;
+  --transition-fast:160ms cubic-bezier(.4,0,.2,1);--transition-smooth:280ms cubic-bezier(.16,1,.3,1);
+  --transition-spring:450ms cubic-bezier(.34,1.56,.64,1);
+}
+.traval-shell{position:relative;display:flex;flex-direction:column;height:100dvh;overflow:hidden;background:var(--color-base);color:var(--color-ink);font-family:var(--traval-font);line-height:1.5;-webkit-font-smoothing:antialiased}
+.traval-shell *,.traval-shell *::before,.traval-shell *::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+/* App header */
+.traval-shell .traval-header{position:relative;flex:0 0 auto;height:64px;background:var(--color-surface-translucent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--color-subtle-border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:20}
+.traval-shell .brand-container{display:flex;align-items:center;gap:8px;cursor:pointer;background:none;border:0}
+.traval-shell .brand-logo-icon{width:32px;height:32px;background:var(--color-forest);color:var(--color-lime);border-radius:var(--radius-md);display:grid;place-items:center;font-weight:700;font-size:16px;box-shadow:var(--shadow-sm)}
+.traval-shell .brand-text{font-size:var(--font-size-lg);font-weight:700;color:var(--color-forest);letter-spacing:-.5px}
+.traval-shell .brand-tag{background:var(--color-lime-glow);color:var(--color-forest);font-size:10px;font-weight:700;padding:2px 7px;border-radius:var(--radius-full);text-transform:uppercase}
+.traval-shell .header-actions{display:flex;align-items:center;gap:10px}
+.traval-shell .icon-btn{width:40px;height:40px;border-radius:var(--radius-full);border:1px solid var(--color-subtle-border);background:var(--color-surface);color:var(--color-ink);display:grid;place-items:center;cursor:pointer;transition:all var(--transition-fast)}
+.traval-shell .icon-btn:hover{background:var(--color-divider);transform:translateY(-1px)}
+.traval-shell .badge-counter{position:absolute;top:4px;right:4px;background:var(--color-lime);color:var(--color-forest);font-size:10px;font-weight:700;min-width:17px;height:17px;padding:0 4px;border-radius:var(--radius-full);display:grid;place-items:center;border:2px solid #fff}
+/* Viewport + map canvas */
+.traval-shell .traval-app-viewport{position:relative;flex:1;width:100%;overflow:hidden}
+.traval-shell .view-container{position:absolute;inset:0;display:none;width:100%;height:100%}
+.traval-shell .view-container.active{display:block}
+.traval-shell .map-canvas-container{position:absolute;inset:0;background:#E6EDE5;background-image:radial-gradient(#CBD8CA 1px,transparent 1px),linear-gradient(to right,rgba(0,0,0,.02) 1px,transparent 1px),linear-gradient(to bottom,rgba(0,0,0,.02) 1px,transparent 1px);background-size:32px 32px;overflow:hidden}
+/* Floating map controls */
+.traval-shell .map-floating-top{position:absolute;top:14px;left:14px;right:14px;z-index:15;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.traval-shell .map-floating-top>*{pointer-events:auto}
+.traval-shell .map-search-bar{display:flex;align-items:center;background:var(--color-surface);border:1px solid var(--color-subtle-border);box-shadow:var(--shadow-md);border-radius:var(--radius-full);padding:6px 14px;gap:10px;transition:box-shadow var(--transition-fast)}
+.traval-shell .map-search-bar:focus-within{box-shadow:var(--shadow-lg),0 0 0 2px var(--color-lime)}
+.traval-shell .map-search-input{flex:1;border:0;background:transparent;outline:none;font-family:inherit;font-size:var(--font-size-sm);color:var(--color-ink)}
+.traval-shell .map-search-input::placeholder{color:var(--color-ink-muted)}
+.traval-shell .category-filter-rail{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.traval-shell .category-filter-rail::-webkit-scrollbar{display:none}
+.traval-shell .chip{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-full);font-size:var(--font-size-xs);font-weight:500;border:1px solid var(--color-subtle-border);background:var(--color-surface-translucent);backdrop-filter:blur(8px);color:var(--color-ink-secondary);cursor:pointer;white-space:nowrap;box-shadow:var(--shadow-sm);transition:all var(--transition-fast)}
+.traval-shell .chip:hover{background:var(--color-surface);color:var(--color-forest)}
+.traval-shell .chip.active{background:var(--color-forest);color:var(--color-lime);border-color:var(--color-forest);font-weight:600}
+.traval-shell .chip.chip-sme{background:#FEF9EE;color:#B47214;border-color:#F8E3B6}
+.traval-shell .chip.chip-sme.active{background:#C47F15;color:#FFFFFF;border-color:#C47F15}
+.traval-shell .map-actions-stack{position:absolute;right:14px;top:130px;display:flex;flex-direction:column;gap:10px;z-index:15}
+.traval-shell .map-action-fab{width:46px;height:46px;border-radius:var(--radius-md);background:var(--color-surface);border:1px solid var(--color-subtle-border);box-shadow:var(--shadow-md);display:grid;place-items:center;color:var(--color-forest);cursor:pointer;transition:all var(--transition-smooth);position:relative}
+.traval-shell .map-action-fab:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.traval-shell .map-action-fab.active{background:var(--color-forest);color:var(--color-lime);border-color:var(--color-forest)}
+.traval-shell .map-action-fab.follow-active{background:var(--color-bluedot);color:#FFF;border-color:var(--color-bluedot);animation:traval-pulse-border 2s infinite}
+@keyframes traval-pulse-border{0%{box-shadow:0 0 0 0 rgba(37,99,235,.4)}70%{box-shadow:0 0 0 10px rgba(37,99,235,0)}100%{box-shadow:0 0 0 0 rgba(37,99,235,0)}}
+/* Live location blue dot */
+.traval-shell .live-location-bluedot{position:absolute;width:22px;height:22px;transform:translate(-50%,-50%);pointer-events:none;z-index:12}
+.traval-shell .live-location-bluedot .dot-core{width:16px;height:16px;background:var(--color-bluedot);border:3px solid #fff;border-radius:50%;position:absolute;top:3px;left:3px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.traval-shell .live-location-bluedot .dot-pulse{position:absolute;inset:-6px;border-radius:50%;background:var(--color-bluedot-pulse);animation:traval-bluedot-pulse 2.4s ease-out infinite}
+.traval-shell .live-location-bluedot .dot-heading-cone{position:absolute;top:-16px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:14px solid rgba(37,99,235,.45)}
+@keyframes traval-bluedot-pulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.4);opacity:0}}
+/* Markers & clusters */
+.traval-shell .traval-marker{position:absolute;transform:translate(-50%,-100%);cursor:pointer;transition:transform var(--transition-spring);z-index:10}
+.traval-shell .traval-marker:hover,.traval-shell .traval-marker.selected{transform:translate(-50%,-106%) scale(1.15);z-index:14}
+.traval-shell .marker-pin-body{position:relative;width:44px;height:48px;display:flex;flex-direction:column;align-items:center}
+.traval-shell .marker-bubble{width:40px;height:40px;border-radius:50% 50% 50% 4px;transform:rotate(-45deg);background:var(--color-surface);border:2px solid var(--color-forest);box-shadow:var(--shadow-md);display:grid;place-items:center;overflow:hidden}
+.traval-shell .marker-inner-icon{transform:rotate(45deg);width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--color-forest)}
+.traval-shell .traval-marker.marker-sme .marker-bubble{background:var(--color-forest);border-color:var(--color-lime)}
+.traval-shell .traval-marker.marker-sme .marker-inner-icon{color:var(--color-lime)}
+.traval-shell .traval-marker.marker-sme::after{content:'SME';position:absolute;top:-8px;right:-6px;background:var(--color-sme-gold);color:#fff;font-size:8px;font-weight:800;padding:1px 4px;border-radius:var(--radius-full);box-shadow:var(--shadow-sm)}
+.traval-shell .traval-cluster{position:absolute;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:50%;background:var(--color-forest);color:var(--color-lime);border:3px solid rgba(255,255,255,.9);display:grid;place-items:center;font-weight:700;font-size:var(--font-size-sm);box-shadow:var(--shadow-md);cursor:pointer;z-index:13;transition:transform var(--transition-fast)}
+.traval-shell .traval-cluster:hover{transform:translate(-50%,-50%) scale(1.1)}
+/* Place detail bottom sheet */
+.traval-shell .traval-bottom-sheet{position:absolute;left:0;right:0;bottom:0;background:var(--color-surface);border-radius:var(--radius-xl) var(--radius-xl) 0 0;box-shadow:var(--shadow-bottomsheet);border-top:1px solid var(--color-subtle-border);z-index:30;display:flex;flex-direction:column;transition:transform var(--transition-smooth),height var(--transition-smooth);touch-action:none;max-width:680px;margin:0 auto}
+.traval-shell .traval-bottom-sheet.state-hidden{transform:translateY(110%)}
+.traval-shell .traval-bottom-sheet.state-peek{transform:translateY(0);height:200px}
+.traval-shell .traval-bottom-sheet.state-half{transform:translateY(0);height:55%}
+.traval-shell .traval-bottom-sheet.state-full{transform:translateY(0);height:calc(100% - 12px)}
+.traval-shell .sheet-drag-handle-bar{width:100%;padding:10px 0 6px;display:flex;justify-content:center;cursor:grab}
+.traval-shell .drag-pill{width:44px;height:5px;background:#D8DFD7;border-radius:var(--radius-full)}
+.traval-shell .sheet-scroll-content{flex:1;overflow-y:auto;padding:0 18px 24px}
+.traval-shell .sheet-place-header{display:flex;gap:14px;margin-bottom:14px}
+.traval-shell .sheet-place-thumb{width:84px;height:84px;border-radius:var(--radius-md);object-fit:cover;flex-shrink:0;box-shadow:var(--shadow-sm)}
+.traval-shell .sheet-place-intro{flex:1;min-width:0}
+.traval-shell .sheet-badge-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
+.traval-shell .badge-sme{background:#FFF4E0;color:#B26B00;border:1px solid #FFE0A6;font-size:10px;font-weight:700;padding:2px 7px;border-radius:var(--radius-full)}
+.traval-shell .sheet-place-title{font-size:var(--font-size-md);font-weight:700;color:var(--color-forest);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.traval-shell .sheet-place-subtitle{font-size:var(--font-size-xs);color:var(--color-ink-muted);margin-bottom:4px}
+.traval-shell .sheet-meta-row{display:flex;align-items:center;gap:10px;font-size:var(--font-size-xs);color:var(--color-ink-secondary);flex-wrap:wrap}
+.traval-shell .rating-star{color:#F59E0B;display:inline-flex;align-items:center;gap:2px;font-weight:600}
+.traval-shell .distance-pill{background:var(--color-divider);padding:2px 6px;border-radius:var(--radius-sm);font-size:11px;font-weight:600;color:var(--color-forest)}
+.traval-shell .sheet-cta-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin:12px 0 16px}
+.traval-shell .btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--color-forest);color:#FFF;border:0;border-radius:var(--radius-full);padding:10px 16px;font-size:var(--font-size-sm);font-weight:600;cursor:pointer;transition:all var(--transition-fast)}
+.traval-shell .btn-primary:hover{background:var(--color-forest-light)}
+.traval-shell .btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--color-divider);color:var(--color-forest);border:1px solid var(--color-subtle-border);border-radius:var(--radius-full);padding:10px 16px;font-size:var(--font-size-sm);font-weight:600;cursor:pointer}
+.traval-shell .btn-icon-square{width:42px;height:42px;border-radius:var(--radius-full);border:1px solid var(--color-subtle-border);background:var(--color-surface);display:grid;place-items:center;color:var(--color-ink-secondary);cursor:pointer;transition:all var(--transition-fast)}
+.traval-shell .btn-icon-square.saved{background:#FFF1F2;border-color:#FECDD3;color:#E11D48}
+.traval-shell .local-story-card{background:#FAF9F4;border:1px solid #ECE7D9;border-radius:var(--radius-lg);padding:14px;margin-top:14px}
+.traval-shell .story-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.traval-shell .story-header h4{font-size:var(--font-size-sm);color:var(--color-forest);font-weight:700}
+.traval-shell .story-content{font-size:var(--font-size-xs);color:var(--color-ink-secondary);line-height:1.6}
+.traval-shell .highlights-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.traval-shell .highlight-tag{background:var(--color-surface);border:1px solid #E3DFD4;padding:3px 8px;border-radius:var(--radius-sm);font-size:11px;color:var(--color-forest)}
+/* Bottom navigation */
+.traval-shell .traval-bottom-nav{position:relative;flex:0 0 auto;height:64px;background:var(--color-surface);border-top:1px solid var(--color-subtle-border);display:flex;align-items:center;justify-content:space-around;z-index:20}
+.traval-shell .nav-tab-btn{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;color:var(--color-ink-muted);font-family:inherit;font-size:11px;font-weight:500;cursor:pointer;padding:6px 12px;transition:color var(--transition-fast)}
+.traval-shell .nav-tab-btn.active{color:var(--color-forest);font-weight:700}
+.traval-shell .nav-tab-btn svg{width:22px;height:22px}
+/* Home / discover screen */
+.traval-shell .home-screen{padding:18px 16px 100px;overflow-y:auto;height:100%;background:var(--color-base);-webkit-overflow-scrolling:touch}
+.traval-shell .home-hero-editorial{position:relative;background:linear-gradient(145deg,#0D2C1C 0%,#16462D 60%,#1E5538 100%);border-radius:var(--radius-xl);padding:24px 20px;color:#FFF;overflow:hidden;box-shadow:var(--shadow-lg);margin-bottom:24px}
+.traval-shell .home-hero-editorial::after{content:'';position:absolute;right:-20px;bottom:-30px;width:150px;height:150px;background:radial-gradient(circle,var(--color-lime-glow) 0%,transparent 70%);pointer-events:none}
+.traval-shell .hero-eyebrow{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--color-lime);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.traval-shell .hero-headline{font-size:clamp(1.4rem,4vw,1.85rem);font-weight:700;line-height:1.25;margin-bottom:10px;letter-spacing:-.5px}
+.traval-shell .hero-subtext{font-size:var(--font-size-sm);color:#D3DFD7;line-height:1.5;margin-bottom:18px;max-width:440px}
+.traval-shell .hero-cta-btn{display:inline-flex;align-items:center;gap:8px;background:var(--color-lime);color:var(--color-forest);font-family:inherit;font-size:var(--font-size-sm);font-weight:700;padding:11px 20px;border-radius:var(--radius-full);border:0;cursor:pointer;box-shadow:0 4px 14px rgba(141,224,38,.4);transition:all var(--transition-fast)}
+.traval-shell .hero-cta-btn:hover{background:#7bd41b;transform:translateY(-2px)}
+.traval-shell .section-title-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.traval-shell .section-title-row h2{font-size:var(--font-size-lg);font-weight:700;color:var(--color-forest);display:flex;align-items:center;gap:8px}
+.traval-shell .section-link{font-size:var(--font-size-xs);font-weight:600;color:var(--color-forest);background:none;border:0;cursor:pointer;text-decoration:underline}
+.traval-shell .spotlight-rail{display:flex;gap:14px;overflow-x:auto;padding-bottom:10px;margin-bottom:28px;scrollbar-width:none;scroll-snap-type:x mandatory}
+.traval-shell .spotlight-rail::-webkit-scrollbar{display:none}
+.traval-shell .spotlight-card{flex:0 0 280px;scroll-snap-align:start;background:var(--color-surface);border-radius:var(--radius-lg);border:1px solid var(--color-subtle-border);overflow:hidden;box-shadow:var(--shadow-sm);cursor:pointer;transition:transform var(--transition-fast),box-shadow var(--transition-fast);display:flex;flex-direction:column}
+.traval-shell .spotlight-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.traval-shell .spotlight-card-cover{position:relative;width:100%;height:150px;overflow:hidden}
+.traval-shell .spotlight-card-cover img{width:100%;height:100%;object-fit:cover;transition:transform var(--transition-smooth)}
+.traval-shell .spotlight-card:hover .spotlight-card-cover img{transform:scale(1.04)}
+.traval-shell .spotlight-badge-tag{position:absolute;top:10px;left:10px;background:rgba(13,44,28,.88);backdrop-filter:blur(6px);color:var(--color-lime);font-size:10px;font-weight:700;padding:3px 8px;border-radius:var(--radius-full);border:1px solid rgba(141,224,38,.3)}
+.traval-shell .spotlight-card-body{padding:14px;flex:1;display:flex;flex-direction:column;justify-content:space-between}
+.traval-shell .spotlight-card-name{font-size:var(--font-size-md);font-weight:700;color:var(--color-forest);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.traval-shell .spotlight-card-location{font-size:var(--font-size-xs);color:var(--color-ink-muted);margin-bottom:8px}
+.traval-shell .spotlight-card-story{font-size:11px;color:var(--color-ink-secondary);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:10px}
+.traval-shell .spotlight-footer-meta{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:600;padding-top:8px;border-top:1px solid var(--color-divider)}
+.traval-shell .popular-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:24px}
+.traval-shell .place-item-card{background:var(--color-surface);border-radius:var(--radius-lg);border:1px solid var(--color-subtle-border);overflow:hidden;box-shadow:var(--shadow-sm);display:flex;gap:12px;padding:10px;cursor:pointer;transition:all var(--transition-fast);position:relative}
+.traval-shell .place-item-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.traval-shell .place-item-thumb{width:82px;height:82px;border-radius:var(--radius-md);object-fit:cover;flex-shrink:0}
+.traval-shell .place-item-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.traval-shell .place-item-title{font-size:var(--font-size-sm);font-weight:700;color:var(--color-forest);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.traval-shell .place-item-sub{font-size:11px;color:var(--color-ink-muted);margin-top:2px}
+.traval-shell .place-item-meta{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:11px;flex-wrap:wrap}
+.traval-shell .place-heart-btn{position:absolute;top:10px;right:10px;background:none;border:0;color:var(--color-ink-muted);cursor:pointer;padding:4px}
+.traval-shell .place-heart-btn.saved{color:#E11D48}
+/* Collection screen */
+.traval-shell .collection-screen{padding:16px;overflow-y:auto;height:100%;background:var(--color-base)}
+.traval-shell .collection-header{margin-bottom:16px}
+.traval-shell .collection-header h2{font-size:var(--font-size-xl);color:var(--color-forest);font-weight:700}
+.traval-shell .traval-collection-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.traval-shell .traval-collection-card{background:var(--color-surface);border-radius:var(--radius-lg);border:1px solid var(--color-subtle-border);padding:12px;display:flex;gap:12px;box-shadow:var(--shadow-sm);cursor:pointer;transition:transform var(--transition-fast)}
+.traval-shell .traval-collection-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.traval-shell .collection-thumb{width:76px;height:76px;border-radius:var(--radius-md);object-fit:cover;flex-shrink:0}
+.traval-shell .collection-info{flex:1;min-width:0}
+.traval-shell .collection-title{font-size:var(--font-size-sm);font-weight:700;color:var(--color-forest);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.traval-shell .traval-empty{padding:40px 10px;text-align:center;color:var(--color-ink-muted)}
+/* Traval launcher link buttons on the unfold screens */
+.traval-launch{display:flex;align-items:center;gap:9px;border:1px solid #d5dfd0;border-radius:999px;background:#f4f8f0;color:#143d2a;padding:10px 17px;font-size:12px;font-weight:700;text-decoration:none}
+.traval-launch:hover{background:#e5f0df}
+@media(max-width:700px){.traval-shell .home-screen{padding:14px 12px 96px}.traval-shell .spotlight-card{flex-basis:250px}}
+
