@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 960" preserveAspectRatio="xMidYMid slice">
+<defs>
+ <linearGradient id="sea" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d4e4de"/><stop offset="1" stop-color="#b8d6da"/></linearGradient>
+ <linearGradient id="land" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#eceddc"/><stop offset="1" stop-color="#cad7c3"/></linearGradient>
+ <pattern id="roads" width="160" height="150" patternUnits="userSpaceOnUse"><path d="M-30 124Q75 80 195 40" stroke="#ffffff" stroke-opacity=".65" stroke-width="3" fill="none"/></pattern>
+</defs>
+<rect width="1200" height="960" fill="url(#sea)"/>
+<path d="M-50 -40H1250V975C1110 970 1125 835 1024 813C927 790 887 723 840 686S737 646 682 616C605 575 607 478 514 456S388 359 297 342C180 320 181 228 93 194S-12 124 -50 102Z" fill="url(#land)"/>
+<path d="M-50 -40H1250V975C1110 970 1125 835 1024 813C927 790 887 723 840 686S737 646 682 616C605 575 607 478 514 456S388 359 297 342C180 320 181 228 93 194S-12 124 -50 102Z" fill="url(#roads)" opacity=".8"/>
+<g fill="none" stroke="#ffffff" stroke-width="2" opacity=".30">
+ <path d="M-34 130C130 141 224 285 330 326S480 377 555 461S600 555 690 622S865 713 1022 828"/>
+ <path d="M-60 168C115 190 202 328 300 375S428 433 485 489S572 639 670 667S890 778 1012 846"/>
+ <path d="M-60 200C97 238 146 337 252 400S413 483 469 568S532 673 614 712S856 810 975 873"/>
+ <path d="M-60 232C79 290 152 404 246 437S389 535 424 608S502 720 583 758S819 869 921 917"/>
+ <path d="M-60 274C99 317 159 433 218 486S342 546 382 660S485 748 556 795S750 901 860 936"/>
+ <path d="M-30 320C79 361 109 457 175 506S291 594 346 684S440 812 494 842"/>
+</g>
+<g fill="none" stroke="#f4e8c9" stroke-width="10" stroke-linecap="round" opacity=".95">
+ <path d="M60 85 C140 120 153 167 210 204S285 288 345 315S446 359 495 406S565 491 638 530S699 618 784 647S903 725 976 761S1120 816 1190 873"/>
+ <path d="M264 87C318 142 366 167 425 202S493 286 569 325S677 400 738 455S822 513 907 560S1092 614 1210 660"/>
+ <path d="M461 115Q507 170 570 214T705 286T845 347T1002 418T1182 460"/>
+</g>
+<g fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity=".88">
+ <path d="M60 85 C140 120 153 167 210 204S285 288 345 315S446 359 495 406S565 491 638 530S699 618 784 647S903 725 976 761S1120 816 1190 873"/>
+ <path d="M264 87C318 142 366 167 425 202S493 286 569 325S677 400 738 455S822 513 907 560S1092 614 1210 660"/>
+ <path d="M461 115Q507 170 570 214T705 286T845 347T1002 418T1182 460"/>
+</g>
+<g fill="none" stroke="#8ca9a0" stroke-width="1.2" opacity=".3">
+ <path d="M70 0Q240 65 359 162T640 264T982 408"/><path d="M60 0Q240 95 313 197T565 298T919 464"/><path d="M90 0Q234 130 288 248T534 363T860 511"/><path d="M125 0Q244 162 275 287T491 407T809 561"/>
+ <path d="M376 0Q444 125 523 177T705 282T1039 333"/><path d="M434 0Q504 93 572 136T760 246T1125 293"/>
+ <path d="M700 0Q748 73 850 141T1064 207T1200 246"/><path d="M738 0Q824 92 913 154T1140 193T1222 229"/>
+</g>
+<g fill="#c3d9ca" opacity=".52">
+ <path d="M845 83l37-39 35 36 22-27 50 56-44 36-49-12z"/><path d="M470 42l53-30 40 29 25 42-66 23-39-12z"/>
+ <path d="M917 486l55-40 55 30 30 55-51 46-50-26z"/><path d="M665 157l29-35 51 18 35 40-44 41z"/>
+</g>
+<g font-family="Georgia,serif" fill="#688a87" opacity=".72"><text x="105" y="746" font-size="33" font-style="italic">Tyrrhenian Sea</text></g>
+</svg>
