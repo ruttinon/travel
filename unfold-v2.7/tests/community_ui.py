@@ -33,9 +33,9 @@ window.fetch=async function(url,opt={}){
 };
 '''
 async def test_public(browser,kind,width,height):
- html=(ROOT/'index.html').read_text(encoding='utf-8')
- css=(ROOT/'styles.css').read_text(encoding='utf-8')
- js=(ROOT/'app.js').read_text(encoding='utf-8')
+ html=(ROOT/'apps/traveler/index.html').read_text(encoding='utf-8')
+ css=(ROOT/'apps/traveler/styles.css').read_text(encoding='utf-8')
+ js=(ROOT/'apps/traveler/app.js').read_text(encoding='utf-8')
  start=js.index('const photo=p=>');end=js.index(';',start)+1
  js=js[:start]+"const photo=p=>window.__demoPhoto;"+js[end:]
  html=html.replace('<link rel="stylesheet" href="styles.css" />','<style>'+css+'</style>')
@@ -87,9 +87,9 @@ async def test_public(browser,kind,width,height):
  return f'{kind}: account, review draft, saved, trip, logout, responsive PASS'
 
 async def test_moderation(browser):
- html=(ROOT/'moderation.html').read_text(encoding='utf-8')
- css=(ROOT/'moderation.css').read_text(encoding='utf-8')
- js=(ROOT/'moderation.js').read_text(encoding='utf-8')
+ html=(ROOT/'apps/admin/moderation.html').read_text(encoding='utf-8')
+ css=(ROOT/'apps/admin/moderation.css').read_text(encoding='utf-8')
+ js=(ROOT/'apps/admin/moderation.js').read_text(encoding='utf-8')
  img=PHOTO
  mock=r'''window.fetch=async(url,opt={})=>{
  let status='pending';if(opt.body)status=JSON.parse(opt.body).status;

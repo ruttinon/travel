@@ -17,7 +17,7 @@ forest='data:image/webp;base64,'+base64.b64encode((ROOT/'assets'/'misty-cabin.we
 def render_offline(page, kind, response):
     if kind=='business':
         page.set_content('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div id="business-root"></div><div id="business-toast" class="toast" role="status"></div></body></html>')
-        css=(ROOT/'business.css').read_text().replace('@import url(\'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap\');','')
+        css=(ROOT/'apps/business/business.css').read_text().replace('@import url(\'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap\');','')
         css=css.replace("url('assets/terraced-fields.webp')",f"url('{blob}')").replace("url('assets/misty-cabin.webp')",f"url('{forest}')")
         page.add_style_tag(content=css)
         page.evaluate('''data => {
@@ -34,12 +34,12 @@ def render_offline(page, kind, response):
              return {ok:status>=200&&status<300,status,json:async()=>payload};
            }
         }''',response)
-        script=(ROOT/'business.js').read_text().replace("return 'assets/terraced-fields.webp'",f"return '{blob}'")
+        script=(ROOT/'apps/business/business.js').read_text().replace("return 'assets/terraced-fields.webp'",f"return '{blob}'")
         script=script.replace("return url;return 'assets/terraced-fields.webp'",f"return '{blob}';return '{blob}'")
         page.add_script_tag(content=script)
     else:
         page.set_content('<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div id="business-admin-root"></div><div id="admin-business-toast" class="toast" role="status"></div></body></html>')
-        css=(ROOT/'business.css').read_text()+"\n"+(ROOT/'business-admin.css').read_text()
+        css=(ROOT/'apps/business/business.css').read_text()+"\n"+(ROOT/'apps/business/business-admin.css').read_text()
         css='\n'.join(line for line in css.splitlines() if not line.strip().startswith('@import url('))
         css=css.replace("url('assets/terraced-fields.webp')",f"url('{blob}')").replace("url('assets/misty-cabin.webp')",f"url('{forest}')")
         page.add_style_tag(content=css)
@@ -52,7 +52,7 @@ def render_offline(page, kind, response):
            return {ok:true,status:200,json:async()=>payload};
          }
         }''',response)
-        script=(ROOT/'business-admin.js').read_text().replace("?src.replace('/uploads/','/api/admin/business-media/'):'assets/terraced-fields.webp'", f"?'{blob}':'{blob}'")
+        script=(ROOT/'apps/business/business-admin.js').read_text().replace("?src.replace('/uploads/','/api/admin/business-media/'):'assets/terraced-fields.webp'", f"?'{blob}':'{blob}'")
         page.add_script_tag(content=script)
 
 def main():

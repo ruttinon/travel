@@ -9,6 +9,37 @@ const path = require('node:path');
 const { URL } = require('node:url');
 
 const ROOT = __dirname;
+// Public URLs stay flat (/admin.html, /app.js). Files live under apps/ by role.
+// See docs/00-อ่านก่อน.md for which folder owns each part of the Traval spec.
+const PAGE_FILES={
+  'index.html':'apps/traveler/index.html',
+  'app.js':'apps/traveler/app.js',
+  'styles.css':'apps/traveler/styles.css',
+  'sw.js':'apps/traveler/sw.js',
+  'manifest.webmanifest':'apps/traveler/manifest.webmanifest',
+  'admin.html':'apps/admin/admin.html',
+  'admin.js':'apps/admin/admin.js',
+  'admin.css':'apps/admin/admin.css',
+  'admin-v26.css':'apps/admin/admin-v26.css',
+  'audit.html':'apps/admin/audit.html',
+  'audit.js':'apps/admin/audit.js',
+  'audit.css':'apps/admin/audit.css',
+  'moderation.html':'apps/admin/moderation.html',
+  'moderation.js':'apps/admin/moderation.js',
+  'moderation.css':'apps/admin/moderation.css',
+  'review-v26.css':'apps/admin/review-v26.css',
+  'business.html':'apps/business/business.html',
+  'business.js':'apps/business/business.js',
+  'business.css':'apps/business/business.css',
+  'business-v26.css':'apps/business/business-v26.css',
+  'business-admin.html':'apps/business/business-admin.html',
+  'business-admin.js':'apps/business/business-admin.js',
+  'business-admin.css':'apps/business/business-admin.css',
+  'planner.html':'apps/planner/planner.html',
+  'planner.js':'apps/planner/planner.js',
+  'planner.css':'apps/planner/planner.css',
+  'trip-engine.js':'apps/planner/trip-engine.js'
+};
 const DATA = path.resolve(process.env.UNFOLD_DATA_DIR || (process.platform==='win32'&&process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA,'unfold-travel','data') : path.join(ROOT,'data')));
 const UPLOADS = path.join(DATA, 'uploads');
 const REVIEW_UPLOADS = path.join(DATA,'review-media');
@@ -772,8 +803,9 @@ function staticFile(req,res,u,adminImageAccess=false){
     filePath=path.join(UPLOADS,filename);
   } else {
     const route=u.pathname==='/'?'index.html':u.pathname==='/admin'?'admin.html':u.pathname.replace(/^\//,'');
-    if(!new Set(['index.html','app.js','styles.css','admin.html','admin.js','admin.css','business.html','business.js','business.css','business-admin.html','business-admin.js','business-admin.css','review-v26.css','planner.html','planner.js','trip-engine.js','planner.css','admin-v26.css','business-v26.css','audit.html','audit.js','audit.css','moderation.html','moderation.js','moderation.css','sw.js','manifest.webmanifest']).has(route)&&!/^assets\/[a-z0-9_.-]+\.(?:webp|png|svg|jpg)$/.test(route))fail(404,'Not found');
-    filePath=path.resolve(ROOT,route);
+    if(PAGE_FILES[route])filePath=path.resolve(ROOT,PAGE_FILES[route]);
+    else if(/^assets\/[a-z0-9_.-]+\.(?:webp|png|svg|jpg)$/.test(route))filePath=path.resolve(ROOT,route);
+    else fail(404,'Not found');
   }
   if(!fs.existsSync(filePath)||!fs.statSync(filePath).isFile())fail(404,'Not found');
   ext=path.extname(filePath).toLowerCase();res.writeHead(200,{'Content-Type':mime[ext]||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':adminImageAccess?'private, no-store':u.pathname.startsWith('/uploads/')?'no-store':ext==='.html'||ext==='.js'||ext==='.css'||ext==='.webmanifest'?'no-cache':'public, max-age=3600'});
