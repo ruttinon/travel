@@ -1,0 +1,5 @@
+# Durable user data (local on Linux/macOS, under LOCALAPPDATA on Windows)
+data/
+backups/
+node_modules/
+*.log
