@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
-const {plan,km,visitHours,groupWarnings}=require('../apps/planner/trip-engine.js');
+const {plan,km,visitHours,groupWarnings}=require('../frontend/planner/trip-engine.js');
 const point=(id,lat,lon,country='Thailand',visit='2h')=>({id,en:id,locEn:`Test, ${country}`,lat,lon,visit});
 test('planner keeps nearby places together but prevents implausibly distant day routes',()=>{
  const bangkok=point('bkk',13.7563,100.5018),chiangmai=point('cnx',18.7883,98.9853),lamphun=point('lam',18.58,99.01);

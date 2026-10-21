@@ -28,7 +28,7 @@ window.fetch=async (url,opt={})=>{
 };
 '''
 async def run_case(browser,device,width,height):
- html=(ROOT/'apps/traveler/index.html').read_text();css=(ROOT/'apps/traveler/styles.css').read_text();js=(ROOT/'apps/traveler/app.js').read_text()
+ html=(ROOT/'frontend/traveler/index.html').read_text();css=(ROOT/'frontend/traveler/styles.css').read_text();js=(ROOT/'frontend/traveler/app.js').read_text()
  start=js.index('const photo=p=>');end=js.index(';',start)+1
  js=js[:start]+'const photo=p=>window.__demoPhoto;'+js[end:]
  html=html.replace('<link rel="stylesheet" href="styles.css" />','<style>'+css+'</style>')

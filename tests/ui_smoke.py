@@ -13,9 +13,9 @@ UPLOAD='/uploads/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.webp'
 FRONT_PLACE={'id':'test-trail-v21','en':'Mountain Trail Local','th':'ทางเดินเขาท้องถิ่น','locEn':'Chiang Mai, Thailand','locTh':'เชียงใหม่ ประเทศไทย','category':'nature','region':'north','lat':18.48,'lon':98.45,'visit':'2–3h','storyEn':'Quiet mountain scenery and local views. Demo UI data.','storyTh':'ตัวอย่างสำหรับทดสอบ UI','photo':UPLOAD,'gallery':[UPLOAD],'featured':True}
 
 async def admin_test(browser):
-    html=(ROOT/'apps/admin/admin.html').read_text(encoding='utf8')
-    css=(ROOT/'apps/admin/admin.css').read_text(encoding='utf8')
-    js=(ROOT/'apps/admin/admin.js').read_text(encoding='utf8')
+    html=(ROOT/'frontend/admin/admin.html').read_text(encoding='utf8')
+    css=(ROOT/'frontend/admin/admin.css').read_text(encoding='utf8')
+    js=(ROOT/'frontend/admin/admin.js').read_text(encoding='utf8')
     js=js.replace('function image(url){',"function image(url){if(url&&url.startsWith('/uploads/'))return window.__uiPhoto;")
     mock="""
     let logged=false,setup=true,places=[];
@@ -71,9 +71,9 @@ async def admin_test(browser):
     await page.close();return 'admin setup + create + upload + publish + edit + mobile responsive: PASS'
 
 async def front_test(browser):
-    html=(ROOT/'apps/traveler/index.html').read_text(encoding='utf8')
-    css=(ROOT/'apps/traveler/styles.css').read_text(encoding='utf8')
-    js=(ROOT/'apps/traveler/app.js').read_text(encoding='utf8')
+    html=(ROOT/'frontend/traveler/index.html').read_text(encoding='utf8')
+    css=(ROOT/'frontend/traveler/styles.css').read_text(encoding='utf8')
+    js=(ROOT/'frontend/traveler/app.js').read_text(encoding='utf8')
     start=js.index('const photo=p=>');end=js.index(';',start)+1
     js=js[:start]+"const photo=p=>window.__uiPhoto[p]||window.__uiPhoto['fallback'];"+js[end:]
     photo_map={'fallback':PHOTO}

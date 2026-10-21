@@ -9,36 +9,36 @@ const path = require('node:path');
 const { URL } = require('node:url');
 
 const ROOT = path.resolve(__dirname, '..');
-// Public URLs stay flat (/admin.html, /app.js). Files live under apps/ by role.
+// Public URLs stay flat (/admin.html, /app.js). Files live under frontend/ by role.
 // See docs/00-อ่านก่อน.md for which folder owns each part of the Traval spec.
 const PAGE_FILES={
-  'index.html':'apps/traveler/index.html',
-  'app.js':'apps/traveler/app.js',
-  'styles.css':'apps/traveler/styles.css',
-  'sw.js':'apps/traveler/sw.js',
-  'manifest.webmanifest':'apps/traveler/manifest.webmanifest',
-  'admin.html':'apps/admin/admin.html',
-  'admin.js':'apps/admin/admin.js',
-  'admin.css':'apps/admin/admin.css',
-  'admin-v26.css':'apps/admin/admin-v26.css',
-  'audit.html':'apps/admin/audit.html',
-  'audit.js':'apps/admin/audit.js',
-  'audit.css':'apps/admin/audit.css',
-  'moderation.html':'apps/admin/moderation.html',
-  'moderation.js':'apps/admin/moderation.js',
-  'moderation.css':'apps/admin/moderation.css',
-  'review-v26.css':'apps/admin/review-v26.css',
-  'business.html':'apps/business/business.html',
-  'business.js':'apps/business/business.js',
-  'business.css':'apps/business/business.css',
-  'business-v26.css':'apps/business/business-v26.css',
-  'business-admin.html':'apps/business/business-admin.html',
-  'business-admin.js':'apps/business/business-admin.js',
-  'business-admin.css':'apps/business/business-admin.css',
-  'planner.html':'apps/planner/planner.html',
-  'planner.js':'apps/planner/planner.js',
-  'planner.css':'apps/planner/planner.css',
-  'trip-engine.js':'apps/planner/trip-engine.js'
+  'index.html':'frontend/traveler/index.html',
+  'app.js':'frontend/traveler/app.js',
+  'styles.css':'frontend/traveler/styles.css',
+  'sw.js':'frontend/traveler/sw.js',
+  'manifest.webmanifest':'frontend/traveler/manifest.webmanifest',
+  'admin.html':'frontend/admin/admin.html',
+  'admin.js':'frontend/admin/admin.js',
+  'admin.css':'frontend/admin/admin.css',
+  'admin-v26.css':'frontend/admin/admin-v26.css',
+  'audit.html':'frontend/admin/audit.html',
+  'audit.js':'frontend/admin/audit.js',
+  'audit.css':'frontend/admin/audit.css',
+  'moderation.html':'frontend/admin/moderation.html',
+  'moderation.js':'frontend/admin/moderation.js',
+  'moderation.css':'frontend/admin/moderation.css',
+  'review-v26.css':'frontend/admin/review-v26.css',
+  'business.html':'frontend/business/business.html',
+  'business.js':'frontend/business/business.js',
+  'business.css':'frontend/business/business.css',
+  'business-v26.css':'frontend/business/business-v26.css',
+  'business-admin.html':'frontend/business/business-admin.html',
+  'business-admin.js':'frontend/business/business-admin.js',
+  'business-admin.css':'frontend/business/business-admin.css',
+  'planner.html':'frontend/planner/planner.html',
+  'planner.js':'frontend/planner/planner.js',
+  'planner.css':'frontend/planner/planner.css',
+  'trip-engine.js':'frontend/planner/trip-engine.js'
 };
 const DATA = path.resolve(process.env.UNFOLD_DATA_DIR || (fs.existsSync(path.join(ROOT,'data')) ? path.join(ROOT,'data') : (process.platform==='win32'&&process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA,'unfold-travel','data') : path.join(ROOT,'data'))));
 const UPLOADS = path.join(DATA, 'uploads');
