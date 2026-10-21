@@ -62,5 +62,5 @@ test('unfold v2.2 backend: setup, draft, photo, publish, auth and restart persis
     r=await request(run.url,'/api/places');assert.equal(r.json.places.length,0,'Draft is never shown to public');
     r=await request(run.url,`/api/admin/places/${slug}`,{method:'DELETE',cookie:loggedInCookie});assert.equal(r.status,200);
     r=await request(run.url,'/api/admin/places',{cookie:loggedInCookie});assert.equal(r.json.places.length,0);
-  }finally{if(run?.child&&!run.child.killed)run.child.kill();fs.rmSync(dir,{recursive:true,force:true})}
+  }finally{if(run?.child&&run.child.exitCode===null){run.child.kill();await new Promise(res=>run.child.once('exit',res));}fs.rmSync(dir,{recursive:true,force:true,maxRetries:5,retryDelay:100})}
 });

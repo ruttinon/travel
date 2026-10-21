@@ -84,7 +84,7 @@ test('real HTTP lifecycle + Admin audit + verified backup and safe restore',asyn
   const dryWhileAlive=cli('restore.js',[backupDir],data);assert.notEqual(dryWhileAlive.status,0,'Restore refuses active server');
   await stop(run);run=null;
   const liveDb=new DatabaseSync(path.join(data,'unfold.sqlite'));liveDb.exec('DELETE FROM places');liveDb.close();
-  assert.equal(new DatabaseSync(path.join(data,'unfold.sqlite'),{readOnly:true}).prepare('SELECT count(*) as n FROM places').get().n,0);
+  const emptyCheckDb=new DatabaseSync(path.join(data,'unfold.sqlite'),{readOnly:true});assert.equal(emptyCheckDb.prepare('SELECT count(*) as n FROM places').get().n,0);emptyCheckDb.close();
   const dry=cli('restore.js',[backupDir],data);assert.equal(dry.status,0,dry.stderr+dry.stdout);assert.match(dry.stdout,/DRY RUN/);
   const apply=cli('restore.js',[backupDir,'--apply'],data);assert.equal(apply.status,0,apply.stderr+apply.stdout);assert.match(apply.stdout,/\[RESTORE PASS\]/);
   const db=new DatabaseSync(path.join(data,'unfold.sqlite'),{readOnly:true});

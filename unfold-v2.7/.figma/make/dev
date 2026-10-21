@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-if [[ -z "${PORT:-}" ]]; then
-  echo "PORT is required" >&2
-  exit 1
-fi
-export FIGMA=1
-export UNFOLD_NO_BROWSER=1
-exec node server.js

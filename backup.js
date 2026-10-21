@@ -1,7 +1,7 @@
 'use strict';
 // Consistent SQLite snapshot and uploaded photos with per-file SHA256 manifest.
 // Never overwrites an existing backup; restores are handled by restore.js.
-const {DatabaseSync,backup}=require('node:sqlite');
+const {DatabaseSync}=require('node:sqlite');
 const fs=require('node:fs');
 const path=require('node:path');
 const {integrity,contentsFor,verifyBackup}=require('./backup-lib');
@@ -17,9 +17,13 @@ async function run(){
  if(fs.existsSync(target)&&fs.readdirSync(target).length)throw new Error('Backup destination already contains files: '+target);
  fs.mkdirSync(target,{recursive:true});
  const db=new DatabaseSync(DB);
- try{await backup(db,path.join(target,'unfold.sqlite'));}finally{db.close()}
+ const backupFile=path.join(target,'unfold.sqlite');
+ try{
+  const escapedTarget=backupFile.replace(/'/g, "''");
+  db.exec(`VACUUM INTO '${escapedTarget}'`);
+ }finally{db.close()}
  integrity(path.join(target,'unfold.sqlite'));
- for(const kind of ['uploads','review-media']){
+ for(const kind of ['uploads','review-media','safety-media']){
   const src=path.join(DATA,kind);if(fs.existsSync(src))fs.cpSync(src,path.join(target,kind),{recursive:true,force:false});
  }
  const manifest={format:1,app:'unfold',version:'2.7.0',createdAt:new Date().toISOString(),files:contentsFor(target)};

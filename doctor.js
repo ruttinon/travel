@@ -10,7 +10,7 @@ const result={app:'unfold',version:'2.7.0',dataDirectory:DATA,checks:[],totals:{
 function check(name,status,details){result.checks.push({name,status,details})}
 function table(db,name){return db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(name)?db.prepare(`SELECT COUNT(*) AS n FROM ${name}`).get().n:null}
 function run(){
- const node=process.versions.node.split('.').map(Number);check('Node.js runtime',(node[0]>22||node[0]===22&&node[1]>=16)?'PASS':'FAIL',process.version);
+ const node=process.versions.node.split('.').map(Number);check('Node.js runtime',(node[0]>22||node[0]===22&&node[1]>=14)?'PASS':'FAIL',process.version);
  if(!fs.existsSync(FILE)){check('SQLite database','FAIL','No database. Start unfold once to initialize.');return}
  let db;try{db=new DatabaseSync(FILE,{readOnly:true});
   const x=db.prepare('PRAGMA integrity_check').all();check('SQLite integrity',x.length===1&&x[0].integrity_check==='ok'?'PASS':'FAIL',JSON.stringify(x).slice(0,500));

@@ -34,7 +34,7 @@ function run(){
  let moved=false,swapped=false;
  try{
   fs.copyFileSync(path.join(sourceRoot,'unfold.sqlite'),path.join(staging,'unfold.sqlite'));
-  for(const folder of ['uploads','review-media']){
+  for(const folder of ['uploads','review-media','safety-media']){
    if(fs.existsSync(path.join(sourceRoot,folder)))fs.cpSync(path.join(sourceRoot,folder),path.join(staging,folder),{recursive:true});
   }
   integrity(path.join(staging,'unfold.sqlite'));

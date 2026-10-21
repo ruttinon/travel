@@ -43,8 +43,10 @@ const PAGE_FILES={
 const DATA = path.resolve(process.env.UNFOLD_DATA_DIR || (process.platform==='win32'&&process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA,'unfold-travel','data') : path.join(ROOT,'data')));
 const UPLOADS = path.join(DATA, 'uploads');
 const REVIEW_UPLOADS = path.join(DATA,'review-media');
+const SAFETY_UPLOADS = path.join(DATA,'safety-media');
 fs.mkdirSync(UPLOADS, { recursive: true });
 fs.mkdirSync(REVIEW_UPLOADS, { recursive: true });
+fs.mkdirSync(SAFETY_UPLOADS, { recursive: true });
 // Prevent running two server processes against the same local SQLite data directory.
 const SERVER_PID_FILE=path.join(DATA,'server.pid');
 function pidAlive(pid){
@@ -126,6 +128,68 @@ function addColumn(table,column,definition){
 addColumn('users','email_verified','INTEGER NOT NULL DEFAULT 1'); // legacy accounts keep their prior permissions
 addColumn('places','price_from','REAL');
 addColumn('places','price_currency',"TEXT NOT NULL DEFAULT 'THB'");
+addColumn('places','is_sme','INTEGER NOT NULL DEFAULT 0');
+addColumn('places','sme_type',"TEXT NOT NULL DEFAULT ''");
+addColumn('places','spotlight_badge',"TEXT NOT NULL DEFAULT ''");
+addColumn('places','local_story_th',"TEXT NOT NULL DEFAULT ''");
+addColumn('places','local_story_en',"TEXT NOT NULL DEFAULT ''");
+addColumn('places','contact_phone',"TEXT NOT NULL DEFAULT ''");
+addColumn('places','contact_website',"TEXT NOT NULL DEFAULT ''");
+addColumn('places','contact_line',"TEXT NOT NULL DEFAULT ''");
+addColumn('places','opening_hours_json',"TEXT NOT NULL DEFAULT '{}'");
+addColumn('places','google_place_id',"TEXT NOT NULL DEFAULT ''");
+addColumn('places','is_sponsored','INTEGER NOT NULL DEFAULT 0');
+addColumn('users','status',"TEXT NOT NULL DEFAULT 'active'");
+
+db.exec(`
+ CREATE TABLE IF NOT EXISTS travel_safety_reports (
+   id TEXT PRIMARY KEY,
+   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+   category TEXT NOT NULL CHECK (category IN ('overcharging','transport','scam','danger','other')),
+   title TEXT NOT NULL,
+   description TEXT NOT NULL,
+   location_name TEXT NOT NULL,
+   lat REAL NOT NULL,
+   lon REAL NOT NULL,
+   photo TEXT NOT NULL DEFAULT '',
+   status TEXT NOT NULL CHECK (status IN ('pending','verified','rejected','resolved')) DEFAULT 'pending',
+   admin_note TEXT NOT NULL DEFAULT '',
+   created_at TEXT NOT NULL,
+   updated_at TEXT NOT NULL
+ );
+ CREATE INDEX IF NOT EXISTS travel_safety_status ON travel_safety_reports(status, updated_at DESC);
+ CREATE TABLE IF NOT EXISTS safety_media (
+   filename TEXT PRIMARY KEY,
+   owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+   created_at TEXT NOT NULL
+ );
+ CREATE TABLE IF NOT EXISTS campaigns (
+   id TEXT PRIMARY KEY,
+   title TEXT NOT NULL,
+   subtitle TEXT NOT NULL DEFAULT '',
+   banner_url TEXT NOT NULL DEFAULT '',
+   target_place_slug TEXT,
+   target_url TEXT NOT NULL DEFAULT '',
+   category TEXT NOT NULL DEFAULT '',
+   region TEXT NOT NULL DEFAULT '',
+   badge TEXT NOT NULL DEFAULT '',
+   start_date TEXT,
+   end_date TEXT,
+   status TEXT NOT NULL DEFAULT 'published' CHECK(status IN ('draft','published','expired')),
+   priority INTEGER NOT NULL DEFAULT 0,
+   created_at TEXT NOT NULL,
+   updated_at TEXT NOT NULL
+ );
+ CREATE INDEX IF NOT EXISTS campaigns_status_priority ON campaigns(status, priority DESC, updated_at DESC);
+ CREATE TABLE IF NOT EXISTS place_events (
+   id INTEGER PRIMARY KEY AUTOINCREMENT,
+   place_slug TEXT NOT NULL,
+   event_type TEXT NOT NULL CHECK(event_type IN ('view','direction','phone','website','favorite','add_trip','sme_impression')),
+   created_at TEXT NOT NULL
+ );
+ CREATE INDEX IF NOT EXISTS place_events_slug_type ON place_events(place_slug, event_type);
+`);
+
 
 
 // Business data is additive: no pre-existing places or accounts are rewritten.
@@ -179,6 +243,7 @@ db.exec(`
  );
  CREATE INDEX IF NOT EXISTS itinerary_by_user ON user_itineraries(user_id,updated_at);
 `);
+addColumn('user_itineraries','budget_breakdown_json',"TEXT NOT NULL DEFAULT '{}'");
 
 // Immutable-by-API administrative audit trail, append-only and local-only.
 // Older databases are upgraded additively and are never cleared.
@@ -245,7 +310,18 @@ function normalize(p){
     gallery:[], featured:p.featured===true?1:0,
     status:p.status==='published'?'published':'draft',
     price_from:p.priceFrom===''||p.priceFrom==null?null:Number(p.priceFrom),
-    price_currency:validString(p.currency||'THB',3,'Currency')
+    price_currency:validString(p.currency||'THB',3,'Currency'),
+    is_sme:p.isSme===true||p.is_sme===1||p.is_sme==='1'?1:0,
+    sme_type:validString(p.smeType||p.sme_type,40,'SME type'),
+    spotlight_badge:validString(p.spotlightBadge||p.spotlight_badge,50,'Spotlight badge'),
+    local_story_th:validString(p.localStoryTh||p.local_story_th,3000,'Local story TH'),
+    local_story_en:validString(p.localStoryEn||p.local_story_en,3000,'Local story EN'),
+    contact_phone:validString(p.contactPhone||p.contact_phone,40,'Contact phone'),
+    contact_website:validString(p.contactWebsite||p.contact_website,300,'Contact website'),
+    contact_line:validString(p.contactLine||p.contact_line,100,'Contact LINE'),
+    opening_hours_json:typeof p.openingHours==='object'?JSON.stringify(p.openingHours):validString(p.opening_hours_json||'{}',2000,'Opening hours'),
+    google_place_id:validString(p.googlePlaceId||p.google_place_id,120,'Google Place ID'),
+    is_sponsored:p.isSponsored===true||p.is_sponsored===1||p.is_sponsored==='1'?1:0
   };
   if(!CATEGORIES.has(r.category))fail(400,'Invalid category');
   if(!CURRENCIES.has(r.price_currency))fail(400,'Unsupported currency');
@@ -253,8 +329,9 @@ function normalize(p){
   if(!REGIONS.has(r.region))fail(400,'Invalid region');
   if(r.lat!==null && (!Number.isFinite(r.lat)||r.lat< -85||r.lat>85))fail(400,'Invalid latitude');
   if(r.lon!==null && (!Number.isFinite(r.lon)||r.lon< -180||r.lon>180))fail(400,'Invalid longitude');
-  if(!Array.isArray(p.gallery)||p.gallery.length>8)fail(400,'Gallery accepts up to 8 photos');
-  r.gallery=[...new Set(p.gallery.map(imagePath).filter(Boolean))];
+  const rawGallery = p.gallery == null ? [] : p.gallery;
+  if(!Array.isArray(rawGallery)||rawGallery.length>8)fail(400,'Gallery accepts up to 8 photos');
+  r.gallery=[...new Set(rawGallery.map(imagePath).filter(Boolean))];
   if(r.status==='published'&&(r.lat===null||r.lon===null||!r.cover))fail(400,'Publishing requires coordinates and a photo');
   return r;
 }
@@ -262,7 +339,12 @@ function rowToPlace(row,includeAdmin=false){
   const result={id:row.slug,en:row.name_en,th:row.name_th||row.name_en,locEn:row.location_en,locTh:row.location_th||row.location_en,
     category:row.category,region:row.region,lat:row.lat,lon:row.lon,visit:row.visit,
     storyEn:row.description_en,storyTh:row.description_th||row.description_en,
-    photo:row.cover,gallery:JSON.parse(row.gallery_json),featured:!!row.featured,priceFrom:row.price_from??null,currency:row.price_currency||'THB'};
+    photo:row.cover,gallery:JSON.parse(row.gallery_json||'[]'),featured:!!row.featured,priceFrom:row.price_from??null,currency:row.price_currency||'THB',
+    isSme:!!row.is_sme,smeType:row.sme_type||'',spotlightBadge:row.spotlight_badge||'',
+    localStoryTh:row.local_story_th||'',localStoryEn:row.local_story_en||'',
+    contactPhone:row.contact_phone||'',contactWebsite:row.contact_website||'',contactLine:row.contact_line||'',
+    openingHours:(()=>{try{return JSON.parse(row.opening_hours_json||'{}')}catch{return {}}})(),
+    googlePlaceId:row.google_place_id||'',isSponsored:!!row.is_sponsored};
   if(includeAdmin)Object.assign(result,{status:row.status,createdAt:row.created_at,updatedAt:row.updated_at});
   return result;
 }
@@ -295,9 +377,9 @@ function uploadImageTo(body,destination=UPLOADS,prefix='/uploads/'){ const data=
 // Account + community features use distinct sessions from the local Admin.
 function userCookie(token,req){const parts=[`unfold_user=${token||''}`,'HttpOnly','SameSite=Strict','Path=/',`Max-Age=${token?USER_SESS_AGE:0}`];if(req.socket.encrypted)parts.push('Secure');return parts.join('; ');}
 function userToken(req){return /(?:^|;\s*)unfold_user=([a-f0-9]{64})/.exec(req.headers.cookie||'')?.[1]||null;}
-function userSession(req){const token=userToken(req);if(!token)return null;return db.prepare('SELECT u.id,u.name,u.email,u.email_verified FROM user_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?').get(hashToken(token),Math.floor(Date.now()/1000))||null;}
-function userPublic(user){return user?{id:user.id,name:user.name,email:user.email,emailVerified:!!user.email_verified}:null;}
-function requireUser(req){const user=userSession(req);if(!user)fail(401,'Sign in to continue');return user;}
+function userSession(req){const token=userToken(req);if(!token)return null;return db.prepare('SELECT u.id,u.name,u.email,u.email_verified,u.status FROM user_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?').get(hashToken(token),Math.floor(Date.now()/1000))||null;}
+function userPublic(user){return user?{id:user.id,name:user.name,email:user.email,emailVerified:!!user.email_verified,status:user.status||'active'}:null;}
+function requireUser(req){const user=userSession(req);if(!user)fail(401,'Sign in to continue');if(user.status==='suspended')fail(403,'Your account has been suspended. Please contact Admin.');return user;}
 function issueUserSession(req,res,id){const token=crypto.randomBytes(32).toString('hex');db.prepare('INSERT INTO user_sessions(token_hash,user_id,expires_at) VALUES(?,?,?)').run(hashToken(token),id,Math.floor(Date.now()/1000)+USER_SESS_AGE);res.setHeader('Set-Cookie',userCookie(token,req));}
 function normalizeItinerary(b){
  if(!b||typeof b!=='object'||Array.isArray(b))fail(400,'Invalid trip');
@@ -315,14 +397,24 @@ function normalizeItinerary(b){
    return g.map(id=>{if(typeof id!=='string'||!/[a-z0-9-]{1,65}/.test(id)||id.length>65||!/^[a-z0-9-]+$/.test(id))fail(400,'Invalid place');publishedPlace(id);return id});
  });
  const flat=groups.flat();if(flat.length>30||new Set(flat).size!==flat.length)fail(400,'Maximum 30 unique published places per trip');
- return {title,days,hoursPerDay,currency,travelMode,budget,groups};
+ const budgetBreakdown={};
+ if(b.budgetBreakdown&&typeof b.budgetBreakdown==='object'&&!Array.isArray(b.budgetBreakdown)){
+   for(const [k,v] of Object.entries(b.budgetBreakdown)){
+     if(['transport','fuel','food','stay','activities','other'].includes(k)&&Number.isFinite(Number(v))&&Number(v)>=0&&Number(v)<=100_000_000){
+       budgetBreakdown[k]=Number(v);
+     }
+   }
+ }
+ return {title,days,hoursPerDay,currency,travelMode,budget,groups,budgetBreakdown};
 }
 function itineraryPublic(row){
  const groups=JSON.parse(row.days_json).map(g=>g.filter(id=>{
   const p=getRow.get(id);return !!p&&p.status==='published';
  }));
+ const budgetBreakdown=(()=>{try{return JSON.parse(row.budget_breakdown_json||'{}')}catch{return {}}})();
  return {id:row.id,title:row.title,days:row.days,hoursPerDay:row.hours_per_day,
   budget:row.budget,currency:row.currency,travelMode:row.travel_mode,
+  budgetBreakdown,
   groups,createdAt:row.created_at,updatedAt:row.updated_at};
 }
 function collectionList(userId,kind){return db.prepare("SELECT c.place_slug FROM user_collections c JOIN places p ON p.slug=c.place_slug WHERE c.user_id=? AND c.kind=? AND p.status='published' ORDER BY c.position ASC").all(userId,kind).map(r=>r.place_slug);}
@@ -370,12 +462,13 @@ function getNearby(u){
   const category=q.get('category')||'all';if(category!=='all'&&!CATEGORIES.has(category))fail(400,'Invalid category');
   const currency=q.get('currency')||'THB';if(!CURRENCIES.has(currency))fail(400,'Invalid currency');
   const rawPrice=q.get('maxPrice');const maxPrice=rawPrice===null?null:parsedCoord(rawPrice,'price',0,10_000_000);
-  const list=getPublic.all().filter(p=>p.lat!==null&&p.lon!==null&&(category==='all'||p.category===category))
+  const localOnly=q.get('localOnly')==='1'||q.get('localOnly')==='true'||q.get('smeOnly')==='1';
+  const list=getPublic.all().filter(p=>p.lat!==null&&p.lon!==null&&(category==='all'||p.category===category)&&(!localOnly||p.is_sme===1))
     .map(p=>({place:rowToPlace(p),distanceKm:kmBetween(lat,lon,p.lat,p.lon)}))
     .filter(x=>x.distanceKm<=radiusKm&&(maxPrice===null||(x.place.priceFrom!==null&&x.place.currency===currency&&x.place.priceFrom<=maxPrice)))
     .sort((a,b)=>a.distanceKm-b.distanceKm).slice(0,100)
     .map(x=>({...x.place,distanceKm:Math.round(x.distanceKm*10)/10}));
-  return {places:list,count:list.length,radiusKm,currency,unit:'km'};
+  return {places:list,count:list.length,radiusKm,currency,unit:'km',localOnly};
 }
 
 function businessPublic(row){return row?{id:row.id,name:row.name,type:row.type,contactEmail:row.contact_email,phone:row.phone,website:row.website,description:row.description,status:row.status,note:row.admin_note,createdAt:row.created_at,updatedAt:row.updated_at}:null;}
@@ -458,18 +551,296 @@ function slugFor(name){const base=name.normalize('NFKD').toLowerCase().replace(/
 function saveNew(p){const t=new Date().toISOString(),slug=slugFor(p.name_en);
   db.prepare('INSERT INTO places(slug,name_en,name_th,location_en,location_th,category,region,lat,lon,visit,description_en,description_th,cover,gallery_json,featured,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
     .run(slug,p.name_en,p.name_th,p.location_en,p.location_th,p.category,p.region,p.lat,p.lon,p.visit,p.description_en,p.description_th,p.cover,JSON.stringify(p.gallery),p.featured,p.status,t,t);
-  db.prepare('UPDATE places SET price_from=?,price_currency=? WHERE slug=?').run(p.price_from,p.price_currency,slug);
+  db.prepare('UPDATE places SET price_from=?,price_currency=?,is_sme=?,sme_type=?,spotlight_badge=?,local_story_th=?,local_story_en=?,contact_phone=?,contact_website=?,contact_line=?,opening_hours_json=?,google_place_id=?,is_sponsored=? WHERE slug=?')
+    .run(p.price_from,p.price_currency,p.is_sme,p.sme_type,p.spotlight_badge,p.local_story_th,p.local_story_en,p.contact_phone,p.contact_website,p.contact_line,p.opening_hours_json,p.google_place_id,p.is_sponsored,slug);
   return rowToPlace(getRow.get(slug),true);
 }
 function saveExisting(slug,p){const result=db.prepare('UPDATE places SET name_en=?,name_th=?,location_en=?,location_th=?,category=?,region=?,lat=?,lon=?,visit=?,description_en=?,description_th=?,cover=?,gallery_json=?,featured=?,status=?,updated_at=? WHERE slug=?')
  .run(p.name_en,p.name_th,p.location_en,p.location_th,p.category,p.region,p.lat,p.lon,p.visit,p.description_en,p.description_th,p.cover,JSON.stringify(p.gallery),p.featured,p.status,new Date().toISOString(),slug);
- if(!result.changes)fail(404,'Place not found');db.prepare('UPDATE places SET price_from=?,price_currency=? WHERE slug=?').run(p.price_from,p.price_currency,slug);return rowToPlace(getRow.get(slug),true);
+ if(!result.changes)fail(404,'Place not found');
+ db.prepare('UPDATE places SET price_from=?,price_currency=?,is_sme=?,sme_type=?,spotlight_badge=?,local_story_th=?,local_story_en=?,contact_phone=?,contact_website=?,contact_line=?,opening_hours_json=?,google_place_id=?,is_sponsored=? WHERE slug=?')
+   .run(p.price_from,p.price_currency,p.is_sme,p.sme_type,p.spotlight_badge,p.local_story_th,p.local_story_en,p.contact_phone,p.contact_website,p.contact_line,p.opening_hours_json,p.google_place_id,p.is_sponsored,slug);
+ return rowToPlace(getRow.get(slug),true);
+}
+function generateAiTripPlan(params){
+  const destination=(params.destination||'').toLowerCase().trim();
+  const days=Math.max(1,Math.min(7,Number(params.days)||1));
+  const travelMode=['driving','walking','transit','taxi'].includes(params.travelMode)?params.travelMode:'driving';
+  const pace=params.pace||'moderate';
+  const hoursPerDay=pace==='relaxed'?5:pace==='packed'?9:7;
+  const travelers=Math.max(1,Math.min(20,Number(params.travelers)||1));
+  const budget=Number(params.budget)>0?Number(params.budget):null;
+  const interests=Array.isArray(params.interests)?params.interests.map(i=>String(i).toLowerCase()):[];
+  const mustVisit=Array.isArray(params.mustVisit)?params.mustVisit:[];
+  const includeSme=params.includeSme!==false;
+  const query=String(params.query||'').trim();
+
+  if(params.userLat!=null&&params.userLon!=null&&(/(เดิน|walk|รอบตัว|around|ใกล้ฉัน|10 นาที)/i.test(query))){
+    const lat=Number(params.userLat),lon=Number(params.userLon);
+    const nearby=getPublic.all().filter(p=>p.lat!==null&&p.lon!==null)
+      .map(p=>({place:rowToPlace(p),dist:kmBetween(lat,lon,p.lat,p.lon)}))
+      .filter(x=>x.dist<=1.5)
+      .sort((a,b)=>{
+        if(a.place.isSme&&!b.place.isSme)return -1;
+        if(!a.place.isSme&&b.place.isSme)return 1;
+        return a.dist-b.dist;
+      })
+      .slice(0,8);
+    const walkingPlaces=nearby.map(x=>({
+      ...x.place,
+      walkingDistanceMeters:Math.round(x.dist*1000),
+      estimatedWalkMinutes:Math.max(1,Math.round((x.dist/4.5)*60))
+    }));
+    return {
+      type:'quick_walk_recommendations',
+      query,
+      userLocation:{lat,lon},
+      places:walkingPlaces,
+      count:walkingPlaces.length,
+      aiSummary:walkingPlaces.length?`พบ ${walkingPlaces.length} ร้านและสถานที่ในระยะเดิน 10-15 นาที โดยมีร้าน SME ท้องถิ่นเด่น เช่น ${walkingPlaces.filter(p=>p.isSme).map(p=>p.th||p.en).slice(0,3).join(', ')||walkingPlaces[0].th}`:'ไม่พบสถานที่ในระยะเดิน 15 นาทีจากพิกัดนี้ ลองค้นหาด้วยยานพาหนะ'
+    };
+  }
+
+  const allPub=getPublic.all();
+  let pool=allPub;
+  if(destination&&destination!=='all'){
+    const matched=allPub.filter(p=>
+      p.region.toLowerCase()===destination||
+      p.location_en.toLowerCase().includes(destination)||
+      p.location_th.toLowerCase().includes(destination)||
+      p.name_en.toLowerCase().includes(destination)||
+      p.name_th.toLowerCase().includes(destination)
+    );
+    if(matched.length>=3)pool=matched;
+  }
+  const scored=pool.map(p=>{
+    let score=0;
+    if(mustVisit.includes(p.slug))score+=1000;
+    if(interests.includes(p.category))score+=15;
+    if(includeSme&&p.is_sme)score+=8;
+    if(p.featured)score+=5;
+    if(p.spotlight_badge)score+=6;
+    if(p.cover)score+=3;
+    if(p.price_from!=null)score+=2;
+    return {place:p,score};
+  });
+  scored.sort((a,b)=>b.score-a.score);
+
+  const targetPerDay=pace==='relaxed'?3:pace==='packed'?5:4;
+  const totalTarget=Math.min(scored.length,days*targetPerDay);
+  const selectedPlaces=scored.slice(0,totalTarget).map(x=>x.place);
+
+  const arranged=[];
+  const remaining=[...selectedPlaces];
+  while(remaining.length){
+    if(!arranged.length){arranged.push(remaining.shift());continue;}
+    const last=arranged[arranged.length-1];
+    let bestIdx=0,bestDist=Infinity;
+    for(let i=0;i<remaining.length;i++){
+      const d=kmBetween(last.lat,last.lon,remaining[i].lat,remaining[i].lon);
+      if(d<bestDist){bestDist=d;bestIdx=i;}
+    }
+    arranged.push(remaining.splice(bestIdx,1)[0]);
+  }
+
+  const dailyGroups=Array.from({length:days},()=>[]);
+  const placesPerDay=Math.ceil(arranged.length/days);
+  for(let i=0;i<arranged.length;i++){
+    const dayIndex=Math.min(days-1,Math.floor(i/placesPerDay));
+    dailyGroups[dayIndex].push(arranged[i]);
+  }
+
+  let totalKm=0;
+  const dailyItinerary=[];
+  const allSuggestedSme=[];
+  const usedSlugs=new Set(arranged.map(p=>p.slug));
+
+  dailyGroups.forEach((dayPlaces,idx)=>{
+    let dayKm=0;
+    for(let j=1;j<dayPlaces.length;j++){
+      dayKm+=kmBetween(dayPlaces[j-1].lat,dayPlaces[j-1].lon,dayPlaces[j].lat,dayPlaces[j].lon);
+    }
+    totalKm+=dayKm;
+
+    const daySmeRecs=[];
+    if(includeSme&&dayPlaces.length>0){
+      const candidates=allPub.filter(p=>p.is_sme===1&&!usedSlugs.has(p.slug)&&p.lat!=null&&p.lon!=null);
+      for(const sme of candidates){
+        let minDetour=Infinity,nearStop=null;
+        for(const wp of dayPlaces){
+          const d=kmBetween(wp.lat,wp.lon,sme.lat,sme.lon);
+          if(d<minDetour){minDetour=d;nearStop=wp;}
+        }
+        if(minDetour<=15){
+          daySmeRecs.push({
+            place:rowToPlace(sme),
+            nearestStopId:nearStop.slug,
+            nearestStopName:nearStop.name_th||nearStop.name_en,
+            detourKm:Math.round(minDetour*10)/10,
+            estimatedDetourMin:Math.max(3,Math.round((minDetour/30)*60))
+          });
+        }
+      }
+      daySmeRecs.sort((a,b)=>a.detourKm-b.detourKm);
+    }
+    const topDaySme=daySmeRecs.slice(0,2);
+    topDaySme.forEach(s=>allSuggestedSme.push(s));
+    dailyItinerary.push({
+      day:idx+1,
+      places:dayPlaces.map(p=>rowToPlace(p)),
+      distanceKm:Math.round(dayKm*10)/10,
+      estimatedDriveMinutes:Math.round((dayKm/35)*60),
+      smeRecommendations:topDaySme
+    });
+  });
+
+  let transportEst=0;
+  if(travelMode==='taxi'){
+    let base=35;
+    if(totalKm>1)base+=Math.min(9,totalKm-1)*6.5;
+    if(totalKm>10)base+=Math.min(10,totalKm-10)*7.0;
+    if(totalKm>20)base+=(totalKm-20)*8.0;
+    transportEst=Math.round(base*1.15);
+  }else if(travelMode==='driving'){
+    transportEst=Math.round(totalKm*3.2);
+  }else if(travelMode==='transit'){
+    transportEst=Math.round(days*180*travelers);
+  }else{
+    transportEst=0;
+  }
+  const foodEst=Math.round(days*3*150*travelers);
+  let activitiesEst=0;
+  arranged.forEach(p=>{activitiesEst+=(p.price_from!=null?p.price_from:80)*travelers;});
+  activitiesEst=Math.round(activitiesEst);
+  const stayEst=days>1?(days-1)*1200*Math.ceil(travelers/2):0;
+  const totalEstimated=transportEst+foodEst+activitiesEst+stayEst;
+
+  const budgetBreakdown={
+    transport:transportEst,
+    food:foodEst,
+    activities:activitiesEst,
+    accommodation:stayEst,
+    totalEstimated
+  };
+
+  const titleDest=destination&&destination!=='all'?destination:(arranged[0]?.location_th||'กรุงเทพและปริมณฑล');
+  const tripTitle=`ทริปเที่ยว${titleDest} ${days} วัน (${pace==='relaxed'?'สไตล์ชิลๆ':pace==='packed'?'จัดเต็มทุกจุด':'ครบเครื่อง'})`;
+  const interestText=interests.length?`เน้น${interests.join(', ')}`:'' ;
+  const aiSummary=`จัดแผนการเดินทาง ${days} วัน ${interestText} รวมระยะทางประมาณ ${Math.round(totalKm*10)/10} กม. จัดกลุ่มสถานที่ใกล้กันในแต่ละวันเพื่อประหยัดเวลาเดินทาง พร้อมแนะนำร้าน Local SME ${allSuggestedSme.length} แห่งระหว่างเส้นทาง ค่าใช้จ่ายประมาณการรวม ${totalEstimated.toLocaleString()} บาท${budget?(budget>=totalEstimated?` (อยู่ในงบประมาณ ${budget.toLocaleString()} บาทที่ตั้งไว้)`:` (เกินจากงบที่ตั้งไว้ แนะนำปรับเปลี่ยนที่พักหรือลดมื้อพิเศษ)`):''}`;
+
+  return {
+    type:'auto_trip_plan',
+    title:tripTitle,
+    days,
+    travelMode,
+    hoursPerDay,
+    travelers,
+    totalDistanceKm:Math.round(totalKm*10)/10,
+    dailyItinerary,
+    groups:dailyGroups.map(g=>g.map(p=>p.slug)),
+    suggestedSmeStops:allSuggestedSme,
+    budgetBreakdown,
+    budgetStatus:budget?(budget>=totalEstimated?'within_budget':'exceeds_budget'):'not_specified',
+    aiSummary
+  };
 }
 async function api(req,res,u){
   const method=req.method,route=u.pathname;
   if(route==='/api/health'&&method==='GET')return reply(res,200,{ok:true,version:'2.7.0',storage:'SQLite',published:db.prepare("SELECT count(*) AS n FROM places WHERE status='published'").get().n});
   if(route==='/api/places'&&method==='GET')return reply(res,200,{places:getPublic.all().map(p=>rowToPlace(p)),mode:'live'});
   if(route==='/api/places/nearby'&&method==='GET')return reply(res,200,getNearby(u));
+  if(route==='/api/places/sme'&&method==='GET'){
+    const type=u.searchParams.get('type')||'all';
+    const spotlightOnly=u.searchParams.get('spotlight')==='1';
+    const region=u.searchParams.get('region')||'all';
+    const list=getPublic.all().filter(p=>p.is_sme===1&&(type==='all'||p.sme_type===type)&&(region==='all'||p.region===region)&&(!spotlightOnly||(p.spotlight_badge&&p.spotlight_badge!==''))).map(p=>rowToPlace(p));
+    return reply(res,200,{places:list,count:list.length});
+  }
+  if(route==='/api/places/spotlight'&&method==='GET'){
+    const list=getPublic.all().filter(p=>p.is_sme===1&&p.spotlight_badge&&p.spotlight_badge!=='').map(p=>rowToPlace(p));
+    return reply(res,200,{spotlight:list,count:list.length});
+  }
+  if(route==='/api/safety/reports'&&method==='GET'){
+    const rows=db.prepare("SELECT * FROM travel_safety_reports WHERE status='verified' ORDER BY updated_at DESC LIMIT 100").all();
+    return reply(res,200,{reports:rows.map(r=>({id:r.id,category:r.category,title:r.title,description:r.description,locationName:r.location_name,lat:r.lat,lon:r.lon,photo:r.photo,createdAt:r.created_at})),count:rows.length});
+  }
+  if(route==='/api/trips/recommend-sme'&&method==='POST'){
+    const body=await jsonBody(req);
+    const placeIds=Array.isArray(body?.places)?body.places.filter(id=>typeof id==='string'):[];
+    const maxDetourKm=Number.isFinite(Number(body?.maxDetourKm))?Math.min(50,Math.max(1,Number(body.maxDetourKm))):15;
+    const limit=Number.isFinite(Number(body?.limit))?Math.min(20,Math.max(1,Number(body.limit))):5;
+    const waypoints=placeIds.map(id=>getRow.get(id)).filter(p=>p&&p.status==='published'&&p.lat!==null&&p.lon!==null);
+    if(!waypoints.length)return reply(res,200,{recommendations:[],count:0});
+    const existing=new Set(placeIds);
+    const smePlaces=getPublic.all().filter(p=>p.is_sme===1&&!existing.has(p.slug)&&p.lat!==null&&p.lon!==null);
+    const recs=[];
+    for(const sme of smePlaces){
+      let minKm=Infinity,closest=null;
+      for(const wp of waypoints){
+        const d=kmBetween(wp.lat,wp.lon,sme.lat,sme.lon);
+        if(d<minKm){minKm=d;closest=wp;}
+      }
+      if(minKm<=maxDetourKm){
+        const estMin=Math.max(2,Math.round((minKm/30)*60));
+        recs.push({
+          place:rowToPlace(sme),
+          nearestStopId:closest.slug,
+          nearestStopName:closest.name_th||closest.name_en,
+          detourKm:Math.round(minKm*10)/10,
+          estimatedDetourMin:estMin
+        });
+      }
+    }
+    recs.sort((a,b)=>a.detourKm-b.detourKm);
+    return reply(res,200,{recommendations:recs.slice(0,limit),count:Math.min(recs.length,limit)});
+  }
+  if(route==='/api/trips/estimate-cost'&&method==='GET'){
+    const dist=parsedCoord(u.searchParams.get('distanceKm'),'distanceKm',0,5000);
+    let taxiBase=35;
+    if(dist>1){const d1=Math.min(9,dist-1);taxiBase+=d1*6.5;}
+    if(dist>10){const d2=Math.min(10,dist-10);taxiBase+=d2*7.0;}
+    if(dist>20){const d3=dist-20;taxiBase+=d3*8.0;}
+    const taxiMin=Math.round(taxiBase),taxiMax=Math.round(taxiBase*1.25);
+    const fuelMin=Math.round(dist*2.8),fuelMax=Math.round(dist*3.5);
+    return reply(res,200,{
+      distanceKm:dist,
+      currency:'THB',
+      taxiFare:{min:taxiMin,max:taxiMax,note:'ประมาณการตามมิเตอร์แท็กซี่เบื้องต้น อาจผันแปรตามสภาพการจราจร'},
+      fuelCost:{min:fuelMin,max:fuelMax,note:'ประมาณการค่าน้ำมันรถยนต์ส่วนบุคคลเฉลี่ย 3 บาท/กม.'}
+    });
+  }
+  if(route==='/api/ai/advisor'&&method==='POST'){
+    const body=await jsonBody(req).catch(()=>({}));
+    const plan=generateAiTripPlan(body);
+    return reply(res,200,{plan});
+  }
+  if(route==='/api/campaigns'&&method==='GET'){
+    const now=new Date().toISOString();
+    const rows=db.prepare(`
+      SELECT * FROM campaigns 
+      WHERE status='published' 
+      AND (start_date IS NULL OR start_date='' OR start_date<=?)
+      AND (end_date IS NULL OR end_date='' OR end_date>=?)
+      ORDER BY priority DESC, updated_at DESC LIMIT 50
+    `).all(now,now);
+    return reply(res,200,{campaigns:rows.map(c=>({
+      id:c.id,title:c.title,subtitle:c.subtitle,bannerUrl:c.banner_url,
+      targetPlaceSlug:c.target_place_slug,targetUrl:c.target_url,
+      category:c.category,region:c.region,badge:c.badge,
+      startDate:c.start_date,endDate:c.end_date,priority:c.priority
+    }))});
+  }
+  if(route==='/api/analytics/event'&&method==='POST'){
+    checkOrigin(req);const b=await jsonBody(req);
+    const placeSlug=validString(b?.placeSlug||b?.place_slug,65,'Place ID',{required:true});
+    const eventType=validString(b?.eventType||b?.event_type,30,'Event type',{required:true});
+    if(!['view','direction','phone','website','favorite','add_trip','sme_impression'].includes(eventType))fail(400,'Invalid event type');
+    publishedPlace(placeSlug);
+    const now=new Date().toISOString();
+    db.prepare('INSERT INTO place_events(place_slug,event_type,created_at) VALUES(?,?,?)').run(placeSlug,eventType,now);
+    return reply(res,200,{ok:true});
+  }
+
   if(/^\/api\/places\/[a-z0-9-]{1,65}$/.test(route)&&method==='GET'){const id=route.slice('/api/places/'.length);const p=getRow.get(id);if(!p||p.status!=='published')fail(404,'Place not found');return reply(res,200,{place:rowToPlace(p)});}
   if(route==='/api/admin/status'&&method==='GET')return reply(res,200,{setupRequired:!db.prepare('SELECT id FROM admins WHERE id=1').get(),authenticated:isAdmin(req)});
   if(route==='/api/admin/setup'&&method==='POST'){
@@ -509,6 +880,7 @@ async function api(req,res,u){
     const user=db.prepare('SELECT * FROM users WHERE email=?').get(email);
     const dummySalt='a'.repeat(32),hash=pwHash(pass,user?.salt||dummySalt);
     if(!user||!crypto.timingSafeEqual(Buffer.from(hash,'hex'),Buffer.from(user.password_hash,'hex')))fail(401,'Incorrect email or password');
+    if(user.status==='suspended')fail(403,'Your account has been suspended. Please contact Admin.');
     limits.delete('login:'+(req.socket.remoteAddress||'local'));
     issueUserSession(req,res,user.id);return reply(res,200,{user:userPublic(user)});
   }
@@ -546,8 +918,24 @@ async function api(req,res,u){
     checkOrigin(req);const user=requireUser(req),body=await jsonBody(req);
     const name=validString(body?.name,60,'Name',{required:true});if(name.length<2)fail(400,'Name must be at least 2 characters');
     db.prepare('UPDATE users SET name=? WHERE id=?').run(name,user.id);
-    return reply(res,200,{user:userPublic(db.prepare('SELECT id,name,email,email_verified FROM users WHERE id=?').get(user.id))});
+    return reply(res,200,{user:userPublic(db.prepare('SELECT id,name,email,email_verified,status FROM users WHERE id=?').get(user.id))});
   }
+  if(route==='/api/me/account'&&method==='DELETE'){
+    checkOrigin(req);const user=requireUser(req);
+    const body=await jsonBody(req).catch(()=>({}));
+    const userRow=db.prepare('SELECT * FROM users WHERE id=?').get(user.id);
+    if(body?.password){
+      const test=pwHash(body.password,userRow.salt);
+      if(!crypto.timingSafeEqual(Buffer.from(test,'hex'),Buffer.from(userRow.password_hash,'hex'))){
+        fail(401,'Incorrect password');
+      }
+    }
+    db.prepare('DELETE FROM users WHERE id=?').run(user.id);
+    audit('user',user.id,'account.delete','user',user.id,{email:user.email,reason:'User requested account closure'});
+    res.setHeader('Set-Cookie',userCookie('',req));
+    return reply(res,200,{ok:true,message:'Account successfully deleted'});
+  }
+
   // Private trip plans are owned by the authenticated traveller, not the business account.
   if(route==='/api/me/itineraries'&&method==='GET'){
     const user=requireUser(req);
@@ -559,9 +947,29 @@ async function api(req,res,u){
     const count=db.prepare('SELECT count(*) AS n FROM user_itineraries WHERE user_id=?').get(user.id).n;
     if(count>=40)fail(429,'Maximum 40 trip plans per account');
     const id=crypto.randomUUID(),now=new Date().toISOString();
-    db.prepare('INSERT INTO user_itineraries(id,user_id,title,days,hours_per_day,currency,budget,travel_mode,days_json,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
-     .run(id,user.id,p.title,p.days,p.hoursPerDay,p.currency,p.budget,p.travelMode,JSON.stringify(p.groups),now,now);
+    db.prepare('INSERT INTO user_itineraries(id,user_id,title,days,hours_per_day,currency,budget,travel_mode,days_json,created_at,updated_at,budget_breakdown_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
+     .run(id,user.id,p.title,p.days,p.hoursPerDay,p.currency,p.budget,p.travelMode,JSON.stringify(p.groups),now,now,JSON.stringify(p.budgetBreakdown||{}));
     return reply(res,201,{itinerary:itineraryPublic(db.prepare('SELECT * FROM user_itineraries WHERE id=?').get(id))});
+  }
+  const addStopMatch=/^\/api\/me\/itineraries\/([a-f0-9-]{36})\/add-stop$/.exec(route);
+  if(addStopMatch&&method==='POST'){
+    checkOrigin(req);const user=requireUser(req);
+    const row=db.prepare('SELECT * FROM user_itineraries WHERE id=? AND user_id=?').get(addStopMatch[1],user.id);
+    if(!row)fail(404,'Trip not found');
+    const b=await jsonBody(req);
+    const dayIndex=Number(b?.dayIndex);
+    const placeSlug=validString(b?.placeSlug||b?.placeId,65,'Place ID',{required:true});
+    publishedPlace(placeSlug);
+    const groups=JSON.parse(row.days_json);
+    if(!Number.isInteger(dayIndex)||dayIndex<0||dayIndex>=groups.length)fail(400,'Invalid dayIndex');
+    if(groups.flat().includes(placeSlug))fail(409,'Place already in this trip');
+    if(groups[dayIndex].length>=15)fail(400,'Day has maximum 15 stops');
+    if(groups.flat().length>=30)fail(400,'Trip has maximum 30 unique stops');
+    groups[dayIndex].push(placeSlug);
+    const now=new Date().toISOString();
+    db.prepare('UPDATE user_itineraries SET days_json=?,updated_at=? WHERE id=? AND user_id=?')
+      .run(JSON.stringify(groups),now,row.id,user.id);
+    return reply(res,200,{itinerary:itineraryPublic(db.prepare('SELECT * FROM user_itineraries WHERE id=?').get(row.id))});
   }
   const tripMatch=/^\/api\/me\/itineraries\/([a-f0-9-]{36})$/.exec(route);
   if(tripMatch){
@@ -571,8 +979,8 @@ async function api(req,res,u){
     if(method==='GET')return reply(res,200,{itinerary:itineraryPublic(row)});
     if(method==='PUT'){
       checkOrigin(req);const p=normalizeItinerary(await jsonBody(req));
-      db.prepare('UPDATE user_itineraries SET title=?,days=?,hours_per_day=?,currency=?,budget=?,travel_mode=?,days_json=?,updated_at=? WHERE id=? AND user_id=?')
-       .run(p.title,p.days,p.hoursPerDay,p.currency,p.budget,p.travelMode,JSON.stringify(p.groups),new Date().toISOString(),row.id,user.id);
+      db.prepare('UPDATE user_itineraries SET title=?,days=?,hours_per_day=?,currency=?,budget=?,travel_mode=?,days_json=?,budget_breakdown_json=?,updated_at=? WHERE id=? AND user_id=?')
+       .run(p.title,p.days,p.hoursPerDay,p.currency,p.budget,p.travelMode,JSON.stringify(p.groups),JSON.stringify(p.budgetBreakdown||{}),new Date().toISOString(),row.id,user.id);
       return reply(res,200,{itinerary:itineraryPublic(db.prepare('SELECT * FROM user_itineraries WHERE id=?').get(row.id))});
     }
     if(method==='DELETE'){
@@ -581,7 +989,14 @@ async function api(req,res,u){
     }
   }
   if(route==='/api/me/collections'&&method==='GET'){
-    const user=requireUser(req);return reply(res,200,{saved:collectionList(user.id,'saved'),trip:collectionList(user.id,'trip')});
+    const user=requireUser(req);
+    const saved=collectionList(user.id,'saved'),trip=collectionList(user.id,'trip');
+    const result={saved,trip};
+    if(u.searchParams.get('populated')==='1'){
+      result.savedPlaces=saved.map(s=>{const p=getRow.get(s);return p?rowToPlace(p):null;}).filter(Boolean);
+      result.tripPlaces=trip.map(s=>{const p=getRow.get(s);return p?rowToPlace(p):null;}).filter(Boolean);
+    }
+    return reply(res,200,result);
   }
   if(route==='/api/me/collections'&&method==='PUT'){
     checkOrigin(req);const user=requireUser(req),b=await jsonBody(req);
@@ -621,6 +1036,36 @@ async function api(req,res,u){
   if(myReview&&method==='DELETE'){
     checkOrigin(req);const user=requireUser(req);
     db.prepare('DELETE FROM reviews WHERE user_id=? AND place_slug=?').run(user.id,myReview[1]);return reply(res,200,{ok:true});
+  }
+  // TRAVEL SAFETY & SCAM REPORTS - moderated safety warnings for travellers
+  if(route==='/api/safety/reports'&&method==='POST'){
+    checkOrigin(req);const user=requireUser(req);
+    allowUserAttempt(req,'safety-report');
+    const b=await jsonBody(req);
+    const category=validString(b?.category,30,'Category',{required:true});
+    if(!['overcharging','transport','scam','danger','other'].includes(category))fail(400,'Invalid category');
+    const title=validString(b?.title,120,'Title',{required:true});
+    const description=validString(b?.description,2000,'Description',{required:true});
+    const locationName=validString(b?.locationName||b?.location_name,160,'Location name',{required:true});
+    const lat=parsedCoord(b?.lat,'latitude',-85,85);
+    const lon=parsedCoord(b?.lon,'longitude',-180,180);
+    const photo=b?.photo?validString(b.photo,256,'Photo'):'';
+    const id=crypto.randomUUID(),now=new Date().toISOString();
+    db.prepare('INSERT INTO travel_safety_reports(id,user_id,category,title,description,location_name,lat,lon,photo,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)')
+      .run(id,user.id,category,title,description,locationName,lat,lon,photo,'pending',now,now);
+    audit('user',user.id,'safety_report.create','safety_report',id,{category,locationName});
+    return reply(res,201,{report:{id,category,title,description,locationName,lat,lon,photo,status:'pending',createdAt:now}});
+  }
+  if(route==='/api/me/safety-reports'&&method==='GET'){
+    const user=requireUser(req);
+    const rows=db.prepare('SELECT * FROM travel_safety_reports WHERE user_id=? ORDER BY created_at DESC LIMIT 100').all(user.id);
+    return reply(res,200,{reports:rows.map(r=>({id:r.id,category:r.category,title:r.title,description:r.description,locationName:r.location_name,lat:r.lat,lon:r.lon,photo:r.photo,status:r.status,adminNote:r.admin_note,createdAt:r.created_at}))});
+  }
+  if(route==='/api/safety/upload'&&method==='POST'){
+    checkOrigin(req);const user=requireUser(req),body=await jsonBody(req);
+    const img=uploadImageTo(body,SAFETY_UPLOADS,'/safety-media/');
+    db.prepare('INSERT INTO safety_media(filename,owner_id,created_at) VALUES(?,?,?)').run(path.basename(img.url),user.id,new Date().toISOString());
+    return reply(res,201,img);
   }
   // BUSINESS PORTAL - independent traveler accounts, no admin privileges.
   if(route==='/api/business/me'&&method==='GET'){
@@ -778,6 +1223,174 @@ async function api(req,res,u){
     audit('admin','1','place.delete','place',m[1],{before:placeAuditSummary(prev)});
     return reply(res,200,{ok:true});
   }
+  if(route==='/api/admin/safety-reports'&&method==='GET'){
+    const status=u.searchParams.get('status')||'all';
+    if(!['all','pending','verified','rejected','resolved'].includes(status))fail(400,'Invalid status');
+    const query=`SELECT s.*,u.name AS user_name,u.email AS user_email FROM travel_safety_reports s JOIN users u ON u.id=s.user_id ${status==='all'?'':'WHERE s.status=?'} ORDER BY s.updated_at DESC LIMIT 200`;
+    const rows=db.prepare(query).all(...(status==='all'?[]:[status]));
+    return reply(res,200,{reports:rows.map(r=>({id:r.id,userId:r.user_id,userName:r.user_name,userEmail:r.user_email,category:r.category,title:r.title,description:r.description,locationName:r.location_name,lat:r.lat,lon:r.lon,photo:r.photo,status:r.status,adminNote:r.admin_note,createdAt:r.created_at,updatedAt:r.updated_at}))});
+  }
+  const adminSafetyMatch=/^\/api\/admin\/safety-reports\/([a-f0-9-]{36})$/.exec(route);
+  if(adminSafetyMatch&&method==='PATCH'){
+    checkOrigin(req);const b=await jsonBody(req);
+    const status=validString(b?.status,20,'Status',{required:true});
+    if(!['pending','verified','rejected','resolved'].includes(status))fail(400,'Invalid status');
+    const note=validString(b?.adminNote||b?.admin_note||'',1000,'Admin note');
+    const before=db.prepare('SELECT status FROM travel_safety_reports WHERE id=?').get(adminSafetyMatch[1]);
+    if(!before)fail(404,'Safety report not found');
+    const now=new Date().toISOString();
+    db.prepare('UPDATE travel_safety_reports SET status=?,admin_note=?,updated_at=? WHERE id=?').run(status,note,now,adminSafetyMatch[1]);
+    audit('admin','1','safety_report.decision','safety_report',adminSafetyMatch[1],{before:before.status,after:status});
+    return reply(res,200,{ok:true,status});
+  }
+  if(route==='/api/admin/stats'&&method==='GET'){
+    const totalUsers=db.prepare('SELECT count(*) AS n FROM users').get().n;
+    const totalPlaces=db.prepare('SELECT count(*) AS n FROM places').get().n;
+    const publishedPlaces=db.prepare("SELECT count(*) AS n FROM places WHERE status='published'").get().n;
+    const smePlaces=db.prepare("SELECT count(*) AS n FROM places WHERE is_sme=1 AND status='published'").get().n;
+    const totalReviews=db.prepare('SELECT count(*) AS n FROM reviews').get().n;
+    const pendingReviews=db.prepare("SELECT count(*) AS n FROM reviews WHERE status='pending'").get().n;
+    const pendingSubmissions=db.prepare("SELECT count(*) AS n FROM business_submissions WHERE status='pending'").get().n;
+    const pendingSafety=db.prepare("SELECT count(*) AS n FROM travel_safety_reports WHERE status='pending'").get().n;
+    const verifiedSafety=db.prepare("SELECT count(*) AS n FROM travel_safety_reports WHERE status='verified'").get().n;
+    const totalItineraries=db.prepare('SELECT count(*) AS n FROM user_itineraries').get().n;
+    const categories=db.prepare("SELECT category, count(*) AS count FROM places WHERE status='published' GROUP BY category").all();
+    return reply(res,200,{
+      stats:{
+        totalUsers,totalPlaces,publishedPlaces,smePlaces,
+        totalReviews,pendingReviews,pendingSubmissions,
+        pendingSafetyReports:pendingSafety,verifiedSafetyReports:verifiedSafety,
+        totalItineraries,categories
+      }
+    });
+  }
+  if(route==='/api/admin/users'&&method==='GET'){
+    const q=u.searchParams.get('q')||'';
+    const status=u.searchParams.get('status')||'all';
+    if(!['all','active','suspended'].includes(status))fail(400,'Invalid user status');
+    let sql=`SELECT u.id, u.name, u.email, u.email_verified, u.status, u.created_at,
+             (SELECT count(*) FROM reviews r WHERE r.user_id=u.id) AS review_count,
+             (SELECT count(*) FROM user_itineraries i WHERE i.user_id=u.id) AS itinerary_count,
+             (SELECT count(*) FROM travel_safety_reports s WHERE s.user_id=u.id) AS safety_count
+             FROM users u WHERE 1=1`;
+    const params=[];
+    if(status!=='all'){sql+=' AND u.status=?';params.push(status);}
+    if(q){sql+=' AND (u.name LIKE ? OR u.email LIKE ?)';params.push(`%${q}%`,`%${q}%`);}
+    sql+=' ORDER BY u.created_at DESC LIMIT 200';
+    const rows=db.prepare(sql).all(...params);
+    return reply(res,200,{
+      users:rows.map(r=>({
+        id:r.id,name:r.name,email:r.email,emailVerified:!!r.email_verified,
+        status:r.status||'active',createdAt:r.created_at,
+        reviewCount:r.review_count,itineraryCount:r.itinerary_count,safetyReportCount:r.safety_count
+      }))
+    });
+  }
+  const adminUserStatus=/^\/api\/admin\/users\/([a-f0-9-]{36})\/status$/.exec(route);
+  if(adminUserStatus&&method==='PATCH'){
+    checkOrigin(req);const b=await jsonBody(req);
+    const status=validString(b?.status,20,'Status',{required:true});
+    if(!['active','suspended'].includes(status))fail(400,'Status must be active or suspended');
+    const user=db.prepare('SELECT id,status FROM users WHERE id=?').get(adminUserStatus[1]);
+    if(!user)fail(404,'User not found');
+    db.prepare('UPDATE users SET status=? WHERE id=?').run(status,user.id);
+    audit('admin','1','user.status','user',user.id,{before:user.status,after:status,note:b?.note||''});
+    return reply(res,200,{ok:true,status});
+  }
+  if(route==='/api/admin/campaigns'&&method==='GET'){
+    const rows=db.prepare('SELECT * FROM campaigns ORDER BY priority DESC, updated_at DESC LIMIT 100').all();
+    return reply(res,200,{campaigns:rows.map(c=>({
+      id:c.id,title:c.title,subtitle:c.subtitle,bannerUrl:c.banner_url,
+      targetPlaceSlug:c.target_place_slug,targetUrl:c.target_url,
+      category:c.category,region:c.region,badge:c.badge,
+      startDate:c.start_date,endDate:c.end_date,status:c.status,
+      priority:c.priority,createdAt:c.created_at,updatedAt:c.updated_at
+    }))});
+  }
+  if(route==='/api/admin/campaigns'&&method==='POST'){
+    checkOrigin(req);const b=await jsonBody(req);
+    const title=validString(b?.title,150,'Title',{required:true});
+    const subtitle=validString(b?.subtitle||'',250,'Subtitle');
+    const bannerUrl=validString(b?.bannerUrl||b?.banner_url||'',256,'Banner URL');
+    const targetPlaceSlug=b?.targetPlaceSlug?validString(b.targetPlaceSlug,65,'Place Slug'):null;
+    const targetUrl=validString(b?.targetUrl||b?.target_url||'',300,'Target URL');
+    const category=validString(b?.category||'',30,'Category');
+    const region=validString(b?.region||'',30,'Region');
+    const badge=validString(b?.badge||'',50,'Badge');
+    const startDate=b?.startDate?validString(b.startDate,30,'Start date'):null;
+    const endDate=b?.endDate?validString(b.endDate,30,'End date'):null;
+    const status=validString(b?.status||'published',20,'Status');
+    if(!['draft','published','expired'].includes(status))fail(400,'Invalid status');
+    const priority=Number.isInteger(Number(b?.priority))?Number(b.priority):0;
+    const id=crypto.randomUUID(),now=new Date().toISOString();
+    db.prepare(`
+      INSERT INTO campaigns(id,title,subtitle,banner_url,target_place_slug,target_url,category,region,badge,start_date,end_date,status,priority,created_at,updated_at)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    `).run(id,title,subtitle,bannerUrl,targetPlaceSlug,targetUrl,category,region,badge,startDate,endDate,status,priority,now,now);
+    audit('admin','1','campaign.create','campaign',id,{title,status});
+    return reply(res,201,{campaign:db.prepare('SELECT * FROM campaigns WHERE id=?').get(id)});
+  }
+  const adminCampaignMatch=/^\/api\/admin\/campaigns\/([a-f0-9-]{36})$/.exec(route);
+  if(adminCampaignMatch){
+    if(method==='PUT'){
+      checkOrigin(req);const b=await jsonBody(req);
+      const title=validString(b?.title,150,'Title',{required:true});
+      const subtitle=validString(b?.subtitle||'',250,'Subtitle');
+      const bannerUrl=validString(b?.bannerUrl||b?.banner_url||'',256,'Banner URL');
+      const targetPlaceSlug=b?.targetPlaceSlug?validString(b.targetPlaceSlug,65,'Place Slug'):null;
+      const targetUrl=validString(b?.targetUrl||b?.target_url||'',300,'Target URL');
+      const category=validString(b?.category||'',30,'Category');
+      const region=validString(b?.region||'',30,'Region');
+      const badge=validString(b?.badge||'',50,'Badge');
+      const startDate=b?.startDate?validString(b.startDate,30,'Start date'):null;
+      const endDate=b?.endDate?validString(b.endDate,30,'End date'):null;
+      const status=validString(b?.status||'published',20,'Status');
+      if(!['draft','published','expired'].includes(status))fail(400,'Invalid status');
+      const priority=Number.isInteger(Number(b?.priority))?Number(b.priority):0;
+      const now=new Date().toISOString();
+      const resUpdate=db.prepare(`
+        UPDATE campaigns SET title=?,subtitle=?,banner_url=?,target_place_slug=?,target_url=?,category=?,region=?,badge=?,start_date=?,end_date=?,status=?,priority=?,updated_at=?
+        WHERE id=?
+      `).run(title,subtitle,bannerUrl,targetPlaceSlug,targetUrl,category,region,badge,startDate,endDate,status,priority,now,adminCampaignMatch[1]);
+      if(!resUpdate.changes)fail(404,'Campaign not found');
+      audit('admin','1','campaign.update','campaign',adminCampaignMatch[1],{title,status});
+      return reply(res,200,{campaign:db.prepare('SELECT * FROM campaigns WHERE id=?').get(adminCampaignMatch[1])});
+    }
+    if(method==='DELETE'){
+      checkOrigin(req);
+      const resDel=db.prepare('DELETE FROM campaigns WHERE id=?').run(adminCampaignMatch[1]);
+      if(!resDel.changes)fail(404,'Campaign not found');
+      audit('admin','1','campaign.delete','campaign',adminCampaignMatch[1]);
+      return reply(res,200,{ok:true});
+    }
+  }
+  if(route==='/api/admin/sme-stats'&&method==='GET'){
+    const topSme=db.prepare(`
+      SELECT p.slug, p.name_en, p.name_th, p.sme_type, p.spotlight_badge,
+             SUM(CASE WHEN e.event_type='sme_impression' THEN 1 ELSE 0 END) AS impressions,
+             SUM(CASE WHEN e.event_type='view' THEN 1 ELSE 0 END) AS views,
+             SUM(CASE WHEN e.event_type='direction' THEN 1 ELSE 0 END) AS directions,
+             SUM(CASE WHEN e.event_type='add_trip' THEN 1 ELSE 0 END) AS trip_adds,
+             SUM(CASE WHEN e.event_type IN ('phone','website') THEN 1 ELSE 0 END) AS contacts
+      FROM places p
+      LEFT JOIN place_events e ON e.place_slug=p.slug
+      WHERE p.is_sme=1 AND p.status='published'
+      GROUP BY p.slug
+      ORDER BY (views + directions*2 + trip_adds*3) DESC
+      LIMIT 100
+    `).all();
+    const eventTotals=db.prepare(`
+      SELECT event_type, count(*) AS count FROM place_events GROUP BY event_type
+    `).all();
+    return reply(res,200,{
+      smeStats:topSme.map(r=>({
+        slug:r.slug,nameEn:r.name_en,nameTh:r.name_th,smeType:r.sme_type,
+        spotlightBadge:r.spotlight_badge,impressions:r.impressions||0,
+        views:r.views||0,directions:r.directions||0,tripAdds:r.trip_adds||0,contacts:r.contacts||0
+      })),
+      totals:Object.fromEntries(eventTotals.map(t=>[t.event_type,t.count]))
+    });
+  }
   fail(404,'Unknown API endpoint');
 }
 function staticFile(req,res,u,adminImageAccess=false){
@@ -787,6 +1400,10 @@ function staticFile(req,res,u,adminImageAccess=false){
     if(!/^\/review-media\/[a-f0-9-]{36}\.(?:png|jpg|webp)$/.test(u.pathname))fail(404,'Not found');
     const fileName=path.basename(u.pathname);if(!reviewFileAccess(req,fileName))fail(404,'Not found');
     filePath=path.join(REVIEW_UPLOADS,fileName);
+  } else if(u.pathname.startsWith('/safety-media/')){
+    if(!/^\/safety-media\/[a-f0-9-]{36}\.(?:png|jpg|webp)$/.test(u.pathname))fail(404,'Not found');
+    const fileName=path.basename(u.pathname);
+    filePath=path.join(SAFETY_UPLOADS,fileName);
   } else if(u.pathname.startsWith('/uploads/')){
     if(!/^\/uploads\/[a-f0-9-]{36}\.(?:png|jpg|webp)$/.test(u.pathname))fail(404,'Not found');
     const filename=path.basename(u.pathname);
