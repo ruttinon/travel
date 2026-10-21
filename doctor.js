@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {DatabaseSync}=require('node:sqlite');
 const ROOT=__dirname;
-const DATA=path.resolve(process.env.UNFOLD_DATA_DIR || (process.platform==='win32'&&process.env.LOCALAPPDATA?path.join(process.env.LOCALAPPDATA,'unfold-travel','data'):path.join(ROOT,'data')));
+const DATA=path.resolve(process.env.UNFOLD_DATA_DIR || (fs.existsSync(path.join(ROOT,'data','unfold.sqlite'))?path.join(ROOT,'data'):process.platform==='win32'&&process.env.LOCALAPPDATA?path.join(process.env.LOCALAPPDATA,'unfold-travel','data'):path.join(ROOT,'data')));
 const FILE=path.join(DATA,'unfold.sqlite');
 const result={app:'unfold',version:'2.7.0',dataDirectory:DATA,checks:[],totals:{},ready:false};
 function check(name,status,details){result.checks.push({name,status,details})}

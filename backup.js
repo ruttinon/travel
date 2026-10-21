@@ -6,7 +6,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {integrity,contentsFor,verifyBackup}=require('./backup-lib');
 const ROOT=__dirname;
-const DATA=path.resolve(process.env.UNFOLD_DATA_DIR || (process.platform==='win32'&&process.env.LOCALAPPDATA?path.join(process.env.LOCALAPPDATA,'unfold-travel','data'):path.join(ROOT,'data')));
+const DATA=path.resolve(process.env.UNFOLD_DATA_DIR || (fs.existsSync(path.join(ROOT,'data','unfold.sqlite'))?path.join(ROOT,'data'):process.platform==='win32'&&process.env.LOCALAPPDATA?path.join(process.env.LOCALAPPDATA,'unfold-travel','data'):path.join(ROOT,'data')));
 const DB=path.join(DATA,'unfold.sqlite');
 const stamp=new Date().toISOString().replaceAll(':','-').replace(/\..+Z$/,'Z');
 const target=path.resolve(process.argv[2]||path.join(ROOT,'backups',stamp));
