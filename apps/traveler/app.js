@@ -135,7 +135,9 @@ const state={
  resetToken:'',accountMessage:'',nearbyActive:false,nearbyBusy:false,nearbyList:[],
  nearbyPoint:null,nearbyRadius:1,nearbyMaxPrice:'',nearbyCurrency:'THB',travelMode:'driving',filtersOpen:false,
  localOnly:false,followMe:false,heading:0,collectionFilter:'all',
- bottomSheetState:'closed',bottomSheetPlaceId:null,mapPannedAway:false
+ bottomSheetState:'closed',bottomSheetPlaceId:null,mapPannedAway:false,
+ aiModalOpen:false,aiLoading:false,aiResult:null,aiForm:{province:'chiang-mai',days:2,budget:3500,style:'all',pace:'normal',quickWalk:false},
+ safetyModalOpen:false,safetyReports:[],safetyFormOpen:false,campaigns:[],spotlightPlaces:[]
 };
 
 const guestSaved=[...state.saved],guestTrip=[...state.trip];
@@ -174,11 +176,47 @@ async function loadAccountCollections(){
 }
 
 async function refreshSession(){
- try{
-  const result=await userApi('/api/auth/me');
-  if(result.user){state.account=result.user;await loadAccountCollections()}
-  else if(state.account){state.account=null;state.saved=[...guestSaved];state.trip=[...guestTrip];state.myReviews=[];render({keepScroll:true})}
- }catch(err){console.info('Account service unavailable:',err.message)}
+  try{
+   const result=await userApi('/api/auth/me');
+   if(result.user){state.account=result.user;await loadAccountCollections()}
+   else if(state.account){state.account=null;state.saved=[...guestSaved];state.trip=[...guestTrip];state.myReviews=[];render({keepScroll:true})}
+  }catch(err){console.info('Account service unavailable:',err.message)}
+}
+
+async function initRealData(){
+  try{
+    const [placesRes,spotRes,campRes,safetyRes]=await Promise.allSettled([
+      userApi('/api/places'),
+      userApi('/api/places/spotlight'),
+      userApi('/api/campaigns'),
+      userApi('/api/safety/reports?verified=1')
+    ]);
+    if(placesRes.status==='fulfilled'&&Array.isArray(placesRes.value.places)&&placesRes.value.places.length){
+      const realPlaces=placesRes.value.places.map(p=>({
+        id:p.id,en:p.en,th:p.th||p.en,locEn:p.locEn,locTh:p.locTh||p.locEn,
+        category:p.category,region:p.region,lat:p.lat,lon:p.lon,
+        visit:p.visit||'1-2h',priceFrom:p.priceFrom,currency:p.currency||'THB',
+        storyEn:p.storyEn||'',storyTh:p.storyTh||'',photo:p.photo||'assets/hero-forest.webp',
+        gallery:p.gallery||[],isSme:Boolean(p.isSme),smeType:p.smeType||'',
+        smeBadge:p.spotlightBadge||(p.isSme?'Local SME Spotlight':''),
+        featured:Boolean(p.featured),openHours:'เปิดบริการตามปกติ',isOpen:true,
+        phone:p.contactPhone||'',specialtiesTh:p.localStoryTh?[p.localStoryTh.slice(0,30)]:undefined
+      }));
+      const ids=new Set(realPlaces.map(x=>x.id));
+      PLACES=[...realPlaces,...SAMPLE_PLACES.filter(s=>!ids.has(s.id))];
+      LIVE_DATA=true;API_ONLINE=true;
+    }
+    if(spotRes.status==='fulfilled'&&Array.isArray(spotRes.value.places)){
+      state.spotlightPlaces=spotRes.value.places;
+    }
+    if(campRes.status==='fulfilled'&&Array.isArray(campRes.value.campaigns)){
+      state.campaigns=campRes.value.campaigns;
+    }
+    if(safetyRes.status==='fulfilled'&&Array.isArray(safetyRes.value.reports)){
+      state.safetyReports=safetyRes.value.reports;
+    }
+    render({keepScroll:true});
+  }catch(e){console.info('initRealData fallback:',e.message)}
 }
 
 let persistOrder=Promise.resolve();
@@ -235,7 +273,9 @@ function header(){
       </button>
     `).join('')}
   </nav>
-  <div class="head-actions">
+  <div class="head-actions" style="display:flex;align-items:center;gap:6px;">
+    <button class="header-icon" data-action="open-ai" title="AI Travel Advisor" style="font-size:12px;font-weight:800;color:#0D2C1C;background:#8DE026;padding:6px 12px;border-radius:99px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">✨ AI Plan</button>
+    <button class="header-icon" data-action="open-safety" title="Travel Safety" style="font-size:14px;background:none;border:none;cursor:pointer;padding:6px;">🛡️</button>
     <button class="language-btn" data-action="language" aria-label="Change language">${state.lang==='en'?'TH':'EN'}</button>
     ${actionBtn('search-open',ico('search',20),'header-icon','aria-label="Search"')}
     ${actionBtn('menu-open',ico('menu',23),'header-icon menu-trigger','aria-label="Open menu"')}
@@ -445,6 +485,32 @@ function discover(){
 
     ${categoryButtons()}
     ${nearbyControls()}
+
+    ${state.campaigns && state.campaigns.length ? `
+      <div style="margin-bottom:24px;border-radius:18px;overflow:hidden;position:relative;background:linear-gradient(90deg,#0D2C1C,#1E4E35);color:#FFF;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;gap:14px;box-shadow:0 4px 18px rgba(0,0,0,0.08);">
+        <div>
+          ${state.campaigns[0].badgeText?`<span style="background:#8DE026;color:#0D2C1C;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;text-transform:uppercase;">★ ${html(state.campaigns[0].badgeText)}</span>`:''}
+          <h3 style="margin:6px 0 2px 0;font-size:16px;color:#FFF;">${html(state.campaigns[0].title)}</h3>
+          <p style="margin:0;font-size:11px;color:#CDE3D3;">แคมเปญโปรโมตเพื่อสนับสนุนร้านค้าชุมชนและวิถีท้องถิ่น</p>
+        </div>
+        ${state.campaigns[0].targetSlug?`
+          <button data-action="place" data-id="${html(state.campaigns[0].targetSlug)}" style="background:#FFF;color:#0D2C1C;border:none;border-radius:99px;padding:8px 16px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">
+            ดูรายละเอียด ↗
+          </button>
+        `:''}
+      </div>
+    `:''}
+
+    <section style="background:linear-gradient(135deg, #0D2C1C 0%, #16422C 100%);color:#FFF;border-radius:20px;padding:20px 24px;margin-bottom:28px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 8px 24px rgba(13,44,28,0.14);">
+      <div style="flex:1;min-width:240px;">
+        <span style="color:#8DE026;font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;">✨ AI TRAVEL ADVISOR</span>
+        <h3 style="margin:4px 0 6px 0;font-size:17px;font-weight:700;">วางแผนเที่ยวอัตโนมัติด้วย AI พร้อมแนะนำร้านชุมชน</h3>
+        <p style="margin:0;font-size:12px;color:#CDE3D3;line-height:1.4;">ประเมินงบประมาณ แนะนำร้าน SME แวะรายทาง และค้นหาเส้นทางเดิน 10 นาที</p>
+      </div>
+      <button type="button" data-action="open-ai" style="background:#8DE026;color:#0D2C1C;border:none;border-radius:99px;padding:10px 22px;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+        เปิด AI วางแผนทริป ↗
+      </button>
+    </section>
 
     <!-- Local SME Spotlight Rail -->
     ${smePlaces.length && (!state.category || state.category==='all' || state.category==='sme') ? `
@@ -850,6 +916,13 @@ function profile(){
           </form>
         `}
       </section>
+      ${state.account?`
+        <section class="profile-card" style="border:1px solid #FED7D7;background:#FFF5F5;border-radius:18px;padding:20px;margin-top:20px;">
+          <h2 style="color:#C53030;font-size:16px;margin:0 0 8px 0;">ความเป็นส่วนตัวและสิทธิ์ PDPA</h2>
+          <p style="font-size:12px;color:#742A2A;line-height:1.5;margin:0 0 14px 0;">คุณมีสิทธิ์ขอลบข้อมูลส่วนบุคคล รหัสผ่าน และบัญชีของคุณออกจากระบบอย่างถาวร (Right to Erasure) ตามกฎหมายคุ้มครองข้อมูลส่วนบุคคล</p>
+          <button type="button" data-action="delete-account" style="background:#E53E3E;color:#FFF;border:none;border-radius:99px;padding:10px 20px;font-size:12px;font-weight:700;cursor:pointer;">ขอลบข้อมูลบัญชีถาวร (Delete Account) ↗</button>
+        </section>
+      `:''}
       <section class="profile-card">
         <h2>${html(t('language'))}</h2>
         <div class="language-switch">
@@ -901,6 +974,214 @@ function searchOverlay(){
  </div>`;
 }
 
+function aiModal(){
+  const f = state.aiForm;
+  return `<div class="search-overlay" role="dialog" aria-modal="true" aria-label="AI Travel Advisor" style="display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div class="search-backdrop" data-action="close-ai"></div>
+    <div style="position:relative;z-index:100;background:#FFF;border-radius:24px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,0.3);border:1px solid #E6E8E2;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;border-bottom:1px solid #EEE;padding-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="background:#0D2C1C;color:#8DE026;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:18px;">✨</span>
+          <div>
+            <h2 style="margin:0;font-size:18px;color:#0D2C1C;">AI Travel Advisor</h2>
+            <small style="color:#78857B;">วางแผนเที่ยวและคัดเลือกร้านชุมชน SME อัตโนมัติ</small>
+          </div>
+        </div>
+        <button type="button" data-action="close-ai" style="background:#F4F5F1;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:grid;place-items:center;">${ico('x',18)}</button>
+      </div>
+
+      ${state.aiLoading ? `
+        <div style="padding:60px 20px;text-align:center;">
+          <div style="width:40px;height:40px;border:4px solid #E6E8E2;border-top-color:#8DE026;border-radius:50%;animation:pulseAccuracy 1.2s infinite ease-in-out;margin:0 auto 20px;"></div>
+          <h3 style="margin:0 0 8px;color:#0D2C1C;">AI กำลังประมวลผลเส้นทาง...</h3>
+          <p style="color:#78857B;font-size:13px;margin:0;">กำลังคัดเลือกร้านค้า SME ชุมชน คำนวณงบประมาณ และจัดตารางเวลา</p>
+        </div>
+      ` : state.aiResult ? `
+        <div>
+          <div style="background:#F4F8F1;border:1px solid #D1E7C4;border-radius:16px;padding:16px 20px;margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+              <strong style="color:#183E2D;font-size:16px;">${html(state.aiResult.destination||'Thailand')} (${state.aiResult.days||1} วัน)</strong>
+              <span style="background:#8DE026;color:#0D2C1C;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;">งบประมาณรวม ฿${(state.aiResult.budgetEstimate?.totalEstimatedCost||0).toLocaleString()}</span>
+            </div>
+            <p style="margin:0;font-size:12px;color:#455248;line-height:1.5;">${html(state.aiResult.summary||'')}</p>
+          </div>
+
+          ${state.aiResult.budgetEstimate ? `
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));gap:8px;margin-bottom:20px;">
+              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">ที่พัก (Stays)</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetEstimate.breakdown?.accommodations||0).toLocaleString()}</strong></div>
+              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">อาหาร & SME</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetEstimate.breakdown?.foodAndDining||0).toLocaleString()}</strong></div>
+              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">เดินทาง (Transport)</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetEstimate.breakdown?.transportation||0).toLocaleString()}</strong></div>
+              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">สำรองฉุกเฉิน</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetEstimate.breakdown?.emergencyCushion||0).toLocaleString()}</strong></div>
+            </div>
+          ` : ''}
+
+          <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px;">
+            ${(state.aiResult.itinerary||[]).map(day=>`
+              <div style="border:1px solid #E6E8E2;border-radius:14px;padding:16px;">
+                <h4 style="margin:0 0 10px;color:#0D2C1C;font-size:14px;display:flex;justify-content:space-between;">
+                  <span>Day ${day.day} · ${html(day.theme||'')}</span>
+                  <small style="color:#78857B;font-weight:normal;">${day.schedule?.length||0} จุดแวะ</small>
+                </h4>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  ${(day.schedule||[]).map(s=>`
+                    <div style="display:flex;align-items:center;gap:12px;background:#FAFAF8;padding:8px 12px;border-radius:8px;">
+                      <span style="font-size:11px;font-weight:700;color:#2563EB;min-width:70px;">${html(s.time||'')}</span>
+                      <div style="flex:1;min-width:0;">
+                        <strong style="font-size:12px;color:#0D2C1C;">${html(s.place?.nameEn||s.title||'')}</strong>
+                        ${s.place?.isSme ? `<span style="background:#FEF8EC;color:#925C08;border:1px solid #F59E0B;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;margin-left:6px;">★ Local SME</span>` : ''}
+                        <small style="display:block;color:#78857B;font-size:10px;">${html(s.activity||s.place?.locationEn||'')}</small>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" data-action="reset-ai" style="background:#F4F5F1;border:none;border-radius:99px;padding:10px 20px;font-size:12px;font-weight:700;cursor:pointer;">ปรับเงื่อนไขใหม่</button>
+            <button type="button" data-action="save-ai-plan" style="background:#0D2C1C;color:#8DE026;border:none;border-radius:99px;padding:10px 24px;font-size:12px;font-weight:800;cursor:pointer;">+ บันทึกเข้า My Trips</button>
+          </div>
+        </div>
+      ` : `
+        <form id="ai-advisor-form" style="display:flex;flex-direction:column;gap:16px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:6px;">จังหวัด หรือ ย่านที่ต้องการไป *</label>
+            <select name="province" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;">
+              <option value="chiang-mai" ${f.province==='chiang-mai'?'selected':''}>เชียงใหม่ (Chiang Mai)</option>
+              <option value="bangkok" ${f.province==='bangkok'?'selected':''}>กรุงเทพฯ (Bangkok)</option>
+              <option value="nan" ${f.province==='nan'?'selected':''}>น่าน (Nan)</option>
+              <option value="surat-thani" ${f.province==='surat-thani'?'selected':''}>สุราษฎร์ธานี (Surat Thani)</option>
+              <option value="phang-nga" ${f.province==='phang-nga'?'selected':''}>พังงา (Phang Nga)</option>
+              <option value="mae-hong-son" ${f.province==='mae-hong-son'?'selected':''}>แม่ฮ่องสอน (Mae Hong Son)</option>
+            </select>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:6px;">จำนวนวันเที่ยว (1-7 วัน)</label>
+              <input type="number" name="days" value="${f.days||2}" min="1" max="7" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:6px;">งบประมาณรวม (บาท)</label>
+              <input type="number" name="budget" value="${f.budget||3500}" min="500" max="1000000" step="500" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"/>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:6px;">สไตล์การท่องเที่ยว</label>
+              <select name="style" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;">
+                <option value="all">ผสมผสานทุกรูปแบบ</option>
+                <option value="food">สายกิน & ของอร่อย</option>
+                <option value="nature">ธรรมชาติ & พักผ่อน</option>
+                <option value="culture">วัฒนธรรม & ชุมชน</option>
+                <option value="cafe">คาเฟ่ & จุดถ่ายรูป</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:6px;">จังหวะการเดินทาง</label>
+              <select name="pace" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;">
+                <option value="normal">ปกติ (3-4 จุดต่อวัน)</option>
+                <option value="relaxed">สบาย ๆ ชิลล์ๆ (1-2 จุดต่อวัน)</option>
+                <option value="packed">เที่ยวแน่นเต็มวัน (5+ จุด)</option>
+              </select>
+            </div>
+          </div>
+
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#183E2D;background:#FEF8EC;padding:10px 14px;border-radius:10px;border:1px solid #F59E0B;cursor:pointer;">
+            <input type="checkbox" name="quickWalk" id="ai-quick-walk" style="accent-color:#E5A836;"/>
+            <span><strong>Quick Prompt:</strong> พาเดินเล่นรอบ ๆ ไม่เกิน 10 นาที (สำรวจรอบพิกัดปัจจุบัน)</span>
+          </label>
+
+          <button type="submit" style="background:#0D2C1C;color:#8DE026;border:none;border-radius:99px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;margin-top:8px;">
+            สร้างแผนการเดินทางด้วย AI ↗
+          </button>
+        </form>
+      `}
+    </div>
+  </div>`;
+}
+
+function safetyModal(){
+  const reports = state.safetyReports || [];
+  return `<div class="search-overlay" role="dialog" aria-modal="true" aria-label="Travel Safety" style="display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div class="search-backdrop" data-action="close-safety"></div>
+    <div style="position:relative;z-index:100;background:#FFF;border-radius:24px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,0.3);border:1px solid #E6E8E2;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;border-bottom:1px solid #EEE;padding-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="background:#FEF8EC;color:#C53030;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:18px;">🛡️</span>
+          <div>
+            <h2 style="margin:0;font-size:18px;color:#0D2C1C;">เตือนภัย & ความปลอดภัยนักท่องเที่ยว</h2>
+            <small style="color:#78857B;">รายงานจุดเสี่ยง การโกงราคา และการคมนาคมที่ผ่านการตรวจสอบ</small>
+          </div>
+        </div>
+        <button type="button" data-action="close-safety" style="background:#F4F5F1;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:grid;place-items:center;">${ico('x',18)}</button>
+      </div>
+
+      ${state.safetyFormOpen ? `
+        <form id="safety-report-form" style="display:flex;flex-direction:column;gap:14px;">
+          <h3 style="margin:0;font-size:16px;color:#0D2C1C;">+ รายงานเหตุการณ์ / แจ้งเตือนจุดเสี่ยง</h3>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">ประเภทเหตุการณ์ *</label>
+            <select name="category" required style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;">
+              <option value="overcharging">โกงราคา / เรียกค่าโดยสารแพงเกินจริง</option>
+              <option value="transport">ปัญหาบริการขนส่งสาธารณะ / Taxi / รถสองแถว</option>
+              <option value="scam">มิจฉาชีพ / หลอกลวงซื้อของหรือทัวร์</option>
+              <option value="danger">จุดอันตราย / ทางเปลี่ยว</option>
+              <option value="other">อื่น ๆ</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">หัวข้อรายงาน *</label>
+            <input name="title" required placeholder="เช่น Taxi ไม่กดมิเตอร์บริเวณหน้าตลาด..." style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">รายละเอียดเหตุการณ์ *</label>
+            <textarea name="description" required rows="3" placeholder="ระบุสิ่งที่พบเจอ ข้อควรระวัง หรือคำแนะนำแก่นักท่องเที่ยวท่านอื่น" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"></textarea>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">สถานที่เกิดเหตุ *</label>
+            <input name="locationName" required placeholder="เช่น ซอยสุขุมวิท 11, หน้าสถานีรถไฟเชียงใหม่" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"/>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">ภาพถ่ายหลักฐาน (ไม่เกิน 10 MB)</label>
+            <input type="file" id="safety-photo-input" accept="image/*" style="font-size:12px;"/>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
+            <button type="button" data-action="cancel-safety-form" style="background:#F4F5F1;border:none;border-radius:99px;padding:10px 20px;font-size:12px;font-weight:700;cursor:pointer;">ยกเลิก</button>
+            <button type="submit" style="background:#C53030;color:#FFF;border:none;border-radius:99px;padding:10px 24px;font-size:12px;font-weight:800;cursor:pointer;">ส่งรายงาน ↗</button>
+          </div>
+        </form>
+      ` : `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <strong style="color:#0D2C1C;font-size:14px;">รายการจุดเสี่ยงที่ได้รับการยืนยัน (${reports.length})</strong>
+          <button type="button" data-action="open-safety-form" style="background:#0D2C1C;color:#8DE026;border:none;border-radius:99px;padding:8px 16px;font-size:11px;font-weight:700;cursor:pointer;">+ แจ้งเหตุใหม่</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          ${reports.length ? reports.map(r=>`
+            <div style="border:1px solid #E6E8E2;border-radius:14px;padding:14px;background:#FBFBF9;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <span style="background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:uppercase;">⚠️ ${html(r.category)}</span>
+                <span style="color:#15803D;font-size:10px;font-weight:700;">✓ Verified</span>
+              </div>
+              <strong style="display:block;font-size:14px;color:#0D2C1C;margin-bottom:4px;">${html(r.title)}</strong>
+              <p style="margin:0 0 8px 0;font-size:12px;color:#4B5563;line-height:1.4;">${html(r.description)}</p>
+              <div style="font-size:11px;color:#9CA3AF;">📍 ${html(r.locationName)} · ${new Date(r.createdAt).toLocaleDateString()}</div>
+              ${r.photo ? `<div style="margin-top:8px;height:120px;border-radius:8px;overflow:hidden;"><img src="${html(r.photo)}" style="width:100%;height:100%;object-fit:cover;"/></div>` : ''}
+            </div>
+          `).join('') : `
+            <div style="padding:40px 20px;text-align:center;color:#78857B;">
+              <p>ยังไม่มีรายงานจุดเสี่ยงที่ได้รับการเผยแพร่</p>
+              <button type="button" data-action="open-safety-form" style="background:#0D2C1C;color:#FFF;border:none;border-radius:99px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;">+ แจ้งเตือนคนแรก</button>
+            </div>
+          `}
+        </div>
+      `}
+    </div>
+  </div>`;
+}
+
 function appHtml(){
  let body=state.page==='welcome'?landing():
           state.page==='discover'?discover():
@@ -908,7 +1189,7 @@ function appHtml(){
           state.page==='map'?mapPage():
           state.page==='saved'||state.page==='trip'?collection():
           profile();
- return body+(state.menuOpen?overlayMenu():'')+(state.searchOpen?searchOverlay():'');
+ return body+(state.menuOpen?overlayMenu():'')+(state.searchOpen?searchOverlay():'')+(state.aiModalOpen?aiModal():'')+(state.safetyModalOpen?safetyModal():'');
 }
 
 function render({keepScroll=false}={}){
@@ -916,7 +1197,7 @@ function render({keepScroll=false}={}){
  document.documentElement.lang=state.lang;
  document.title=`Traval — ${state.page==='welcome'?'Travel & Local Discovery':t(state.page==='detail'?'titlePlace':state.page)}`;
  $('#app').innerHTML=appHtml();
- document.body.classList.toggle('has-modal',state.menuOpen||state.searchOpen);
+ document.body.classList.toggle('has-modal',state.menuOpen||state.searchOpen||state.aiModalOpen||state.safetyModalOpen);
  if(state.page==='map') requestAnimationFrame(drawMap);
  if(keepScroll) requestAnimationFrame(()=>window.scrollTo({top:sy,behavior:'instant'}));
  else window.scrollTo({top:0,behavior:'instant'});
@@ -943,6 +1224,7 @@ function place(id){
  history.replaceState(null,'','#place='+id);
  render();
  loadReviewPage(id);
+ userApi('/api/analytics/event','POST',{eventType:'view',placeId:id}).catch(()=>{});
 }
 
 function savePlace(id){
@@ -951,6 +1233,7 @@ function savePlace(id){
  persistCollections();
  render({keepScroll:true});
  toast(t(added?'done':'removed'));
+ if(added) userApi('/api/analytics/event','POST',{eventType:'save',placeId:id}).catch(()=>{});
 }
 
 function toggleTrip(id){
@@ -959,12 +1242,14 @@ function toggleTrip(id){
  persistCollections();
  render({keepScroll:true});
  toast(t(added?'done':'removedTrip'));
+ if(added) userApi('/api/analytics/event','POST',{eventType:'trip_add',placeId:id}).catch(()=>{});
 }
 
 function externalDirections(id){
  const p=getPlace(id);if(!p)return;
  const dest=Number.isFinite(p.lat)&&Number.isFinite(p.lon)?`${p.lat},${p.lon}`:encodeURIComponent(p.en+', '+p.locEn);
  window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=${state.travelMode}`,'_blank','noopener,noreferrer');
+ userApi('/api/analytics/event','POST',{eventType:'direction',placeId:id}).catch(()=>{});
 }
 
 function sharePlace(id){
@@ -1213,6 +1498,31 @@ function dispatch(event){
    case'search-close':state.searchOpen=false;state.query='';render({keepScroll:true});break;
    case'auth-mode':state.authMode=target.dataset.mode;render({keepScroll:true});break;
    case'auth-logout':signOut();break;
+   case'open-ai':state.aiModalOpen=true;render({keepScroll:true});break;
+   case'close-ai':state.aiModalOpen=false;render({keepScroll:true});break;
+   case'reset-ai':state.aiResult=null;state.aiLoading=false;render({keepScroll:true});break;
+   case'save-ai-plan':
+     if(state.aiResult&&Array.isArray(state.aiResult.itinerary)){
+       const ids=[];
+       state.aiResult.itinerary.forEach(d=>{(d.schedule||[]).forEach(s=>{if(s.place?.id&&!state.trip.includes(s.place.id))ids.push(s.place.id)})});
+       if(ids.length){state.trip=[...state.trip,...ids];persistCollections();}
+       state.aiModalOpen=false;navigate('trip');
+       toast(`บันทึก ${ids.length} จุดแวะเข้าทริปเรียบร้อยแล้ว!`);
+     }
+     break;
+   case'open-safety':state.safetyModalOpen=true;render({keepScroll:true});break;
+   case'close-safety':state.safetyModalOpen=false;render({keepScroll:true});break;
+   case'open-safety-form':state.safetyFormOpen=true;render({keepScroll:true});break;
+   case'cancel-safety-form':state.safetyFormOpen=false;render({keepScroll:true});break;
+   case'delete-account':
+     if(confirm(state.lang==='th'?'คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีและข้อมูลทั้งหมดของคุณอย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้ตามข้อกำหนด PDPA':'Are you sure you want to permanently erase your account and all associated data under PDPA? This action cannot be undone.')){
+       userApi('/api/me/account','DELETE').then(()=>{
+         state.account=null;state.saved=[...guestSaved];state.trip=[...guestTrip];state.myReviews=[];
+         toast(state.lang==='th'?'ลบบัญชีและข้อมูลส่วนบุคคลตามสิทธิ์ PDPA สำเร็จแล้ว':'Account and personal data erased successfully.');
+         navigate('profile');
+       }).catch(e=>toast(e.message));
+     }
+     break;
    default:break;
  }
 }
@@ -1241,23 +1551,107 @@ function onChange(event){
  }
 }
 
+document.addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.target;
+
+  if(form.id === 'member-auth-form'){
+    const fd = new FormData(form);
+    const email = fd.get('email');
+    const password = fd.get('password');
+    const name = fd.get('name');
+    try {
+      if(state.authMode === 'register'){
+        const res = await userApi('/api/auth/register', 'POST', { name, email, password });
+        state.account = res.user;
+      } else {
+        const res = await userApi('/api/auth/login', 'POST', { email, password });
+        state.account = res.user;
+      }
+      await loadAccountCollections();
+      toast(state.lang==='th'?'เข้าสู่ระบบสำเร็จ':'Signed in successfully');
+      render({keepScroll:true});
+    } catch(err) {
+      toast(err.message);
+    }
+    return;
+  }
+
+  if(form.id === 'ai-advisor-form'){
+    const fd = new FormData(form);
+    const payload = {
+      destination: fd.get('province') || 'chiang-mai',
+      days: Number(fd.get('days')) || 2,
+      budget: Number(fd.get('budget')) || 3500,
+      style: fd.get('style') || 'all',
+      pace: fd.get('pace') || 'normal',
+      quickWalk: fd.get('quickWalk') === 'true'
+    };
+    state.aiLoading = true;
+    render({keepScroll:true});
+    try {
+      const res = await userApi('/api/ai/advisor', 'POST', payload);
+      state.aiResult = res.plan;
+      state.aiLoading = false;
+      render({keepScroll:true});
+    } catch(err) {
+      state.aiLoading = false;
+      toast(err.message);
+      render({keepScroll:true});
+    }
+    return;
+  }
+
+  if(form.id === 'safety-report-form'){
+    const fd = new FormData(form);
+    const photoInput = form.querySelector('#safety-photo-input');
+    let photoUrl = '';
+    try {
+      if(photoInput && photoInput.files && photoInput.files[0]){
+        const fileFd = new FormData();
+        fileFd.append('photo', photoInput.files[0]);
+        const uploadRes = await fetch('/api/safety/upload', { method: 'POST', credentials: 'same-origin', body: fileFd });
+        const uploadJson = await uploadRes.json();
+        if(uploadRes.ok && uploadJson.photoUrl) {
+          photoUrl = uploadJson.photoUrl;
+        }
+      }
+      await userApi('/api/safety/reports', 'POST', {
+        category: fd.get('category'),
+        title: fd.get('title'),
+        description: fd.get('description'),
+        locationName: fd.get('locationName'),
+        photo: photoUrl
+      });
+      state.safetyFormOpen = false;
+      toast('ส่งรายงานความปลอดภัยสำเร็จ ข้อมูลจะได้รับการตรวจสอบจากผู้ดูแลระบบ');
+      render({keepScroll:true});
+    } catch(err) {
+      toast(err.message);
+    }
+    return;
+  }
+});
+
 document.addEventListener('click',dispatch);
 document.addEventListener('input',onInput);
 document.addEventListener('change',onChange);
 document.addEventListener('keydown',e=>{
- if(e.key==='Escape'){
-   if(state.menuOpen){state.menuOpen=false;render({keepScroll:true})}
-   else if(state.searchOpen){state.searchOpen=false;render({keepScroll:true})}
-   else if(state.bottomSheetState!=='closed'){state.bottomSheetState='closed';render({keepScroll:true})}
-   else if(state.page==='detail')navigate(state.previous||'discover');
- }
+  if(e.key==='Escape'){
+    if(state.menuOpen){state.menuOpen=false;render({keepScroll:true})}
+    else if(state.searchOpen){state.searchOpen=false;render({keepScroll:true})}
+    else if(state.aiModalOpen){state.aiModalOpen=false;render({keepScroll:true})}
+    else if(state.safetyModalOpen){state.safetyModalOpen=false;render({keepScroll:true})}
+    else if(state.bottomSheetState!=='closed'){state.bottomSheetState='closed';render({keepScroll:true})}
+    else if(state.page==='detail')navigate(state.previous||'discover');
+  }
 });
 
 window.addEventListener('hashchange',()=>{
- const h=location.hash.slice(1);
- if(!h) navigate('welcome',false);
- else if(h.startsWith('place=')) place(h.slice(6));
- else if(['welcome','discover','map','saved','trip','profile'].includes(h)) navigate(h,false);
+  const h=location.hash.slice(1);
+  if(!h) navigate('welcome',false);
+  else if(h.startsWith('place=')) place(h.slice(6));
+  else if(['welcome','discover','map','saved','trip','profile'].includes(h)) navigate(h,false);
 });
 
 // Initialize
@@ -1266,3 +1660,4 @@ else if(['welcome','discover','map','saved','trip','profile'].includes(location.
 
 render();
 refreshSession();
+initRealData();
