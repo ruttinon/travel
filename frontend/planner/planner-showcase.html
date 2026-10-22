@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unfold · Trip Planner & Smart Route Optimizer (UX/UI Prototype)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --forest: #172B23;
+      --forest-light: #244437;
+      --lime: #8DE026;
+      --lime-light: #DCF1D7;
+      --sme-gold: #E5A836;
+      --sme-gold-light: #FEF8EC;
+      --cream: #F8F7F3;
+      --paper: #FFFFFF;
+      --ink: #131B17;
+      --muted: #627267;
+      --line: #E5E9E2;
+      --blue: #2563EB;
+      --blue-light: #EFF6FF;
+      --font: 'Inter', 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--cream);
+      color: var(--ink);
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* Top Navigation Header */
+    .site-header {
+      height: 84px;
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      border-bottom: 1px solid var(--line);
+      background: var(--paper);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--forest);
+    }
+    .brand-mark {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--forest);
+      letter-spacing: -0.04em;
+    }
+    .brand-mark span { color: var(--lime); }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+    .nav-link {
+      color: #5D6F63;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+    .nav-link:hover, .nav-link.active {
+      color: var(--forest);
+      font-weight: 700;
+    }
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .user-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--forest);
+      color: var(--lime);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    /* Main Container */
+    .planner-shell {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 36px 48px 80px;
+    }
+
+    /* Header Hero Title */
+    .planner-tophead {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 28px;
+    }
+    .overline {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #7A8F82;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .planner-tophead h1 {
+      font-size: 46px;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      color: var(--forest);
+      line-height: 1.08;
+    }
+    .planner-tophead h1 span { color: var(--lime); }
+    .planner-tophead p {
+      font-size: 15px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* Mode Segmented Control */
+    .mode-switch {
+      display: flex;
+      background: #EAEFE8;
+      padding: 4px;
+      border-radius: 14px;
+      gap: 4px;
+    }
+    .mode-btn {
+      padding: 10px 22px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 700;
+      color: #4A5E51;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .mode-btn.active {
+      background: var(--paper);
+      color: var(--forest);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+
+    /* Main Layout Grid */
+    .planner-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    /* Left Control Sidebar */
+    .sidebar-panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 4px 24px rgba(23,43,35,0.03);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .panel-heading {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--forest);
+      letter-spacing: -0.02em;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .field-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field-wrap label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--forest);
+    }
+    .field-wrap input, .field-wrap select {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    /* Places Pool Checklist */
+    .places-pool {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 280px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .pool-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #FDFEFD;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .pool-item:hover {
+      background: #F3F7F2;
+      border-color: var(--forest);
+    }
+    .pool-img {
+      width: 46px;
+      height: 46px;
+      border-radius: 10px;
+      object-fit: cover;
+    }
+    .pool-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .pool-info strong {
+      font-size: 13px;
+      color: var(--forest);
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pool-info small {
+      font-size: 11px;
+      color: var(--muted);
+      display: block;
+      margin-top: 2px;
+    }
+
+    /* Right Itinerary Stream */
+    .itinerary-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* Trip Hero Card */
+    .trip-summary-card {
+      background: linear-gradient(135deg, #172B23 0%, #0F221B 100%);
+      border-radius: 24px;
+      padding: 32px 36px;
+      color: #FFFFFF;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(23,43,35,0.08);
+    }
+    .summary-left small {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--lime);
+      font-weight: 800;
+    }
+    .summary-left h2 {
+      font-size: 32px;
+      font-weight: 800;
+      margin: 6px 0 8px;
+      letter-spacing: -0.02em;
+    }
+    .summary-left p {
+      font-size: 14px;
+      color: #CBD7CE;
+    }
+    .summary-stats {
+      display: flex;
+      gap: 32px;
+      text-align: right;
+    }
+    .stat-box strong {
+      font-size: 28px;
+      font-weight: 800;
+      color: #FFFFFF;
+      display: block;
+      letter-spacing: -0.03em;
+    }
+    .stat-box small {
+      font-size: 11px;
+      color: #A3B8AA;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Day Accordion / Card */
+    .day-section {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+    }
+    .day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #EEF2EB;
+    }
+    .day-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--forest);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .day-badge {
+      background: var(--forest);
+      color: #FFFFFF;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 99px;
+    }
+    .day-meta {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* Timeline Stops Stream */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .stop-item {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      position: relative;
+      padding-bottom: 24px;
+    }
+    .stop-marker {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #EAEFE7;
+      color: var(--forest);
+      font-weight: 800;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 2;
+    }
+    .stop-marker.lime { background: var(--lime); }
+    
+    .stop-card {
+      flex: 1;
+      background: #FDFEFD;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      transition: all 0.2s;
+    }
+    .stop-card:hover {
+      box-shadow: 0 6px 20px rgba(0,0,0,0.04);
+      border-color: #CAD5C8;
+    }
+    .stop-img {
+      width: 72px;
+      height: 72px;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+    .stop-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .stop-body h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 4px;
+    }
+    .stop-body p {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .stop-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .drag-handle {
+      cursor: grab;
+      color: #A6B4A8;
+      font-size: 18px;
+      padding: 6px;
+    }
+
+    /* Travel Route Connection Pill */
+    .travel-connection {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: 52px;
+      padding-bottom: 24px;
+      font-size: 12px;
+      color: #6C8274;
+    }
+    .travel-line {
+      width: 24px;
+      height: 2px;
+      background: #C4D2C3;
+    }
+
+    /* SME Stopover Card (Special Local Recommendation) */
+    .sme-stopover-box {
+      margin-left: 52px;
+      margin-bottom: 24px;
+      background: var(--sme-gold-light);
+      border: 1px dashed var(--sme-gold);
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .sme-tag {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      background: var(--sme-gold);
+      color: #FFFFFF;
+      padding: 3px 8px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+    .sme-info strong {
+      font-size: 14px;
+      color: #634305;
+      display: block;
+    }
+    .sme-info small {
+      font-size: 12px;
+      color: #8C651A;
+    }
+    .btn-add-sme {
+      padding: 8px 16px;
+      border-radius: 10px;
+      background: #FFFFFF;
+      color: #634305;
+      border: 1px solid var(--sme-gold);
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .btn-add-sme:hover {
+      background: var(--sme-gold);
+      color: #FFFFFF;
+    }
+
+    /* Budget Breakdown Module */
+    .budget-module {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 30px;
+    }
+    .budget-bars-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .budget-card {
+      background: #F8FAF8;
+      border: 1px solid #EAEFEA;
+      border-radius: 16px;
+      padding: 18px;
+    }
+    .budget-card strong {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--forest);
+      display: block;
+      margin-top: 6px;
+    }
+    .budget-card small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    
+    .budget-meter {
+      height: 12px;
+      background: #E5EBE3;
+      border-radius: 99px;
+      overflow: hidden;
+      display: flex;
+      margin: 16px 0 8px;
+    }
+    .meter-fuel { background: var(--blue); }
+    .meter-stay { background: #9333EA; }
+    .meter-food { background: var(--sme-gold); }
+    .meter-activity { background: var(--lime); }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--forest);
+      color: #FFFFFF;
+      padding: 14px 22px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      display: none;
+      z-index: 100;
+    }
+    .toast.show { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Button Actions */
+    .btn-submit {
+      padding: 14px 24px;
+      border-radius: 12px;
+      background: var(--forest);
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-submit:hover { background: var(--forest-light); }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="site-header">
+    <a href="../../index.html" class="brand">
+      <span class="brand-mark">unfold<span>.</span></span>
+      <span style="font-size:11px; font-weight:800; letter-spacing:0.1em; color:#7A8F82; text-transform:uppercase;">Trip Planner</span>
+    </a>
+
+    <nav class="nav-links">
+      <a href="../../index.html" class="nav-link">Explore</a>
+      <a href="../../index.html#map" class="nav-link">Map</a>
+      <a href="../auth/profile.html" class="nav-link">Saved</a>
+      <a href="planner-showcase.html" class="nav-link active">My Trips</a>
+    </nav>
+
+    <a href="../auth/profile.html" class="user-pill">
+      <span style="font-size: 13px; font-weight: 700; color: var(--forest);">Nine (UX/UI)</span>
+      <div class="user-avatar">N</div>
+    </a>
+  </header>
+
+  <!-- Main Planner Area -->
+  <main class="planner-shell">
+    
+    <!-- Top Header -->
+    <div class="planner-tophead">
+      <div>
+        <span class="overline">ITINERARY / SMART ENGINE</span>
+        <h1>My journeys<span>.</span></h1>
+        <p>จัดทริปท่องเที่ยว ค้นพบร้านค้าชุมชนระหว่างทาง และคำนวณงบประมาณอัตโนมัติ</p>
+      </div>
+
+      <!-- Mode Switcher -->
+      <div class="mode-switch">
+        <button class="mode-btn active" id="btnManualMode" onclick="setMode('manual')">Manual Mode (จัดเอง)</button>
+        <button class="mode-btn" id="btnAutoMode" onclick="setMode('auto')">Auto Mode (AI Generator) ✨</button>
+      </div>
+    </div>
+
+    <!-- Main 2-Column Layout -->
+    <div class="planner-grid">
+      
+      <!-- Left Column: Controls & Places Picker -->
+      <aside class="sidebar-panel">
+        
+        <div class="panel-heading" id="panelHeading">⚙️ กำหนดค่าการเดินทาง</div>
+
+        <!-- Trip Settings Form -->
+        <div class="form-group">
+          <div class="field-wrap">
+            <label>ชื่อทริป (Trip Name)</label>
+            <input type="text" id="tripNameInput" value="ทริปแอ่วเหนือ สัมผัสวิถีแม่กำปอง">
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="field-wrap">
+              <label>จำนวนวัน (Days)</label>
+              <select id="daysSelect" onchange="updateDays(this.value)">
+                <option value="2" selected>2 วัน 1 คืน</option>
+                <option value="3">3 วัน 2 คืน</option>
+                <option value="4">4 วัน 3 คืน</option>
+              </select>
+            </div>
+            <div class="field-wrap">
+              <label>การเดินทาง (Mode)</label>
+              <select id="transportSelect">
+                <option value="car" selected>🚗 รถยนต์ส่วนตัว</option>
+                <option value="transit">🚌 รถสาธารณะ</option>
+                <option value="walk">🚶 เดินเท้า (ชานเมือง)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-wrap">
+            <label>งบประมาณรวมที่ตั้งไว้ (Budget THB)</label>
+            <input type="number" id="budgetLimit" value="10000" step="500" oninput="updateBudgetCalc()">
+          </div>
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--line);">
+
+        <!-- Available Places Pool -->
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <span style="font-size:13px; font-weight:700; color:var(--forest);">สถานที่ที่เลือกไว้ (4 ที่)</span>
+            <span style="font-size:11px; color:var(--muted);">คลิกเพื่อเพิ่ม</span>
+          </div>
+
+          <div class="places-pool">
+            <div class="pool-item">
+              <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=120&q=80" class="pool-img" alt="">
+              <div class="pool-info">
+                <strong>ดอยม่อนแจ่ม วิวทะเลหมอก</strong>
+                <small>ธรรมชาติ · แม่ริม เชียงใหม่</small>
+              </div>
+              <span style="color:var(--lime); font-weight:800;">✓</span>
+            </div>
+
+            <div class="pool-item">
+              <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=120&q=80" class="pool-img" alt="">
+              <div class="pool-info">
+                <strong>ร้านกาแฟคั่วเตาฟืนแม่กำปอง</strong>
+                <small>★ Local SME Cafe · แม่ออน</small>
+              </div>
+              <span style="color:var(--sme-gold); font-weight:800;">★</span>
+            </div>
+
+            <div class="pool-item">
+              <img src="https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=120&q=80" class="pool-img" alt="">
+              <div class="pool-info">
+                <strong>น้ำตกแม่กำปอง & ทางเดินริมธาร</strong>
+                <small>ธรรมชาติ · 3.5 กม.</small>
+              </div>
+              <span style="color:var(--lime); font-weight:800;">✓</span>
+            </div>
+
+            <div class="pool-item">
+              <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=120&q=80" class="pool-img" alt="">
+              <div class="pool-info">
+                <strong>วัดอุโมงค์ สวนพุทธธรรม</strong>
+                <small>วัฒนธรรม · เมืองเชียงใหม่</small>
+              </div>
+              <span style="color:var(--lime); font-weight:800;">✓</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <button class="btn-submit" onclick="savePlan()">
+          <span>บันทึกทริปนี้</span>
+          <span>↗</span>
+        </button>
+
+      </aside>
+
+      <!-- Right Column: Itinerary Timeline & Budget -->
+      <section class="itinerary-panel">
+        
+        <!-- Hero Trip Summary Card -->
+        <div class="trip-summary-card">
+          <div class="summary-left">
+            <small>THE JOURNEY STARTS HERE</small>
+            <h2 id="summaryTripTitle">ทริปแอ่วเหนือ สัมผัสวิถีแม่กำปอง</h2>
+            <p id="summaryTripSub">2 วัน 1 คืน · 4 สถานที่ · เส้นทางต่อเนื่องไม่มีวนรถกลับ</p>
+          </div>
+
+          <div class="summary-stats">
+            <div class="stat-box">
+              <strong id="statDays">2</strong>
+              <small>วันเดินทาง</small>
+            </div>
+            <div class="stat-box">
+              <strong id="statStops">4</strong>
+              <small>จุดแวะเที่ยว</small>
+            </div>
+            <div class="stat-box">
+              <strong id="statDistance">68</strong>
+              <small>กม. รวม</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= DAY 1 TIMELINE ================= -->
+        <div class="day-section">
+          <div class="day-header">
+            <div class="day-title">
+              <span class="day-badge">DAY 1</span>
+              <span>ธรรมชาติและวิถีชีวิตชาวเขา (Mae Rim ➔ Mae Kampong)</span>
+            </div>
+            <div class="day-meta">3 จุดแวะ · ~4.5 ชม. เที่ยวชม</div>
+          </div>
+
+          <div class="timeline" id="day1Timeline">
+            
+            <!-- Stop 1 -->
+            <div class="stop-item">
+              <div class="stop-marker">1</div>
+              <div class="stop-card">
+                <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=200&q=80" class="stop-img" alt="">
+                <div class="stop-body">
+                  <h4>09:00 · ดอยม่อนแจ่ม วิวทะเลหมอก</h4>
+                  <p>ชมวิวทิวเขา แปลงผักขั้นบันได และสัมผัสอากาศเย็นตลอดปี (เวลาเที่ยวแนะนำ ~2 ชม.)</p>
+                </div>
+                <div class="stop-actions">
+                  <span class="drag-handle" title="ลากเพื่อสลับลำดับ">⋮⋮</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Route Connection -->
+            <div class="travel-connection">
+              <div class="travel-line"></div>
+              <span>🚗 ขับรถ 35 นาที (24 กม.) มุ่งหน้าสู่บ้านแม่กำปอง</span>
+            </div>
+
+            <!-- Special SME Stopover Recommendation -->
+            <div class="sme-stopover-box" id="smeStopoverBox">
+              <div>
+                <span class="sme-tag">★ จุดแวะร้านค้าชุมชนระหว่างทาง (SME Stopover)</span>
+                <strong>ร้านกาแฟคั่วเตาฟืนแม่กำปอง</strong>
+                <small>ห่างจากเส้นทางหลักเพียง 400 เมตร (+8 นาที) · กาแฟอาราบิก้าคั่วเตาฟืนสูตร 30 ปี</small>
+              </div>
+              <button class="btn-add-sme" onclick="insertStopover()">+ แวะร้านนี้ (+35 นาที)</button>
+            </div>
+
+            <!-- Stop 2 -->
+            <div class="stop-item">
+              <div class="stop-marker">2</div>
+              <div class="stop-card">
+                <img src="https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=200&q=80" class="stop-img" alt="">
+                <div class="stop-body">
+                  <h4>14:30 · น้ำตกแม่กำปอง & ทางเดินริมธาร</h4>
+                  <p>น้ำตกธรรมชาติ 7 ชั้น ร่มรื่นด้วยต้นไม้ใหญ่ อากาศบริสุทธิ์เย็นสบาย (เวลาเที่ยวแนะนำ ~1.5 ชม.)</p>
+                </div>
+                <div class="stop-actions">
+                  <span class="drag-handle" title="ลากเพื่อสลับลำดับ">⋮⋮</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ================= DAY 2 TIMELINE ================= -->
+        <div class="day-section">
+          <div class="day-header">
+            <div class="day-title">
+              <span class="day-badge">DAY 2</span>
+              <span>มรดกวัฒนธรรมและตลาดชุมชน (Old City Heritage)</span>
+            </div>
+            <div class="day-meta">2 จุดแวะ · ~3 ชม. เที่ยวชม</div>
+          </div>
+
+          <div class="timeline">
+            
+            <!-- Stop 3 -->
+            <div class="stop-item">
+              <div class="stop-marker">3</div>
+              <div class="stop-card">
+                <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=200&q=80" class="stop-img" alt="">
+                <div class="stop-body">
+                  <h4>09:30 · วัดอุโมงค์ สวนพุทธธรรม</h4>
+                  <p>โบราณสถานอายุ 700 ปี โครงสร้างอุโมงค์ใต้ดินท่ามกลางป่าร่มรื่น สงบเงียบ</p>
+                </div>
+                <div class="stop-actions">
+                  <span class="drag-handle">⋮⋮</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Route Connection -->
+            <div class="travel-connection">
+              <div class="travel-line"></div>
+              <span>🚗 ขับรถ 20 นาที (12 กม.)</span>
+            </div>
+
+            <!-- Stop 4 -->
+            <div class="stop-item">
+              <div class="stop-marker">4</div>
+              <div class="stop-card">
+                <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=200&q=80" class="stop-img" alt="">
+                <div class="stop-body">
+                  <h4>12:00 · ตลาดกาดก้อม ชุมชนโบราณ</h4>
+                  <p>ลิ้มลองอาหารเหนือพื้นเมือง ข้าวซอยไก่โบราณ และซื้อของฝากหัตถกรรมชาวบ้าน</p>
+                </div>
+                <div class="stop-actions">
+                  <span class="drag-handle">⋮⋮</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ================= BUDGET BREAKDOWN TRACKER ================= -->
+        <div class="budget-module">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <span class="overline">BUDGET ESTIMATOR</span>
+              <h3 style="font-size:22px; font-weight:800; color:var(--forest);">สรุปการประเมินค่าใช้จ่าย (Trip Budget)</h3>
+            </div>
+            <div style="text-align:right;">
+              <span style="font-size:12px; color:var(--muted);">งบคงเหลือจากเป้าหมาย</span>
+              <strong style="font-size:22px; color:#15803D; display:block;" id="budgetRemaining">2,600 บาท</strong>
+            </div>
+          </div>
+
+          <!-- Progress Meter -->
+          <div class="budget-meter">
+            <div class="meter-fuel" style="width: 18%;" title="ค่าน้ำมัน 18%"></div>
+            <div class="meter-stay" style="width: 42%;" title="ค่าที่พัก 42%"></div>
+            <div class="meter-food" style="width: 28%;" title="ค่าอาหาร 28%"></div>
+            <div class="meter-activity" style="width: 12%;" title="ค่าเข้าชม 12%"></div>
+          </div>
+
+          <div class="budget-bars-grid">
+            <div class="budget-card">
+              <small>🚗 ค่าน้ำมัน/เดินทาง</small>
+              <strong id="costFuel">1,350 ฿</strong>
+            </div>
+            <div class="budget-card">
+              <small>🏡 ค่าที่พักโฮมสเตย์ (1 คืน)</small>
+              <strong id="costStay">3,200 ฿</strong>
+            </div>
+            <div class="budget-card">
+              <small>🍲 ค่าอาหาร & คาเฟ่ SME</small>
+              <strong id="costFood">2,100 ฿</strong>
+            </div>
+            <div class="budget-card">
+              <small>🎟️ ค่าเข้าชมสถานที่</small>
+              <strong id="costEntry">750 ฿</strong>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; padding-top:14px; border-top:1px solid var(--line);">
+            <span style="font-size:13px; color:var(--muted);">
+              รวมค่าใช้จ่ายโดยประมาณทั้งทริป: <strong style="color:var(--forest); font-size:16px;" id="totalCost">7,400 บาท</strong>
+            </span>
+            <button class="btn-submit" style="padding:10px 18px; font-size:13px;" onclick="window.open('https://maps.google.com', '_blank')">
+              <span>เปิดนำทางใน Google Maps ↗</span>
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toastMessage"></div>
+
+  <script>
+    let currentMode = 'manual';
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastMessage');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.getElementById('btnManualMode').classList.toggle('active', mode === 'manual');
+      document.getElementById('btnAutoMode').classList.toggle('active', mode === 'auto');
+
+      if (mode === 'auto') {
+        document.getElementById('panelHeading').textContent = '✨ AI Smart Route Generator';
+        showToast('สลับสู่โหมด AI อัจฉริยะ: ระบบจะเรียงลำดับสถานที่ที่ใกล้กันที่สุดให้อัตโนมัติ');
+      } else {
+        document.getElementById('panelHeading').textContent = '⚙️ กำหนดค่าการเดินทาง';
+        showToast('สลับสู่โหมด Manual: ลากเรียงสถานที่ตามใจชอบ');
+      }
+    }
+
+    function insertStopover() {
+      const box = document.getElementById('smeStopoverBox');
+      box.innerHTML = `
+        <div style="display:flex; align-items:center; gap:14px; width:100%;">
+          <span style="font-size:24px;">☕</span>
+          <div style="flex:1;">
+            <span class="sme-tag">✓ เพิ่มจุดแวะเรียบร้อยแล้ว</span>
+            <strong style="color:#172B23;">12:00 · แวะร้านกาแฟคั่วเตาฟืนแม่กำปอง (Local SME)</strong>
+            <small style="color:#5D6F63;">พักจิบกาแฟริมธาร และทานอาหารกลางวันพื้นบ้าน (~45 นาที)</small>
+          </div>
+          <span style="font-size:12px; color:#15803D; font-weight:800;">+50 ฿ ชุมชน</span>
+        </div>
+      `;
+      box.style.background = '#DCFCE7';
+      box.style.borderColor = '#16A34A';
+
+      // Update stats
+      document.getElementById('statStops').textContent = '5';
+      document.getElementById('statDistance').textContent = '71';
+      showToast('เพิ่ม "ร้านกาแฟคั่วเตาฟืนแม่กำปอง" ลงในไทม์ไลน์ Day 1 สำเร็จ!');
+    }
+
+    function updateBudgetCalc() {
+      const limit = parseFloat(document.getElementById('budgetLimit').value) || 10000;
+      const totalCost = 7400;
+      const rem = limit - totalCost;
+      const remEl = document.getElementById('budgetRemaining');
+      remEl.textContent = rem.toLocaleString() + ' บาท';
+      remEl.style.color = rem >= 0 ? '#15803D' : '#DC2626';
+    }
+
+    function savePlan() {
+      const name = document.getElementById('tripNameInput').value;
+      showToast(`บันทึกทริป "${name}" ลงใน My Trips สำเร็จ!`);
+    }
+
+    function updateDays(val) {
+      document.getElementById('statDays').textContent = val;
+      showToast(`ปรับจำนวนวันเดินทางเป็น ${val} วัน`);
+    }
+  </script>
+
+</body>
+</html>
