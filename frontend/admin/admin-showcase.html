@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unfold · Admin Studio & Moderation (UX/UI Prototype)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --forest: #153E2D;
+      --forest-dark: #0B2B1D;
+      --ink: #162F25;
+      --line: #E6E8E2;
+      --paper: #FFFFFF;
+      --cream: #F6F7F3;
+      --lime: #8DE026;
+      --lime-light: #DCF1D7;
+      --amber: #B57D34;
+      --amber-light: #FAEED8;
+      --red: #9B2C2C;
+      --red-light: #FED7D7;
+      --blue: #2B6CB0;
+      --blue-light: #E1EEF0;
+      --font: 'Inter', 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--cream);
+      color: var(--ink);
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* Left Sidebar Rail */
+    .admin-rail {
+      width: 250px;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      background: linear-gradient(165deg, var(--forest), var(--forest-dark));
+      color: #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      padding: 32px 20px 24px;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+
+    .brand-wrap {
+      margin-bottom: 32px;
+    }
+    .brand-logo {
+      font-size: 26px;
+      font-weight: 800;
+      color: #FFFFFF;
+      text-decoration: none;
+      letter-spacing: -0.03em;
+    }
+    .brand-logo span { color: var(--lime); }
+    .rail-sub {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #9CBCA7;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    .rail-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .rail-heading {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #7DA68B;
+      margin: 16px 0 8px 12px;
+      font-weight: 700;
+    }
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: transparent;
+      border: none;
+      border-radius: 12px;
+      color: #D3E3D7;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #FFFFFF;
+    }
+    .nav-btn.active {
+      background: rgba(255, 255, 255, 0.18);
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+    .nav-btn .icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+    }
+    .badge-count {
+      margin-left: auto;
+      background: var(--lime);
+      color: var(--forest-dark);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 99px;
+    }
+
+    .rail-promo {
+      background: linear-gradient(0deg, rgba(7, 30, 25, 0.8), rgba(25, 57, 41, 0.2)), url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80') center/cover;
+      border-radius: 16px;
+      padding: 20px 16px;
+      margin-top: auto;
+      margin-bottom: 20px;
+      color: #FFFFFF;
+    }
+    .rail-promo small {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--lime);
+      font-weight: 700;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .rail-promo strong {
+      font-size: 15px;
+      line-height: 1.3;
+      font-weight: 700;
+      display: block;
+    }
+
+    .rail-user {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 11px;
+      color: #9CBCA7;
+    }
+    .rail-user button {
+      background: none;
+      border: none;
+      color: #FFFFFF;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    /* Main Content Area */
+    .admin-main {
+      flex: 1;
+      min-width: 0;
+      padding: 0 48px 80px;
+      overflow-y: auto;
+    }
+
+    /* Top Bar */
+    .admin-topbar {
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #ECEFE8;
+      margin-bottom: 32px;
+    }
+    .breadcrumb {
+      font-size: 13px;
+      color: #78857B;
+    }
+    .breadcrumb strong { color: var(--forest); }
+    .admin-avatar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .avatar-circle {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #D4E5C7;
+      color: #2C5635;
+      font-weight: 800;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Page Header */
+    .page-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 32px;
+    }
+    .overline {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6C8572;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .page-title {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #172B23;
+      line-height: 1.1;
+    }
+    .page-title span { color: #87B453; }
+    .page-sub {
+      font-size: 14px;
+      color: #627267;
+      margin-top: 6px;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-action.primary {
+      background: var(--forest);
+      color: #FFFFFF;
+    }
+    .btn-action.primary:hover {
+      background: #0E2C1E;
+      transform: translateY(-1px);
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .kpi-card {
+      background: #FFFFFF;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+    }
+    .kpi-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .kpi-icon.mint { background: var(--lime-light); color: var(--forest); }
+    .kpi-icon.peach { background: #F9ECDD; color: #BE895B; }
+    .kpi-icon.blue { background: var(--blue-light); color: var(--blue); }
+    .kpi-icon.amber { background: var(--amber-light); color: var(--amber); }
+
+    .kpi-data strong {
+      font-size: 30px;
+      font-weight: 800;
+      color: #172B23;
+      line-height: 1.1;
+      display: block;
+      letter-spacing: -0.03em;
+    }
+    .kpi-data small {
+      font-size: 12px;
+      color: #78857B;
+      font-weight: 500;
+      margin-top: 4px;
+      display: block;
+    }
+
+    /* Content Layout Grids */
+    .content-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .adm-card {
+      background: #FFFFFF;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 4px 24px rgba(23, 43, 35, 0.03);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .card-head h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #172B23;
+      letter-spacing: -0.02em;
+    }
+    .card-link {
+      font-size: 12px;
+      color: var(--forest);
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    /* Activity Stream */
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+    }
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 0;
+      border-top: 1px solid #F0F2EC;
+    }
+    .activity-item:first-child { border-top: none; }
+    .activity-img {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+    .activity-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .activity-info strong {
+      font-size: 13px;
+      color: #172B23;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .activity-info small {
+      font-size: 11px;
+      color: #78857B;
+      margin-top: 2px;
+      display: block;
+    }
+
+    /* Status Tags */
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .status-badge.published, .status-badge.approved, .status-badge.verified {
+      background: var(--lime-light);
+      color: var(--forest);
+    }
+    .status-badge.pending {
+      background: var(--amber-light);
+      color: var(--amber);
+    }
+    .status-badge.rejected, .status-badge.suspended {
+      background: var(--red-light);
+      color: var(--red);
+    }
+
+    /* Regional Progress Bars */
+    .region-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 14px;
+      font-size: 13px;
+    }
+    .region-name { width: 110px; font-weight: 600; color: #2C3E35; }
+    .region-track {
+      flex: 1;
+      height: 8px;
+      background: #EDF2E8;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .region-fill {
+      height: 100%;
+      background: #7BB47F;
+      border-radius: 99px;
+    }
+    .region-num { width: 30px; text-align: right; font-weight: 700; color: #172B23; }
+
+    /* Filter Pill Tabs */
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      overflow-x: auto;
+    }
+    .filter-pill {
+      padding: 8px 18px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #EDF0EA;
+      border: 1px solid transparent;
+      color: #4A5C50;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-pill.active, .filter-pill:hover {
+      background: var(--forest);
+      color: #FFFFFF;
+    }
+
+    /* Moderation Cards */
+    .mod-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 20px;
+    }
+    .mod-card {
+      background: #FFFFFF;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+    }
+    .mod-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .mod-category {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--blue-light);
+      color: var(--blue);
+    }
+    .mod-card h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #172B23;
+      line-height: 1.3;
+    }
+    .mod-card p {
+      font-size: 13px;
+      color: #455248;
+      line-height: 1.5;
+    }
+    .mod-meta {
+      font-size: 11px;
+      color: #78857B;
+      line-height: 1.6;
+      background: #F8FAF8;
+      padding: 10px 14px;
+      border-radius: 10px;
+    }
+    .mod-img {
+      width: 100%;
+      height: 160px;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+    .mod-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .btn-sm {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-sm.approve {
+      background: var(--forest);
+      color: #FFFFFF;
+      flex: 1;
+    }
+    .btn-sm.approve:hover { background: #0E2C1E; }
+    .btn-sm.reject {
+      background: #FEE2E2;
+      color: var(--red);
+    }
+    .btn-sm.reject:hover { background: #FED7D7; }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--forest-dark);
+      color: #FFFFFF;
+      padding: 14px 22px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      display: none;
+      z-index: 100;
+      animation: fadeIn 0.3s ease;
+    }
+    .toast.show { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Section Views */
+    .tab-view { display: none; }
+    .tab-view.active { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- Left Sidebar Rail -->
+  <aside class="admin-rail">
+    <div class="brand-wrap">
+      <a href="#" class="brand-logo">unfold<span>.</span></a>
+      <div class="rail-sub">Admin Studio · v2.7</div>
+    </div>
+
+    <nav class="rail-nav">
+      <span class="rail-heading">Control Tower</span>
+      <button class="nav-btn active" onclick="switchTab('overview', this)">
+        <span class="icon">⌂</span>
+        <span>Dashboard สถิติ</span>
+      </button>
+      <button class="nav-btn" onclick="switchTab('businesses', this)">
+        <span class="icon">🏪</span>
+        <span>ตรวจสอบร้านค้า SME</span>
+        <span class="badge-count" id="pendingBizCount">4</span>
+      </button>
+      <button class="nav-btn" onclick="switchTab('safety', this)">
+        <span class="icon">🛡️</span>
+        <span>จุดเสี่ยง & Scam Alert</span>
+        <span class="badge-count" id="pendingSafetyCount">3</span>
+      </button>
+
+      <span class="rail-heading">Content & Access</span>
+      <button class="nav-btn" onclick="switchTab('analytics', this)">
+        <span class="icon">📊</span>
+        <span>SME Analytics</span>
+      </button>
+      <button class="nav-btn" onclick="window.location.href='../auth/profile.html'">
+        <span class="icon">👤</span>
+        <span>User Profile & PDPA ↗</span>
+      </button>
+      <button class="nav-btn" onclick="window.location.href='../../index.html'" target="_blank">
+        <span class="icon">↗</span>
+        <span>View Traveller App</span>
+      </button>
+    </nav>
+
+    <div class="rail-promo">
+      <small>Local First</small>
+      <strong>SME Spotlight & Safe Travels</strong>
+    </div>
+
+    <div class="rail-user">
+      <span>Admin: <strong>Nine (Lead Designer)</strong></span>
+      <button onclick="window.location.href='../auth/login.html'">Sign out ↗</button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="admin-main">
+    
+    <!-- Topbar -->
+    <header class="admin-topbar">
+      <div class="breadcrumb">unfold / <strong id="sectionBreadcrumb">Dashboard Overview</strong></div>
+      <div class="admin-avatar">
+        <div class="avatar-circle">AD</div>
+        <span style="font-size: 13px; font-weight: 600;">Super Administrator</span>
+      </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: DASHBOARD & STATISTICS (ระบบสถิติภาพรวม) -->
+    <!-- ========================================== -->
+    <section class="tab-view active" id="view-overview">
+      <div class="page-head">
+        <div>
+          <span class="overline">OVERVIEW / CONTROL TOWER</span>
+          <h1 class="page-title">Dashboard<span>.</span></h1>
+          <p class="page-sub">ภาพรวมระบบ สถานที่ ร้านค้าชุมชน และงานรอตรวจสอบทั้งหมด</p>
+        </div>
+        <button class="btn-action primary" onclick="showToast('เปิดหน้าต่างเพิ่มสถานที่ใหม่')">+ เพิ่มสถานที่ใหม่</button>
+      </div>
+
+      <!-- 4 KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon mint">⌖</div>
+          <div class="kpi-data">
+            <strong>68</strong>
+            <small>สถานที่ท่องเที่ยวทั้งหมด</small>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon peach">👥</div>
+          <div class="kpi-data">
+            <strong>1,420</strong>
+            <small>สมาชิกนักท่องเที่ยวลงทะเบียน</small>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon blue">🏪</div>
+          <div class="kpi-data">
+            <strong>42</strong>
+            <small>ร้านค้าชุมชน Local SME ที่อนุมัติ</small>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon amber">⚠️</div>
+          <div class="kpi-data">
+            <strong style="color: #B57D34;" id="totalPendingKpi">7</strong>
+            <small>รายการรอตรวจสอบ (Pending)</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 Columns: Activity vs Regional Distribution -->
+      <div class="content-grid-2">
+        
+        <!-- Left: Live Activity Feed -->
+        <div class="adm-card">
+          <div class="card-head">
+            <h2>รายการเคลื่อนไหวล่าสุด (Recent Activity)</h2>
+            <span class="card-link" onclick="switchTab('businesses', document.querySelectorAll('.nav-btn')[1])">ดูทั้งหมด →</span>
+          </div>
+
+          <div class="activity-list">
+            <div class="activity-item">
+              <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=120&q=80" class="activity-img" alt="">
+              <div class="activity-info">
+                <strong>ร้านกาแฟคั่วเตาฟืนแม่กำปอง</strong>
+                <small>ส่งคำขอลงทะเบียนร้านค้า SME · แม่กำปอง เชียงใหม่</small>
+              </div>
+              <span class="status-badge pending">Pending</span>
+            </div>
+
+            <div class="activity-item">
+              <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80" class="activity-img" alt="">
+              <div class="activity-info">
+                <strong>แท็กซี่ไม่กดมิเตอร์ วัดพระแก้ว</strong>
+                <small>นักท่องเที่ยวแจ้งเหตุขูดรีดค่าโดยสาร · พระนคร กรุงเทพฯ</small>
+              </div>
+              <span class="status-badge pending">Pending</span>
+            </div>
+
+            <div class="activity-item">
+              <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=120&q=80" class="activity-img" alt="">
+              <div class="activity-info">
+                <strong>ดอยม่อนแจ่ม วิวทะเลหมอก</strong>
+                <small>เผยแพร่สถานที่ท่องเที่ยวทางธรรมชาติ · เชียงใหม่</small>
+              </div>
+              <span class="status-badge published">Published</span>
+            </div>
+
+            <div class="activity-item">
+              <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=120&q=80" class="activity-img" alt="">
+              <div class="activity-info">
+                <strong>ครัวริมน้ำ ตลาดน้อยโบราณ</strong>
+                <small>อนุมัติโปรไฟล์ร้านค้าชุมชนเรียบร้อยแล้ว</small>
+              </div>
+              <span class="status-badge approved">Approved</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Places by Region -->
+        <div class="adm-card">
+          <div class="card-head">
+            <h2>สัดส่วนสถานที่ตามภูมิภาค (Coverage)</h2>
+            <span style="font-size: 11px; color: #2C5635; background: #ECF5E9; padding: 4px 10px; border-radius: 99px; font-weight: 700;">68 สถานที่</span>
+          </div>
+
+          <div style="margin-top: 20px;">
+            <div class="region-row">
+              <span class="region-name">ภาคเหนือ</span>
+              <div class="region-track"><div class="region-fill" style="width: 75%;"></div></div>
+              <span class="region-num">32</span>
+            </div>
+            <div class="region-row">
+              <span class="region-name">ภาคกลาง</span>
+              <div class="region-track"><div class="region-fill" style="width: 50%;"></div></div>
+              <span class="region-num">21</span>
+            </div>
+            <div class="region-row">
+              <span class="region-name">ภาคใต้</span>
+              <div class="region-track"><div class="region-fill" style="width: 28%;"></div></div>
+              <span class="region-num">12</span>
+            </div>
+            <div class="region-row">
+              <span class="region-name">ภาคอีสาน</span>
+              <div class="region-track"><div class="region-fill" style="width: 15%;"></div></div>
+              <span class="region-num">3</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 36px; padding: 18px; background: #F8FAF8; border-radius: 14px; border: 1px solid #EAEFEA;">
+            <strong style="font-size: 13px; color: #172B23; display: block; margin-bottom: 4px;">💡 SME First Impact</strong>
+            <p style="font-size: 12px; color: #5D6B63; line-height: 1.5;">กว่า 61% ของสถานที่ในระบบเป็นร้านค้าชุมชนและวิสาหกิจขนาดเล็ก ช่วยกระจายรายได้สู่นักท่องเที่ยวโดยตรง</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: BUSINESS & SME VERIFICATION (ตรวจสอบร้านค้า) -->
+    <!-- ========================================== -->
+    <section class="tab-view" id="view-businesses">
+      <div class="page-head">
+        <div>
+          <span class="overline">MODERATION / BUSINESS PORTAL</span>
+          <h1 class="page-title">SME Verification<span>.</span></h1>
+          <p class="page-sub">ตรวจสอบหลักฐานความเป็นเจ้าของและอนุมัติร้านค้าชุมชนขึ้นสู่ระบบ</p>
+        </div>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="filter-tabs">
+        <button class="filter-pill active" onclick="filterBiz('all', this)">ทั้งหมด (4 คำขอ)</button>
+        <button class="filter-pill" onclick="filterBiz('pending', this)">รอการตรวจสอบ (Pending)</button>
+        <button class="filter-pill" onclick="filterBiz('approved', this)">อนุมัติแล้ว (Approved)</button>
+      </div>
+
+      <!-- Business Request Cards Grid -->
+      <div class="mod-grid" id="bizContainer">
+        
+        <!-- Card 1 -->
+        <div class="mod-card" data-biz-status="pending" id="bizCard-1">
+          <div class="mod-top">
+            <span class="mod-category">คาเฟ่ & อาหารพื้นบ้าน</span>
+            <span class="status-badge pending" id="bizBadge-1">Pending</span>
+          </div>
+          <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80" class="mod-img" alt="">
+          <h3>ร้านกาแฟคั่วเตาฟืนแม่กำปอง</h3>
+          <p>กาแฟอาราบิก้าแท้ปลูกใต้ร่มไม้ คั่วเตาฟืนโบราณสูตร 30 ปี บนยอดดอยแม่กำปอง บรรยากาศติดริมธาร</p>
+          
+          <div class="mod-meta">
+            👤 <strong>เจ้าของ:</strong> สมชาย ใจดี (somchai@maekampong.th)<br>
+            📞 <strong>เบอร์โทร:</strong> 081-234-5678 · LINE: @maekampongcoffee<br>
+            📍 <strong>พิกัด GPS:</strong> 18.8651, 99.3498 (เชียงใหม่)<br>
+            📄 <strong>หลักฐาน:</strong> ทะเบียนพาณิชย์ & ภาพถ่ายหน้าร้านคู่กับบัตรประชาชน
+          </div>
+
+          <div class="mod-actions" id="bizActions-1">
+            <button class="btn-sm approve" onclick="decideBiz(1, 'approved', 'ร้านกาแฟคั่วเตาฟืนแม่กำปอง')">✓ อนุมัติ (Approve)</button>
+            <button class="btn-sm reject" onclick="decideBiz(1, 'rejected', 'ร้านกาแฟคั่วเตาฟืนแม่กำปอง')">✕ ปฏิเสธ (Reject)</button>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="mod-card" data-biz-status="pending" id="bizCard-2">
+          <div class="mod-top">
+            <span class="mod-category">โฮมสเตย์ชุมชน</span>
+            <span class="status-badge pending" id="bizBadge-2">Pending</span>
+          </div>
+          <img src="https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=600&q=80" class="mod-img" alt="">
+          <h3>บ้านสวนผึ้งวิถีมอญ โฮมสเตย์</h3>
+          <p>สัมผัสวิถีชีวิตชาวไทยรามัญริมแม่น้ำแควน้อย อาหารพื้นบ้านสูตรโบราณ และล่องแพไม้ไผ่ชุมชน</p>
+          
+          <div class="mod-meta">
+            👤 <strong>เจ้าของ:</strong> ป้าสมศรี รามัญรัก (somsri@suanphueng.th)<br>
+            📞 <strong>เบอร์โทร:</strong> 089-876-5432<br>
+            📍 <strong>พิกัด GPS:</strong> 13.5412, 99.3512 (ราชบุรี)<br>
+            📄 <strong>หลักฐาน:</strong> ใบอนุญาตวิสาหกิจชุมชนท่องเที่ยวเชิงวัฒนธรรม
+          </div>
+
+          <div class="mod-actions" id="bizActions-2">
+            <button class="btn-sm approve" onclick="decideBiz(2, 'approved', 'บ้านสวนผึ้งวิถีมอญ')">✓ อนุมัติ (Approve)</button>
+            <button class="btn-sm reject" onclick="decideBiz(2, 'rejected', 'บ้านสวนผึ้งวิถีมอญ')">✕ ปฏิเสธ (Reject)</button>
+          </div>
+        </div>
+
+        <!-- Card 3 (Approved already) -->
+        <div class="mod-card" data-biz-status="approved">
+          <div class="mod-top">
+            <span class="mod-category">หัตถกรรมชุมชน</span>
+            <span class="status-badge approved">Approved</span>
+          </div>
+          <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=600&q=80" class="mod-img" alt="">
+          <h3>กลุ่มทอผ้าย้อมครามสกลนคร</h3>
+          <p>ผ้าฝ้ายทอมือย้อมครามธรรมชาติ ลวดลายโบราณที่สืบทอดมารุ่นสู่รุ่น สินค้า OTOP 5 ดาว</p>
+          
+          <div class="mod-meta">
+            👤 <strong>เจ้าของ:</strong> ประธานกลุ่มวิสาหกิจทอผ้าคราม<br>
+            📍 <strong>พิกัด GPS:</strong> 17.1664, 104.1486 (สกลนคร)<br>
+            ✓ <strong>สถานะ:</strong> ขึ้นหมุดบนแอปและหน้า Spotlight Rail เรียบร้อยแล้ว
+          </div>
+
+          <div class="mod-actions">
+            <span style="font-size: 12px; color: #2E7D32; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+              ✓ แสดงผลบนแผนที่สาธารณะแล้ว
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: TRAVEL SAFETY & SCAM MODERATION (ความปลอดภัย) -->
+    <!-- ========================================== -->
+    <section class="tab-view" id="view-safety">
+      <div class="page-head">
+        <div>
+          <span class="overline">MODERATION / TRAVEL SAFETY</span>
+          <h1 class="page-title">Safety & Scam Reports<span>.</span></h1>
+          <p class="page-sub">ตรวจสอบรายงานจุดเสี่ยงและเหตุหลอกลวง เพื่อปักหมุดเตือนนักท่องเที่ยวบนแผนที่</p>
+        </div>
+        <div style="font-size: 12px; font-weight: 700; background: var(--amber-light); color: var(--amber); border: 1px solid #F59E0B; padding: 8px 16px; border-radius: 99px;">
+          ⚠️ 3 รายการรอการตรวจสอบ
+        </div>
+      </div>
+
+      <div class="filter-tabs">
+        <button class="filter-pill active">ทั้งหมด (3 รายงาน)</button>
+        <button class="filter-pill">โก่งค่าโดยสาร (Overcharge)</button>
+        <button class="filter-pill">หลอกลวง (Scam)</button>
+        <button class="filter-pill">จุดมืดอันตราย (Safety)</button>
+      </div>
+
+      <div class="mod-grid">
+        
+        <!-- Incident 1 -->
+        <div class="mod-card" id="safetyCard-1">
+          <div class="mod-top">
+            <span class="mod-category" style="background: #FEE2E2; color: #9B2C2C;">🚨 โก่งค่าโดยสาร (TAXI)</span>
+            <span class="status-badge pending" id="safetyBadge-1">Pending</span>
+          </div>
+          <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=600&q=80" class="mod-img" alt="">
+          <h3>แท็กซี่ปฏิเสธกดมิเตอร์ เรียกเหมา 500 บาทไปสยาม</h3>
+          <p>เรียกแท็กซี่หน้าริมถนนมหาราช ไม่ยอมกดมิเตอร์ บอกราคาเหมาเกินจริง 500 บาท พอปฏิเสธแสดงท่าทีไม่พอใจ</p>
+          
+          <div class="mod-meta">
+            📍 <strong>สถานที่:</strong> บริเวณท่ามหาราช / หน้าวัดพระแก้ว (13.7525, 100.4912)<br>
+            👤 <strong>ผู้รายงาน:</strong> Emily Watson (emily.w@traveler.com)<br>
+            📅 <strong>วันที่เกิดเหตุ:</strong> 21 ต.ค. 2569 เวลา 14:30 น.
+          </div>
+
+          <div style="background: #F4F6F2; padding: 10px 14px; border-radius: 10px; font-size: 11px; border-left: 3px solid var(--forest);">
+            <strong>คำแนะนำ Admin (เพื่อแสดงเตือนนักท่องเที่ยว):</strong><br>
+            แนะนำให้เดินไปขึ้นแท็กซี่ที่จุดบริการ Taxi Stand ทางการ หรือใช้แอปเรียกรถ
+          </div>
+
+          <div class="mod-actions" id="safetyActions-1">
+            <button class="btn-sm approve" onclick="decideSafety(1, 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
+            <button class="btn-sm reject" onclick="decideSafety(1, 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
+          </div>
+        </div>
+
+        <!-- Incident 2 -->
+        <div class="mod-card" id="safetyCard-2">
+          <div class="mod-top">
+            <span class="mod-category" style="background: #FEF3C7; color: #92400E;">⚠️ เจ็ตสกีหลอกค่าซ่อม</span>
+            <span class="status-badge pending" id="safetyBadge-2">Pending</span>
+          </div>
+          <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80" class="mod-img" alt="">
+          <h3>อ้างเรือเป็นรอยเก่า เรียกเก็บเงิน 5,000 บาท</h3>
+          <p>เช่าเจ็ตสกีเล่นที่หาด พอขึ้นฝั่งชี้รอยขูดด้านใต้ท้องเรือที่ไม่เคยชน ข่มขู่ให้จ่ายค่าซ่อมทันที</p>
+          
+          <div class="mod-meta">
+            📍 <strong>สถานที่:</strong> หาดพัทยากลาง ชลบุรี (12.9348, 100.8824)<br>
+            👤 <strong>ผู้รายงาน:</strong> Alex Turner (นักท่องเที่ยว UK)<br>
+            📷 <strong>หลักฐาน:</strong> รูปถ่ายจุดที่มีรอยเปรียบเทียบก่อนลงน้ำ
+          </div>
+
+          <div class="mod-actions" id="safetyActions-2">
+            <button class="btn-sm approve" onclick="decideSafety(2, 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
+            <button class="btn-sm reject" onclick="decideSafety(2, 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
+          </div>
+        </div>
+
+        <!-- Incident 3 -->
+        <div class="mod-card" id="safetyCard-3">
+          <div class="mod-top">
+            <span class="mod-category" style="background: var(--blue-light); color: var(--blue);">🌙 ทางเดินมืดอันตราย</span>
+            <span class="status-badge pending" id="safetyBadge-3">Pending</span>
+          </div>
+          <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80" class="mod-img" alt="">
+          <h3>ไฟทางเดินริมคลองดับ ไม่มีกล้องวงจรปิด</h3>
+          <p>ซอยทางเดินแคบเชื่อมระหว่างโฮมสเตย์กับถนนใหญ่ ไฟส่องสว่างดับมาหลายสัปดาห์ ไม่แนะนำให้เดินคนเดียวตอนกลางคืน</p>
+          
+          <div class="mod-meta">
+            📍 <strong>สถานที่:</strong> ชุมชนวัดกัลยาณมิตร ธนบุรี (13.7389, 100.4915)<br>
+            👤 <strong>ผู้รายงาน:</strong> ธนกฤต มั่งมี (Local Guide)
+          </div>
+
+          <div class="mod-actions" id="safetyActions-3">
+            <button class="btn-sm approve" onclick="decideSafety(3, 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
+            <button class="btn-sm reject" onclick="decideSafety(3, 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: SME PERFORMANCE ANALYTICS -->
+    <!-- ========================================== -->
+    <section class="tab-view" id="view-analytics">
+      <div class="page-head">
+        <div>
+          <span class="overline">STATISTICS / LOCAL SME IMPACT</span>
+          <h1 class="page-title">SME Analytics<span>.</span></h1>
+          <p class="page-sub">ข้อมูลการเข้าถึงร้านค้าชุมชน การกดขอเส้นทาง และการบรรจุลงแผนการเดินทาง</p>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon mint">👁</div>
+          <div class="kpi-data">
+            <strong>28,450</strong>
+            <small>ยอดแสดงผลร้านค้า (Impressions)</small>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon blue">📖</div>
+          <div class="kpi-data">
+            <strong>8,120</strong>
+            <small>ยอดคลิกดูรายละเอียดร้าน</small>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon amber">📍</div>
+          <div class="kpi-data">
+            <strong>3,410</strong>
+            <small>ยอดกดขอเส้นทาง (Directions)</small>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon peach">♡</div>
+          <div class="kpi-data">
+            <strong>1,890</strong>
+            <small>บันทึกเข้าทริป (Trip Adds)</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="adm-card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 20px 24px; border-bottom: 1px solid var(--line);">
+          <h2 style="font-size: 16px;">Top Performing Local SME Places</h2>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+          <thead>
+            <tr style="background: #F4F6F2; border-bottom: 1px solid var(--line); color: #56685B;">
+              <th style="padding: 14px 20px;">ชื่อร้านค้า</th>
+              <th style="padding: 14px 20px;">ประเภท</th>
+              <th style="padding: 14px 20px; text-align: right;">ยอดดูร้าน</th>
+              <th style="padding: 14px 20px; text-align: right;">กดนำทาง (Directions)</th>
+              <th style="padding: 14px 20px; text-align: right;">เพิ่มลงทริป</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #EDF0EA;">
+              <td style="padding: 14px 20px;"><strong>ร้านกาแฟคั่วเตาฟืนแม่กำปอง</strong><br><small style="color:#78857B;">เชียงใหม่</small></td>
+              <td style="padding: 14px 20px;"><span style="background:#E8EDE6; padding:3px 8px; border-radius:4px; font-size:11px;">Cafe / Local SME</span></td>
+              <td style="padding: 14px 20px; text-align: right; font-weight: 700;">2,450</td>
+              <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #2B6CB0;">1,120</td>
+              <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #183E2D;">640</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #EDF0EA;">
+              <td style="padding: 14px 20px;"><strong>ครัวริมน้ำ ตลาดน้อยโบราณ</strong><br><small style="color:#78857B;">กรุงเทพมหานคร</small></td>
+              <td style="padding: 14px 20px;"><span style="background:#E8EDE6; padding:3px 8px; border-radius:4px; font-size:11px;">Food / Street Food</span></td>
+              <td style="padding: 14px 20px; text-align: right; font-weight: 700;">1,890</td>
+              <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #2B6CB0;">940</td>
+              <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #183E2D;">410</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toastMessage"></div>
+
+  <script>
+    function showToast(msg) {
+      const toast = document.getElementById('toastMessage');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      
+      const target = document.getElementById('view-' + tabId);
+      if (target) target.classList.add('active');
+      if (btn) btn.classList.add('active');
+
+      const titles = {
+        overview: 'Dashboard Overview',
+        businesses: 'SME Store Verification',
+        safety: 'Travel Safety & Scam Moderation',
+        analytics: 'SME Performance Analytics'
+      };
+      document.getElementById('sectionBreadcrumb').textContent = titles[tabId] || 'Admin';
+    }
+
+    // Business Decision Simulation
+    function decideBiz(id, decision, name) {
+      const badge = document.getElementById(`bizBadge-${id}`);
+      const actions = document.getElementById(`bizActions-${id}`);
+      
+      if (decision === 'approved') {
+        badge.className = 'status-badge approved';
+        badge.textContent = 'Approved';
+        actions.innerHTML = `<span style="font-size:12px; color:#2E7D32; font-weight:700;">✓ อนุมัติร้านเรียบร้อย หมุดพร้อมแสดงบน Map</span>`;
+        showToast(`อนุมัติ "${name}" เรียบร้อยแล้ว`);
+      } else {
+        badge.className = 'status-badge rejected';
+        badge.textContent = 'Rejected';
+        actions.innerHTML = `<span style="font-size:12px; color:#9B2C2C; font-weight:700;">✕ ปฏิเสธคำขอ (ส่งอีเมลแจ้งเหตุผลแล้ว)</span>`;
+        showToast(`ปฏิเสธ "${name}" แล้ว`);
+      }
+
+      // Decrement pending count
+      const countEl = document.getElementById('pendingBizCount');
+      let val = Math.max(0, parseInt(countEl.textContent) - 1);
+      countEl.textContent = val;
+    }
+
+    // Safety Decision Simulation
+    function decideSafety(id, decision, msg) {
+      const badge = document.getElementById(`safetyBadge-${id}`);
+      const actions = document.getElementById(`safetyActions-${id}`);
+      
+      if (decision === 'verified') {
+        badge.className = 'status-badge verified';
+        badge.textContent = 'Verified';
+        actions.innerHTML = `<span style="font-size:12px; color:#183E2D; font-weight:700;">🛡️ ปักหมุดสัญลักษณ์เตือนภัยบนแผนที่เรียบร้อย</span>`;
+        showToast(msg);
+      } else {
+        badge.className = 'status-badge rejected';
+        badge.textContent = 'Rejected';
+        actions.innerHTML = `<span style="font-size:12px; color:#9B2C2C; font-weight:700;">✕ ปฏิเสธรายงาน ไม่แสดงบนแผนที่</span>`;
+        showToast(msg);
+      }
+
+      const countEl = document.getElementById('pendingSafetyCount');
+      let val = Math.max(0, parseInt(countEl.textContent) - 1);
+      countEl.textContent = val;
+    }
+
+    function filterBiz(type, btn) {
+      document.querySelectorAll('#view-businesses .filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const cards = document.querySelectorAll('#bizContainer .mod-card');
+      cards.forEach(card => {
+        if (type === 'all' || card.dataset.bizStatus === type) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>
