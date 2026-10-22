@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unfold · Create Account</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="register-style.css">
+</head>
+
+<body>
+
+    <div class="unfold-canvas">
+
+        <!-- Top Navigation Header -->
+        <header class="header">
+            <a href="login.html" class="brand">
+                <span class="brand-mark">U</span>
+                <span class="wordmark">unfold</span>
+            </a>
+
+            <nav class="navigation">
+                <a href="../../index.html" class="nav-link">Explore</a>
+                <a href="../../index.html#map" class="nav-link">Map</a>
+                <a href="profile.html" class="nav-link">Saved</a>
+                <a href="../planner/planner.html" class="nav-link">My trips</a>
+                <div class="divider"></div>
+                <div class="lang-selector">
+                    <svg class="icon-globe" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#172B23"
+                        stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path
+                            d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                        </path>
+                    </svg>
+                    <span class="lang-text">EN</span>
+                    <svg class="icon-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#172B23"
+                        stroke-width="1.5">
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Main Create Account Workspace -->
+        <main class="workspace">
+
+            <!-- Left Editorial Travel Photo Card -->
+            <section class="inspiration-card">
+                <div class="coastal-escape-bg"></div>
+                <div class="photo-scrim"></div>
+                <div class="photo-caption">
+                    <h2 class="travel-sentiment">Good places.<br>Even better memories.</h2>
+                    <div class="destination-bar">
+                        <div class="location-tag">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF"
+                                stroke-width="1.5">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                            <span>The Italian Riviera, Italy</span>
+                        </div>
+                        <span class="editorial-label">A World to Unfold</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Registration Form Panel -->
+            <section class="auth-panel">
+                <div class="sign-in-box">
+
+                    <div class="welcome-header">
+                        <h1 class="auth-title">Create account<span>.</span></h1>
+                        <p class="auth-desc">Join Unfold to explore local gems and plan trips.</p>
+                    </div>
+
+                    <form class="credentials-form" id="registerForm" onsubmit="event.preventDefault(); window.location.href='profile.html';">
+
+                        <!-- First Name Field -->
+                        <div class="form-field">
+                            <label class="field-label" for="firstName">First name</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="firstName" class="input-control" placeholder="Jane" required>
+                            </div>
+                        </div>
+
+                        <!-- Last Name Field -->
+                        <div class="form-field">
+                            <label class="field-label" for="lastName">Last name</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="lastName" class="input-control" placeholder="Doe" required>
+                            </div>
+                        </div>
+
+                        <!-- Email Field -->
+                        <div class="form-field">
+                            <label class="field-label" for="email">Email address</label>
+                            <div class="input-wrapper">
+                                <input type="email" id="email" class="input-control" placeholder="you@example.com"
+                                    required>
+                            </div>
+                        </div>
+
+                        <!-- Password Field -->
+                        <div class="form-field">
+                            <label class="field-label" for="password">Create password</label>
+                            <div class="input-wrapper">
+                                <input type="password" id="password" class="input-control"
+                                    placeholder="At least 8 characters" required>
+                                <svg class="eye-icon" id="togglePassword" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="#5D6B63" stroke-width="1.5">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn-submit">
+                            <span class="btn-label">Create account</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#172B23"
+                                stroke-width="1.8">
+                                <path d="M5 12h14M12 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </form>
+
+                    <!-- Navigation to Sign In -->
+                    <p class="route-link">
+                        Already have an account? <a href="login.html">Sign in</a>
+                    </p>
+
+                    <div class="alternative-separator">
+                        <div class="rule-line"></div>
+                        <span class="alternative-label">or</span>
+                        <div class="rule-line"></div>
+                    </div>
+
+                    <!-- Guest Access -->
+                    <button class="btn-guest" onclick="window.location.href='profile.html'">
+                        <span>Continue as guest</span>
+                    </button>
+
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <span class="copyright">© 2026 unfold</span>
+            <div class="legal-links">
+                <a href="#" class="legal-link">Privacy</a>
+                <a href="#" class="legal-link">Terms</a>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        // Toggle Password Visibility
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+
+        togglePassword.addEventListener('click', function () {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+        });
+    </script>
+</body>
+
+</html>

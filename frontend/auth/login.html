@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unfold · Welcome</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: #F8FAF8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #172B23;
+    }
+
+    /* Base Canvas matching exact Figma 1440x960 specification */
+    .unfold-canvas {
+      position: relative;
+      width: 1440px;
+      height: 960px;
+      background: #FFFFFF;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(23, 43, 35, 0.08);
+    }
+
+    .header {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0px 48px;
+      position: absolute;
+      width: 1440px;
+      height: 88px;
+      left: 0px;
+      top: 0px;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .brand-mark {
+      font-size: 28px;
+      font-weight: 800;
+      color: #172B23;
+      line-height: 1;
+    }
+
+    .wordmark {
+      font-weight: 700;
+      font-size: 26px;
+      line-height: 33px;
+      color: #172B23;
+      letter-spacing: -0.02em;
+    }
+
+    .navigation {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 32px;
+      height: 20px;
+    }
+
+    .nav-link {
+      font-weight: 500;
+      font-size: 14px;
+      line-height: 17px;
+      color: #172B23;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+
+    .nav-link:hover {
+      opacity: 0.7;
+    }
+
+    .lang-selector {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      color: #172B23;
+      margin-left: 8px;
+    }
+
+    .workspace {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      padding: 0px 48px;
+      gap: 64px;
+      position: absolute;
+      width: 1440px;
+      height: 800px;
+      left: 0px;
+      top: 88px;
+    }
+
+    /* Left Side: Travel Card (Match Figma Image) */
+    .inspiration-card {
+      position: relative;
+      width: 636px;
+      height: 760px;
+      border-radius: 24px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .coastal-escape-bg {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      left: 0;
+      top: 0;
+      background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80');
+      background-size: cover;
+      background-position: center;
+      z-index: 0;
+    }
+
+    .photo-scrim {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      left: 0;
+      top: 0;
+      background: linear-gradient(180deg, rgba(16, 36, 28, 0) 40%, rgba(16, 36, 28, 0.85) 100%);
+      z-index: 1;
+    }
+
+    .photo-caption {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: absolute;
+      width: 564px;
+      left: 36px;
+      bottom: 36px;
+      z-index: 2;
+    }
+
+    .travel-sentiment {
+      font-weight: 700;
+      font-size: 42px;
+      line-height: 1.1;
+      color: #FFFFFF;
+      letter-spacing: -0.02em;
+    }
+
+    .destination-bar {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+
+    .location-tag {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 6px;
+      color: #FFFFFF;
+      font-weight: 500;
+      font-size: 13px;
+    }
+
+    .editorial-label {
+      font-weight: 600;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* Right Side: Sign In Form (Match Figma Exactly) */
+    .auth-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 644px;
+      height: 100%;
+    }
+
+    .sign-in-box {
+      display: flex;
+      flex-direction: column;
+      width: 420px;
+    }
+
+    .auth-title {
+      font-weight: 800;
+      font-size: 52px;
+      line-height: 1.05;
+      color: #172B23;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+
+    .auth-title span {
+      color: #ACF432; /* Accent dot */
+    }
+
+    .auth-desc {
+      font-weight: 400;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #5D6B63;
+      margin-bottom: 32px;
+    }
+
+    /* Form Fields */
+    .credentials-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .field-label {
+      font-weight: 600;
+      font-size: 13px;
+      color: #172B23;
+    }
+
+    .input-wrapper {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      padding: 0px 16px;
+      width: 100%;
+      height: 52px;
+      background: #FFFFFF;
+      border: 1px solid #DCE2DC;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .input-wrapper:focus-within {
+      border-color: #172B23;
+      box-shadow: 0 0 0 3px rgba(172, 244, 50, 0.35);
+    }
+
+    .input-control {
+      width: 100%;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      color: #172B23;
+      background: transparent;
+    }
+
+    .input-control::placeholder {
+      color: #9BA49E;
+    }
+
+    .eye-icon {
+      cursor: pointer;
+      stroke: #788079;
+    }
+
+    .account-recovery {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: -8px;
+      margin-bottom: 8px;
+    }
+
+    .forgot-link {
+      font-weight: 600;
+      font-size: 12px;
+      color: #172B23;
+      text-decoration: none;
+    }
+
+    .forgot-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Sign In Primary Button */
+    .btn-submit {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      height: 52px;
+      background: #A3EE28; /* Figma bright lime */
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 15px;
+      color: #172B23;
+      cursor: pointer;
+      transition: transform 0.1s, background-color 0.2s;
+    }
+
+    .btn-submit:hover {
+      background: #95DE20;
+    }
+
+    .btn-submit:active {
+      transform: scale(0.99);
+    }
+
+    /* Signup Route */
+    .route-link {
+      font-weight: 400;
+      font-size: 14px;
+      text-align: center;
+      color: #5D6B63;
+      margin-top: 16px;
+      margin-bottom: 24px;
+    }
+
+    .route-link a {
+      color: #172B23;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+
+    /* Separator Divider */
+    .alternative-separator {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 16px;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+
+    .rule-line {
+      flex: 1;
+      height: 1px;
+      background: #EAEFEA;
+    }
+
+    .alternative-label {
+      font-weight: 400;
+      font-size: 12px;
+      color: #788079;
+    }
+
+    .social-grid {
+      display: flex;
+      flex-direction: row;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .btn-social {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      height: 50px;
+      border: 1px solid #DCE2DC;
+      border-radius: 12px;
+      background: #FFFFFF;
+      font-weight: 600;
+      font-size: 14px;
+      color: #172B23;
+      cursor: pointer;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    .btn-social:hover {
+      background: #F8FAF8;
+      border-color: #BCC5BC;
+    }
+
+    .btn-social svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .footer {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0px 48px;
+      position: absolute;
+      width: 1440px;
+      height: 72px;
+      left: 0px;
+      top: 888px;
+    }
+
+    .copyright {
+      font-weight: 400;
+      font-size: 12px;
+      color: #788079;
+    }
+
+    .legal-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .legal-link {
+      font-weight: 400;
+      font-size: 12px;
+      color: #788079;
+      text-decoration: none;
+    }
+
+    .legal-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Onboarding Modal Overlay */
+    .modal-overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(23, 43, 35, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-card {
+      background: #FFFFFF;
+      width: 480px;
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+
+    .chip-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 20px 0 24px;
+    }
+
+    .chip {
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: #F4F6F4;
+      border: 1px solid #DCE2DC;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .chip.selected {
+      background: #ACF432;
+      border-color: #172B23;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Canvas Window -->
+  <div class="unfold-canvas">
+    
+    <!-- Top Header Navigation -->
+    <header class="header">
+      <a href="login.html" class="brand">
+        <span class="brand-mark">U</span>
+        <span class="wordmark">unfold</span>
+      </a>
+
+      <nav class="navigation">
+        <a href="../../index.html" class="nav-link">Explore</a>
+        <a href="../../index.html#map" class="nav-link">Map</a>
+        <a href="profile.html" class="nav-link">Saved</a>
+        <a href="../planner/planner.html" class="nav-link">My trips</a>
+        <div class="lang-selector" id="langToggle">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#172B23" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          <span>EN</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#172B23" stroke-width="2">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Sign In Workspace Area -->
+    <main class="workspace">
+      
+      <!-- Left Editorial Travel Photo Card -->
+      <section class="inspiration-card">
+        <div class="coastal-escape-bg"></div>
+        <div class="photo-scrim"></div>
+        <div class="photo-caption">
+          <h2 class="travel-sentiment">Good places.<br>Even better memories.</h2>
+          <div class="destination-bar">
+            <div class="location-tag">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              <span>The Italian Riviera, Italy</span>
+            </div>
+            <span class="editorial-label">A World to Unfold</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Authentication Panel -->
+      <section class="auth-panel">
+        <div class="sign-in-box">
+          
+          <h1 class="auth-title">Welcome<span>.</span></h1>
+          <p class="auth-desc">Sign in to save your places and sync your trips.</p>
+
+          <form class="credentials-form" onsubmit="event.preventDefault(); window.location.href='profile.html';">
+            
+            <div class="form-field">
+              <label class="field-label" for="email">Email address</label>
+              <div class="input-wrapper">
+                <input type="email" id="email" class="input-control" placeholder="you@example.com" required>
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label" for="password">Password</label>
+              <div class="input-wrapper">
+                <input type="password" id="password" class="input-control" placeholder="Enter your password" required>
+                <svg class="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </div>
+            </div>
+
+            <div class="account-recovery">
+              <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn-submit">
+              <span>Sign in</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#172B23" stroke-width="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </form>
+
+          <p class="route-link">
+            New to unfold? <a href="register.html">Create an account</a>
+          </p>
+
+          <div class="alternative-separator">
+            <div class="rule-line"></div>
+            <span class="alternative-label">or explore with</span>
+            <div class="rule-line"></div>
+          </div>
+
+          <!-- Social Buttons Grid (Facebook & Google) -->
+          <div class="social-grid">
+            <button class="btn-social" onclick="showOnboarding()">
+              <svg viewBox="0 0 24 24" fill="#1877F2">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+              </svg>
+              <span>Facebook</span>
+            </button>
+
+            <button class="btn-social" onclick="showOnboarding()">
+              <svg viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Google</span>
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span class="copyright">© 2026 unfold</span>
+      <div class="legal-links">
+        <a href="#" class="legal-link">Privacy policy</a>
+        <a href="#" class="legal-link">Terms of use</a>
+      </div>
+    </footer>
+
+    <!-- Interactive Onboarding Modal Component -->
+    <div class="modal-overlay" id="onboardingModal">
+      <div class="modal-card">
+        <h3 style="font-size: 22px; font-weight: 800; color: #172B23;">Welcome to unfold</h3>
+        <p style="font-size: 14px; color: #5D6B63; margin-top: 6px;">Select your travel interests to personalize your AI suggestions.</p>
+        
+        <div class="chip-group">
+          <div class="chip selected" onclick="this.classList.toggle('selected')">🌿 Nature & National Parks</div>
+          <div class="chip selected" onclick="this.classList.toggle('selected')">☕ Artisanal Cafes</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">🍲 Local Street Food</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">🏛️ Cultural Landmarks</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">🛍️ Community Markets</div>
+        </div>
+
+        <button class="btn-submit" onclick="window.location.href='profile.html'">
+          <span>Complete Sign Up</span>
+        </button>
+      </div>
+    </div>
+          <span>Complete Sign Up</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function showOnboarding() {
+      document.getElementById('onboardingModal').style.display = 'flex';
+    }
+
+    // Toggle password visibility
+    document.querySelector('.eye-icon').addEventListener('click', function() {
+      const pwdInput = document.getElementById('password');
+      if (pwdInput.type === 'password') {
+        pwdInput.type = 'text';
+      } else {
+        pwdInput.type = 'password';
+      }
+    });
+  </script>
+
+</body>
+</html>
