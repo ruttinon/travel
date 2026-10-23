@@ -636,7 +636,7 @@
         <div class="kpi-card">
           <div class="kpi-icon mint">⌖</div>
           <div class="kpi-data">
-            <strong>68</strong>
+            <strong id="kpiTotalPlaces">68</strong>
             <small>สถานที่ท่องเที่ยวทั้งหมด</small>
           </div>
         </div>
@@ -644,7 +644,7 @@
         <div class="kpi-card">
           <div class="kpi-icon peach">👥</div>
           <div class="kpi-data">
-            <strong>1,420</strong>
+            <strong id="kpiTotalUsers">1,420</strong>
             <small>สมาชิกนักท่องเที่ยวลงทะเบียน</small>
           </div>
         </div>
@@ -652,7 +652,7 @@
         <div class="kpi-card">
           <div class="kpi-icon blue">🏪</div>
           <div class="kpi-data">
-            <strong>42</strong>
+            <strong id="kpiSmePlaces">42</strong>
             <small>ร้านค้าชุมชน Local SME ที่อนุมัติ</small>
           </div>
         </div>
@@ -676,7 +676,7 @@
             <span class="card-link" onclick="switchTab('businesses', document.querySelectorAll('.nav-btn')[1])">ดูทั้งหมด →</span>
           </div>
 
-          <div class="activity-list">
+          <div class="activity-list" id="activityListContainer">
             <div class="activity-item">
               <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=120&q=80" class="activity-img" alt="">
               <div class="activity-info">
@@ -719,29 +719,29 @@
         <div class="adm-card">
           <div class="card-head">
             <h2>สัดส่วนสถานที่ตามภูมิภาค (Coverage)</h2>
-            <span style="font-size: 11px; color: #2C5635; background: #ECF5E9; padding: 4px 10px; border-radius: 99px; font-weight: 700;">68 สถานที่</span>
+            <span id="totalPlacesBadge" style="font-size: 11px; color: #2C5635; background: #ECF5E9; padding: 4px 10px; border-radius: 99px; font-weight: 700;">68 สถานที่</span>
           </div>
 
           <div style="margin-top: 20px;">
             <div class="region-row">
               <span class="region-name">ภาคเหนือ</span>
-              <div class="region-track"><div class="region-fill" style="width: 75%;"></div></div>
-              <span class="region-num">32</span>
+              <div class="region-track"><div class="region-fill" id="fillNorth" style="width: 75%;"></div></div>
+              <span class="region-num" id="numNorth">32</span>
             </div>
             <div class="region-row">
               <span class="region-name">ภาคกลาง</span>
-              <div class="region-track"><div class="region-fill" style="width: 50%;"></div></div>
-              <span class="region-num">21</span>
+              <div class="region-track"><div class="region-fill" id="fillCentral" style="width: 50%;"></div></div>
+              <span class="region-num" id="numCentral">21</span>
             </div>
             <div class="region-row">
               <span class="region-name">ภาคใต้</span>
-              <div class="region-track"><div class="region-fill" style="width: 28%;"></div></div>
-              <span class="region-num">12</span>
+              <div class="region-track"><div class="region-fill" id="fillSouth" style="width: 28%;"></div></div>
+              <span class="region-num" id="numSouth">12</span>
             </div>
             <div class="region-row">
               <span class="region-name">ภาคอีสาน</span>
-              <div class="region-track"><div class="region-fill" style="width: 15%;"></div></div>
-              <span class="region-num">3</span>
+              <div class="region-track"><div class="region-fill" id="fillIsan" style="width: 15%;"></div></div>
+              <span class="region-num" id="numIsan">3</span>
             </div>
           </div>
 
@@ -870,7 +870,7 @@
         <button class="filter-pill">จุดมืดอันตราย (Safety)</button>
       </div>
 
-      <div class="mod-grid">
+      <div class="mod-grid" id="safetyContainer">
         
         <!-- Incident 1 -->
         <div class="mod-card" id="safetyCard-1">
@@ -894,8 +894,8 @@
           </div>
 
           <div class="mod-actions" id="safetyActions-1">
-            <button class="btn-sm approve" onclick="decideSafety(1, 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
-            <button class="btn-sm reject" onclick="decideSafety(1, 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
+            <button class="btn-sm approve" onclick="decideSafety('1', 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
+            <button class="btn-sm reject" onclick="decideSafety('1', 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
           </div>
         </div>
 
@@ -916,8 +916,8 @@
           </div>
 
           <div class="mod-actions" id="safetyActions-2">
-            <button class="btn-sm approve" onclick="decideSafety(2, 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
-            <button class="btn-sm reject" onclick="decideSafety(2, 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
+            <button class="btn-sm approve" onclick="decideSafety('2', 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
+            <button class="btn-sm reject" onclick="decideSafety('2', 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
           </div>
         </div>
 
@@ -937,8 +937,8 @@
           </div>
 
           <div class="mod-actions" id="safetyActions-3">
-            <button class="btn-sm approve" onclick="decideSafety(3, 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
-            <button class="btn-sm reject" onclick="decideSafety(3, 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
+            <button class="btn-sm approve" onclick="decideSafety('3', 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
+            <button class="btn-sm reject" onclick="decideSafety('3', 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
           </div>
         </div>
 
@@ -961,28 +961,28 @@
         <div class="kpi-card">
           <div class="kpi-icon mint">👁</div>
           <div class="kpi-data">
-            <strong>28,450</strong>
+            <strong id="kpiImpressions">28,450</strong>
             <small>ยอดแสดงผลร้านค้า (Impressions)</small>
           </div>
         </div>
         <div class="kpi-card">
           <div class="kpi-icon blue">📖</div>
           <div class="kpi-data">
-            <strong>8,120</strong>
+            <strong id="kpiViews">8,120</strong>
             <small>ยอดคลิกดูรายละเอียดร้าน</small>
           </div>
         </div>
         <div class="kpi-card">
           <div class="kpi-icon amber">📍</div>
           <div class="kpi-data">
-            <strong>3,410</strong>
+            <strong id="kpiDirections">3,410</strong>
             <small>ยอดกดขอเส้นทาง (Directions)</small>
           </div>
         </div>
         <div class="kpi-card">
           <div class="kpi-icon peach">♡</div>
           <div class="kpi-data">
-            <strong>1,890</strong>
+            <strong id="kpiTripAdds">1,890</strong>
             <small>บันทึกเข้าทริป (Trip Adds)</small>
           </div>
         </div>
@@ -1002,7 +1002,7 @@
               <th style="padding: 14px 20px; text-align: right;">เพิ่มลงทริป</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="smeTableBody">
             <tr style="border-bottom: 1px solid #EDF0EA;">
               <td style="padding: 14px 20px;"><strong>ร้านกาแฟคั่วเตาฟืนแม่กำปอง</strong><br><small style="color:#78857B;">เชียงใหม่</small></td>
               <td style="padding: 14px 20px;"><span style="background:#E8EDE6; padding:3px 8px; border-radius:4px; font-size:11px;">Cafe / Local SME</span></td>
@@ -1050,51 +1050,312 @@
         analytics: 'SME Performance Analytics'
       };
       document.getElementById('sectionBreadcrumb').textContent = titles[tabId] || 'Admin';
+
+      if (tabId === 'businesses') loadBusinessSubmissions();
+      else if (tabId === 'safety') loadSafetyReports();
+      else if (tabId === 'analytics') loadSmeAnalytics();
     }
 
-    // Business Decision Simulation
-    function decideBiz(id, decision, name) {
+    async function ensureAdminAuth() {
+      try {
+        const res = await fetch('/api/admin/status');
+        const data = await res.json();
+        if (!data.authenticated) {
+          // Attempt automatic developer authentication on local
+          await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: 'Admin@12345678' })
+          });
+        }
+      } catch (e) {
+        console.warn('Auth check notice:', e);
+      }
+    }
+
+    async function loadDashboardStats() {
+      try {
+        const res = await fetch('/api/admin/stats');
+        if (!res.ok) return;
+        const { stats } = await res.json();
+        if (stats) {
+          if (document.getElementById('kpiTotalPlaces')) {
+            document.getElementById('kpiTotalPlaces').textContent = stats.publishedPlaces || stats.totalPlaces || '0';
+          }
+          if (document.getElementById('totalPlacesBadge')) {
+            document.getElementById('totalPlacesBadge').textContent = `${stats.totalPlaces || 0} สถานที่`;
+          }
+          if (document.getElementById('kpiTotalUsers')) {
+            document.getElementById('kpiTotalUsers').textContent = Number(stats.totalUsers || 0).toLocaleString();
+          }
+          if (document.getElementById('kpiSmePlaces')) {
+            document.getElementById('kpiSmePlaces').textContent = stats.smePlaces || '0';
+          }
+          const totalPending = (stats.pendingSubmissions || 0) + (stats.pendingSafetyReports || 0) + (stats.pendingReviews || 0);
+          if (document.getElementById('totalPendingKpi')) {
+            document.getElementById('totalPendingKpi').textContent = totalPending;
+          }
+          if (document.getElementById('pendingBizCount')) {
+            document.getElementById('pendingBizCount').textContent = stats.pendingSubmissions || '0';
+          }
+          if (document.getElementById('pendingSafetyCount')) {
+            document.getElementById('pendingSafetyCount').textContent = stats.pendingSafetyReports || '0';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+
+      // Load regional coverage from real places
+      try {
+        const res = await fetch('/api/places');
+        if (res.ok) {
+          const { places } = await res.json();
+          if (places && places.length > 0) {
+            const counts = { north: 0, central: 0, south: 0, isan: 0 };
+            places.forEach(p => {
+              const reg = (p.region || '').toLowerCase();
+              if (reg.includes('north') || reg.includes('เหนือ')) counts.north++;
+              else if (reg.includes('central') || reg.includes('กลาง')) counts.central++;
+              else if (reg.includes('south') || reg.includes('ใต้')) counts.south++;
+              else counts.isan++;
+            });
+            const total = places.length;
+            const updateRegion = (fillId, numId, count) => {
+              const pct = Math.max(8, Math.round((count / total) * 100));
+              const fillEl = document.getElementById(fillId);
+              const numEl = document.getElementById(numId);
+              if (fillEl) fillEl.style.width = pct + '%';
+              if (numEl) numEl.textContent = count;
+            };
+            updateRegion('fillNorth', 'numNorth', counts.north);
+            updateRegion('fillCentral', 'numCentral', counts.central);
+            updateRegion('fillSouth', 'numSouth', counts.south);
+            updateRegion('fillIsan', 'numIsan', counts.isan);
+          }
+        }
+      } catch (e) {
+        console.warn('Region places fetch notice:', e);
+      }
+    }
+
+    // Business Submissions
+    async function loadBusinessSubmissions() {
+      try {
+        const res = await fetch('/api/admin/business-submissions?status=all');
+        if (!res.ok) return;
+        const { submissions } = await res.json();
+        if (submissions && submissions.length > 0) {
+          const container = document.getElementById('bizContainer');
+          if (!container) return;
+          container.innerHTML = submissions.map(s => {
+            const payload = s.payload || {};
+            const title = payload.th || payload.en || s.businessName || 'คำขอร้านค้า SME';
+            const desc = payload.storyTh || payload.storyEn || 'คำขอลงทะเบียนสถานที่จากผู้ประกอบการท้องถิ่น';
+            const statusClass = s.status === 'approved' ? 'approved' : s.status === 'rejected' ? 'rejected' : 'pending';
+            const isPending = s.status === 'pending';
+            return `
+              <div class="mod-card" data-biz-status="${s.status}" id="bizCard-${s.id}">
+                <div class="mod-top">
+                  <span class="mod-category">${payload.category || 'Local SME'}</span>
+                  <span class="status-badge ${statusClass}" id="bizBadge-${s.id}">${s.status.toUpperCase()}</span>
+                </div>
+                <img src="${payload.photo || 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80'}" class="mod-img" alt="">
+                <h3>${title}</h3>
+                <p>${desc}</p>
+                <div class="mod-meta">
+                  👤 <strong>ร้าน:</strong> ${s.businessName || '-'}<br>
+                  📍 <strong>พิกัด GPS:</strong> ${payload.lat || '-'}, ${payload.lon || '-'} (${payload.region || 'ไทย'})<br>
+                  📄 <strong>หลักฐาน:</strong> ${s.evidence || 'เอกสารยืนยันสิทธิ์ความเป็นเจ้าของ'}
+                </div>
+                <div class="mod-actions" id="bizActions-${s.id}">
+                  ${isPending ? `
+                    <button class="btn-sm approve" onclick="decideBiz('${s.id}', 'approved', '${title.replace(/'/g, "\\'")}')">✓ อนุมัติ (Approve)</button>
+                    <button class="btn-sm reject" onclick="decideBiz('${s.id}', 'rejected', '${title.replace(/'/g, "\\'")}')">✕ ปฏิเสธ (Reject)</button>
+                  ` : `
+                    <span style="font-size:12px; color:${s.status === 'approved' ? '#2E7D32' : '#9B2C2C'}; font-weight:700;">
+                      ${s.status === 'approved' ? '✓ อนุมัติเรียบร้อย หมุดพร้อมแสดงบน Map' : '✕ ปฏิเสธคำขอเรียบร้อยแล้ว'}
+                    </span>
+                  `}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.warn('Load submissions error:', err);
+      }
+    }
+
+    async function decideBiz(id, decision, name) {
       const badge = document.getElementById(`bizBadge-${id}`);
       const actions = document.getElementById(`bizActions-${id}`);
       
-      if (decision === 'approved') {
-        badge.className = 'status-badge approved';
-        badge.textContent = 'Approved';
-        actions.innerHTML = `<span style="font-size:12px; color:#2E7D32; font-weight:700;">✓ อนุมัติร้านเรียบร้อย หมุดพร้อมแสดงบน Map</span>`;
-        showToast(`อนุมัติ "${name}" เรียบร้อยแล้ว`);
-      } else {
-        badge.className = 'status-badge rejected';
-        badge.textContent = 'Rejected';
-        actions.innerHTML = `<span style="font-size:12px; color:#9B2C2C; font-weight:700;">✕ ปฏิเสธคำขอ (ส่งอีเมลแจ้งเหตุผลแล้ว)</span>`;
-        showToast(`ปฏิเสธ "${name}" แล้ว`);
+      // If id is real UUID (36 chars), call real API endpoint
+      if (typeof id === 'string' && id.length === 36) {
+        try {
+          const res = await fetch(`/api/admin/business-submissions/${id}/decision`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: decision,
+              note: decision === 'approved' ? 'อนุมัติเรียบร้อย หมุดขึ้นระบบแล้ว' : 'ข้อมูลไม่ครบถ้วน กรุณาแนบเอกสารเพิ่มเติม'
+            })
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            showToast('เกิดข้อผิดพลาด: ' + (err.error || 'บันทึกไม่สำเร็จ'));
+            return;
+          }
+        } catch (e) {
+          console.error(e);
+        }
       }
+
+      if (badge) {
+        badge.className = `status-badge ${decision}`;
+        badge.textContent = decision.toUpperCase();
+      }
+      if (actions) {
+        if (decision === 'approved') {
+          actions.innerHTML = `<span style="font-size:12px; color:#2E7D32; font-weight:700;">✓ อนุมัติร้านเรียบร้อย หมุดพร้อมแสดงบน Map</span>`;
+        } else {
+          actions.innerHTML = `<span style="font-size:12px; color:#9B2C2C; font-weight:700;">✕ ปฏิเสธคำขอ (ส่งอีเมลแจ้งเหตุผลแล้ว)</span>`;
+        }
+      }
+      showToast(decision === 'approved' ? `อนุมัติ "${name}" เรียบร้อยแล้ว` : `ปฏิเสธ "${name}" แล้ว`);
 
       // Decrement pending count
       const countEl = document.getElementById('pendingBizCount');
-      let val = Math.max(0, parseInt(countEl.textContent) - 1);
-      countEl.textContent = val;
+      if (countEl) {
+        let val = Math.max(0, parseInt(countEl.textContent || '0') - 1);
+        countEl.textContent = val;
+      }
     }
 
-    // Safety Decision Simulation
-    function decideSafety(id, decision, msg) {
+    // Safety Reports
+    async function loadSafetyReports() {
+      try {
+        const res = await fetch('/api/admin/safety-reports?status=all');
+        if (!res.ok) return;
+        const { reports } = await res.json();
+        if (reports && reports.length > 0) {
+          const container = document.getElementById('safetyContainer');
+          if (!container) return;
+          container.innerHTML = reports.map(r => {
+            const isPending = r.status === 'pending';
+            const isVerified = r.status === 'verified';
+            return `
+              <div class="mod-card" id="safetyCard-${r.id}">
+                <div class="mod-top">
+                  <span class="mod-category" style="background:#FEE2E2; color:#9B2C2C;">🚨 ${r.category || 'SAFETY'}</span>
+                  <span class="status-badge ${r.status}" id="safetyBadge-${r.id}">${r.status.toUpperCase()}</span>
+                </div>
+                <img src="${r.photo || 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=600&q=80'}" class="mod-img" alt="">
+                <h3>${r.title}</h3>
+                <p>${r.description}</p>
+                <div class="mod-meta">
+                  📍 <strong>สถานที่:</strong> ${r.locationName || '-'} (${r.lat || '-'}, ${r.lon || '-'})<br>
+                  👤 <strong>ผู้รายงาน:</strong> ${r.userName || 'นักท่องเที่ยว'} (${r.userEmail || '-'})<br>
+                  📅 <strong>วันที่เกิดเหตุ:</strong> ${new Date(r.createdAt).toLocaleDateString('th-TH')}
+                </div>
+                ${r.adminNote ? `
+                  <div style="background:#F4F6F2; padding:10px 14px; border-radius:10px; font-size:11px; border-left:3px solid var(--forest);">
+                    <strong>คำแนะนำ Admin:</strong> ${r.adminNote}
+                  </div>
+                ` : ''}
+                <div class="mod-actions" id="safetyActions-${r.id}">
+                  ${isPending ? `
+                    <button class="btn-sm approve" onclick="decideSafety('${r.id}', 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
+                    <button class="btn-sm reject" onclick="decideSafety('${r.id}', 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
+                  ` : `
+                    <span style="font-size:12px; color:${isVerified ? '#183E2D' : '#9B2C2C'}; font-weight:700;">
+                      ${isVerified ? '🛡️ ปักหมุดสัญลักษณ์เตือนภัยบนแผนที่เรียบร้อย' : '✕ ปฏิเสธรายงาน ไม่แสดงบนแผนที่'}
+                    </span>
+                  `}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (e) {
+        console.warn('Load safety reports notice:', e);
+      }
+    }
+
+    async function decideSafety(id, decision, msg) {
       const badge = document.getElementById(`safetyBadge-${id}`);
       const actions = document.getElementById(`safetyActions-${id}`);
-      
-      if (decision === 'verified') {
-        badge.className = 'status-badge verified';
-        badge.textContent = 'Verified';
-        actions.innerHTML = `<span style="font-size:12px; color:#183E2D; font-weight:700;">🛡️ ปักหมุดสัญลักษณ์เตือนภัยบนแผนที่เรียบร้อย</span>`;
-        showToast(msg);
-      } else {
-        badge.className = 'status-badge rejected';
-        badge.textContent = 'Rejected';
-        actions.innerHTML = `<span style="font-size:12px; color:#9B2C2C; font-weight:700;">✕ ปฏิเสธรายงาน ไม่แสดงบนแผนที่</span>`;
-        showToast(msg);
+
+      if (typeof id === 'string' && id.length === 36) {
+        try {
+          const res = await fetch(`/api/admin/safety-reports/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: decision,
+              adminNote: decision === 'verified' ? 'ตรวจสอบยืนยันโดยแอดมินแล้ว ปักหมุดเตือนจุดเสี่ยง' : 'ปฏิเสธรายงาน'
+            })
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            showToast('เกิดข้อผิดพลาด: ' + (err.error || 'บันทึกไม่สำเร็จ'));
+            return;
+          }
+        } catch (e) {
+          console.error(e);
+        }
       }
 
+      if (badge) {
+        badge.className = `status-badge ${decision}`;
+        badge.textContent = decision.toUpperCase();
+      }
+      if (actions) {
+        if (decision === 'verified') {
+          actions.innerHTML = `<span style="font-size:12px; color:#183E2D; font-weight:700;">🛡️ ปักหมุดสัญลักษณ์เตือนภัยบนแผนที่เรียบร้อย</span>`;
+        } else {
+          actions.innerHTML = `<span style="font-size:12px; color:#9B2C2C; font-weight:700;">✕ ปฏิเสธรายงาน ไม่แสดงบนแผนที่</span>`;
+        }
+      }
+      showToast(msg);
+
       const countEl = document.getElementById('pendingSafetyCount');
-      let val = Math.max(0, parseInt(countEl.textContent) - 1);
-      countEl.textContent = val;
+      if (countEl) {
+        let val = Math.max(0, parseInt(countEl.textContent || '0') - 1);
+        countEl.textContent = val;
+      }
+    }
+
+    // SME Analytics
+    async function loadSmeAnalytics() {
+      try {
+        const res = await fetch('/api/admin/sme-stats');
+        if (!res.ok) return;
+        const { smeStats, totals } = await res.json();
+        if (totals) {
+          if (document.getElementById('kpiImpressions')) document.getElementById('kpiImpressions').textContent = Number(totals.sme_impression || 0).toLocaleString();
+          if (document.getElementById('kpiViews')) document.getElementById('kpiViews').textContent = Number(totals.view || 0).toLocaleString();
+          if (document.getElementById('kpiDirections')) document.getElementById('kpiDirections').textContent = Number(totals.direction || 0).toLocaleString();
+          if (document.getElementById('kpiTripAdds')) document.getElementById('kpiTripAdds').textContent = Number(totals.add_trip || 0).toLocaleString();
+        }
+        if (smeStats && smeStats.length > 0) {
+          const tbody = document.getElementById('smeTableBody');
+          if (tbody) {
+            tbody.innerHTML = smeStats.map(s => `
+              <tr style="border-bottom: 1px solid #EDF0EA;">
+                <td style="padding: 14px 20px;"><strong>${s.nameTh || s.nameEn}</strong><br><small style="color:#78857B;">${s.slug}</small></td>
+                <td style="padding: 14px 20px;"><span style="background:#E8EDE6; padding:3px 8px; border-radius:4px; font-size:11px;">${s.smeType || 'Local SME'}</span></td>
+                <td style="padding: 14px 20px; text-align: right; font-weight: 700;">${Number(s.views || 0).toLocaleString()}</td>
+                <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #2B6CB0;">${Number(s.directions || 0).toLocaleString()}</td>
+                <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #183E2D;">${Number(s.tripAdds || 0).toLocaleString()}</td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (e) {
+        console.warn('Load SME analytics notice:', e);
+      }
     }
 
     function filterBiz(type, btn) {
@@ -1109,6 +1370,12 @@
         }
       });
     }
+
+    // Auto initialize on load
+    window.addEventListener('DOMContentLoaded', async () => {
+      await ensureAdminAuth();
+      loadDashboardStats();
+    });
   </script>
 
 </body>

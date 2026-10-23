@@ -242,6 +242,15 @@ async function signOut(){
  catch(e){toast(e.message)}
 }
 
+async function signOutAll(){
+ try{
+  await userApi('/api/auth/logout-all','POST');
+  state.account=null;state.saved=[...guestSaved];state.trip=[...guestTrip];state.myReviews=[];state.reviewPhoto='';store();
+  toast(state.lang==='th'?'ออกจากระบบจากทุกอุปกรณ์แล้ว':'Signed out from all devices');
+  render({keepScroll:true});
+ }catch(e){toast(e.message)}
+}
+
 let toastTimer;
 function toast(message){
  const el=$('#toast');
@@ -901,7 +910,10 @@ function profile(){
             <span class="account-avatar">${html(state.account.name[0].toUpperCase())}</span>
             <div><strong>${html(state.account.name)}</strong><small>${html(state.account.email)}</small></div>
           </div>
-          <button class="account-signout" type="button" data-action="auth-logout">${html(t('signOut'))} ${ico('arrow',17)}</button>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:6px;">
+            <button class="account-signout" type="button" data-action="auth-logout">${html(t('signOut'))} ${ico('arrow',17)}</button>
+            <button class="account-signout" type="button" data-action="auth-logout-all" style="color:#b83232;" title="${state.lang==='th'?'ออกจากระบบจากทุกอุปกรณ์ที่เคยล็อกอินไว้':'Sign out from all logged in devices'}">${state.lang==='th'?'ออกจากระบบทุกเครื่อง':'Sign out all devices'} ${ico('arrow',17)}</button>
+          </div>
         `:`
           <p class="profile-micro">${html(t('guestIntro'))}</p>
           <div class="auth-tabs">
@@ -911,9 +923,25 @@ function profile(){
           <form class="member-auth-form" id="member-auth-form">
             ${state.authMode==='register'?`<label>${html(t('displayName'))}<input name="name" type="text" required/></label>`:''}
             <label>${html(t('email'))}<input name="email" type="email" required/></label>
-            <label>${html(t('password'))}<input name="password" type="password" required/></label>
+            <label>${html(t('password'))} ${state.authMode==='register'?`<span style="font-weight:normal;color:#718096;font-size:11px;">(${state.lang==='th'?'ขั้นต่ำ 8 ตัวอักษร':'min 8 chars'})</span>`:''}<input name="password" type="password" minlength="${state.authMode==='register'?'8':''}" required/></label>
             <button class="action-lime" type="submit">${html(t(state.authMode==='register'?'createAccount':'signIn'))}</button>
           </form>
+          <div style="display:flex;align-items:center;gap:10px;margin:18px 0 12px 0;">
+            <div style="flex:1;height:1px;background:#e2e8f0;"></div>
+            <span style="font-size:11px;color:#718096;">${state.lang==='th'?'หรือเข้าสู่ระบบด้วย':'or continue with'}</span>
+            <div style="flex:1;height:1px;background:#e2e8f0;"></div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" data-action="quick-social" data-provider="google" style="flex:1;min-width:90px;background:#fff;border:1px solid #cbd5e0;border-radius:12px;padding:9px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">
+              <span style="color:#4285F4;font-weight:800;">G</span> Google
+            </button>
+            <button type="button" data-action="quick-social" data-provider="facebook" style="flex:1;min-width:90px;background:#fff;border:1px solid #cbd5e0;border-radius:12px;padding:9px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">
+              <span style="color:#1877F2;font-weight:800;">f</span> Facebook
+            </button>
+            <button type="button" data-action="quick-phone" style="flex:1;min-width:90px;background:#fff;border:1px solid #cbd5e0;border-radius:12px;padding:9px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">
+              <span>📱</span> ${state.lang==='th'?'เบอร์โทร':'Phone'}
+            </button>
+          </div>
         `}
       </section>
       ${state.account?`
@@ -1498,6 +1526,40 @@ function dispatch(event){
    case'search-close':state.searchOpen=false;state.query='';render({keepScroll:true});break;
    case'auth-mode':state.authMode=target.dataset.mode;render({keepScroll:true});break;
    case'auth-logout':signOut();break;
+   case'auth-logout-all':signOutAll();break;
+   case'quick-social':{
+     const prov=target.dataset.provider||'google';
+     const name=prompt(state.lang==='th'?`กรอกชื่อผู้ใช้สำหรับ ${prov}:`:`Enter your name for ${prov}:`,prov==='google'?'Somchai Google':'Somchai Facebook');
+     if(name){
+       const email=prompt(state.lang==='th'?`กรอกอีเมลสำหรับ ${prov}:`:`Enter email for ${prov}:`,prov==='google'?'somchai.google@gmail.com':'somchai.fb@facebook.com');
+       if(email){
+         try{
+           const res=await userApi('/api/auth/social','POST',{provider:prov,name,email,providerId:prov+'_'+Date.now()});
+           state.account=res.user;await loadAccountCollections();
+           toast(state.lang==='th'?`เข้าสู่ระบบด้วย ${prov} สำเร็จ!`:`Signed in with ${prov}!`);
+           render({keepScroll:true});
+         }catch(e){toast(e.message)}
+       }
+     }
+     break;
+   }
+   case'quick-phone':{
+     const phone=prompt(state.lang==='th'?'กรอกเบอร์โทรศัพท์ (เช่น 0812345678):':'Enter phone number (e.g. 0812345678):','0812345678');
+     if(phone){
+       try{
+         const reqRes=await userApi('/api/auth/phone/otp-request','POST',{phone});
+         const hint=reqRes.devOtp?` (รหัสทดสอบ: ${reqRes.devOtp})`:'';
+         const otp=prompt((state.lang==='th'?'กรอกรหัส OTP 6 หลักที่ได้รับ':'Enter 6-digit OTP code')+hint,reqRes.devOtp||'');
+         if(otp){
+           const verRes=await userApi('/api/auth/phone/otp-verify','POST',{phone,otp});
+           state.account=verRes.user;await loadAccountCollections();
+           toast(state.lang==='th'?'เข้าสู่ระบบด้วยเบอร์โทรสำเร็จ!':'Signed in with phone successfully!');
+           render({keepScroll:true});
+         }
+       }catch(e){toast(e.message)}
+     }
+     break;
+   }
    case'open-ai':state.aiModalOpen=true;render({keepScroll:true});break;
    case'close-ai':state.aiModalOpen=false;render({keepScroll:true});break;
    case'reset-ai':state.aiResult=null;state.aiLoading=false;render({keepScroll:true});break;

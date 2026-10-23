@@ -548,7 +548,9 @@
           <h1 class="auth-title">Welcome<span>.</span></h1>
           <p class="auth-desc">Sign in to save your places and sync your trips.</p>
 
-          <form class="credentials-form" onsubmit="event.preventDefault(); window.location.href='profile.html';">
+          <div id="auth-error-msg" style="display:none;background:#FFF5F5;border:1px solid #FEB2B2;color:#C53030;padding:10px 14px;border-radius:12px;font-size:13px;margin:16px 0 8px 0;line-height:1.4;"></div>
+
+          <form class="credentials-form" id="loginForm">
             
             <div class="form-field">
               <label class="field-label" for="email">Email address</label>
@@ -572,7 +574,7 @@
               <a href="forgot-password.html" class="forgot-link">Forgot password?</a>
             </div>
 
-            <button type="submit" class="btn-submit">
+            <button type="submit" class="btn-submit" id="btnSubmit">
               <span>Sign in</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#172B23" stroke-width="2.5">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -592,14 +594,14 @@
 
           <!-- Social Buttons Grid (Facebook & Google) -->
           <div class="social-grid">
-            <button class="btn-social" onclick="showOnboarding()">
+            <button type="button" class="btn-social" id="btn-facebook" onclick="handleSocialLogin('facebook')">
               <svg viewBox="0 0 24 24" fill="#1877F2">
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
               </svg>
               <span>Facebook</span>
             </button>
 
-            <button class="btn-social" onclick="showOnboarding()">
+            <button type="button" class="btn-social" id="btn-google" onclick="handleSocialLogin('google')">
               <svg viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -609,6 +611,14 @@
               <span>Google</span>
             </button>
           </div>
+
+          <!-- Phone Number Login Button -->
+          <button type="button" class="btn-social" id="btn-phone" onclick="showPhoneModal()" style="margin-top:12px;width:100%;display:flex;justify-content:center;gap:10px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2F855A" stroke-width="2">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+            </svg>
+            <span>เข้าสู่ระบบด้วยเบอร์โทรศัพท์ (Phone OTP)</span>
+          </button>
 
         </div>
       </section>
@@ -643,8 +653,78 @@
         </button>
       </div>
     </div>
-          <span>Complete Sign Up</span>
-        </button>
+
+    <!-- Phone OTP Modal -->
+    <div class="modal-overlay" id="phoneModal">
+      <div class="modal-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h3 style="font-size: 20px; font-weight: 800; color: #172B23;">เข้าสู่ระบบด้วยเบอร์โทรศัพท์</h3>
+          <button type="button" onclick="closePhoneModal()" style="border:none;background:transparent;cursor:pointer;font-size:22px;color:#788079;">✕</button>
+        </div>
+        <p style="font-size: 13px; color: #5D6B63; margin-bottom: 16px;">กรอกเบอร์โทรศัพท์มือถือของคุณเพื่อรับรหัส OTP ยืนยันตัวตน</p>
+        <div id="phone-error" style="display:none;background:#FFF5F5;border:1px solid #FEB2B2;color:#C53030;padding:10px 12px;border-radius:10px;font-size:12px;margin-bottom:12px;"></div>
+        
+        <div id="phone-step-1">
+          <div class="form-field" style="margin-bottom:16px;">
+            <label class="field-label" for="phoneInput">เบอร์โทรศัพท์ (Mobile Number)</label>
+            <div class="input-wrapper">
+              <input type="tel" id="phoneInput" class="input-control" placeholder="เช่น 0812345678" value="0812345678">
+            </div>
+          </div>
+          <button type="button" class="btn-submit" onclick="requestPhoneOtp()">
+            <span>ขอรับรหัส OTP (Request OTP)</span>
+          </button>
+        </div>
+
+        <div id="phone-step-2" style="display:none;">
+          <div style="background:#EBF8FF;border:1px solid #BEE3F8;color:#2B6CB0;padding:10px 12px;border-radius:10px;font-size:12px;margin-bottom:14px;line-height:1.5;" id="otpHint">
+            ระบบได้ส่งรหัส OTP 6 หลักไปยังเบอร์ของคุณแล้ว
+          </div>
+          <div class="form-field" style="margin-bottom:16px;">
+            <label class="field-label" for="otpInput">รหัส OTP 6 หลัก</label>
+            <div class="input-wrapper">
+              <input type="text" id="otpInput" class="input-control" placeholder="123456" maxlength="6" style="letter-spacing:4px;font-size:18px;font-weight:700;text-align:center;">
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button type="button" class="btn-submit" onclick="verifyPhoneOtp()" style="flex:2;">
+              <span>ยืนยันรหัส OTP (Verify)</span>
+            </button>
+            <button type="button" class="btn-social" onclick="requestPhoneOtp()" style="flex:1;font-size:12px;">
+              <span>ส่งอีกครั้ง</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Social Sign-In Modal (Google / Facebook) -->
+    <div class="modal-overlay" id="socialModal">
+      <div class="modal-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h3 id="socialModalTitle" style="font-size: 20px; font-weight: 800; color: #172B23;">เข้าสู่ระบบด้วย Google</h3>
+          <button type="button" onclick="closeSocialModal()" style="border:none;background:transparent;cursor:pointer;font-size:22px;color:#788079;">✕</button>
+        </div>
+        <p id="socialModalDesc" style="font-size: 13px; color: #5D6B63; margin-bottom: 16px;">เชื่อมต่อบัญชีเข้ากับ Unfold Traval</p>
+        <div id="social-error" style="display:none;background:#FFF5F5;border:1px solid #FEB2B2;color:#C53030;padding:10px 12px;border-radius:10px;font-size:12px;margin-bottom:12px;"></div>
+
+        <div style="display:grid;gap:14px;">
+          <div class="form-field">
+            <label class="field-label" for="socialName">ชื่อผู้ใช้ (Display Name)</label>
+            <div class="input-wrapper">
+              <input type="text" id="socialName" class="input-control" value="Somchai Traveler">
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label" for="socialEmail">อีเมล (Email)</label>
+            <div class="input-wrapper">
+              <input type="email" id="socialEmail" class="input-control" value="somchai.traveler@example.com">
+            </div>
+          </div>
+          <button type="button" class="btn-submit" id="btnConfirmSocial" onclick="executeSocialLogin()" style="margin-top:6px;">
+            <span>ยืนยันเข้าสู่ระบบ</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -656,14 +736,139 @@
     }
 
     // Toggle password visibility
-    document.querySelector('.eye-icon').addEventListener('click', function() {
-      const pwdInput = document.getElementById('password');
-      if (pwdInput.type === 'password') {
-        pwdInput.type = 'text';
-      } else {
-        pwdInput.type = 'password';
+    const eyeIcon = document.querySelector('.eye-icon');
+    if (eyeIcon) {
+      eyeIcon.addEventListener('click', function() {
+        const pwdInput = document.getElementById('password');
+        pwdInput.type = (pwdInput.type === 'password') ? 'text' : 'password';
+      });
+    }
+
+    // Email/Password login submission
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+      loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const errBox = document.getElementById('auth-error-msg');
+        errBox.style.display = 'none';
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const json = await res.json();
+          if (!res.ok) throw new Error(json.error || 'Login failed');
+          window.location.href = 'profile.html';
+        } catch (err) {
+          errBox.textContent = err.message;
+          errBox.style.display = 'block';
+        }
+      });
+    }
+
+    // Social Google & Facebook Sign-In
+    let currentSocialProvider = 'google';
+    function handleSocialLogin(provider) {
+      currentSocialProvider = provider;
+      const isGoogle = provider === 'google';
+      document.getElementById('socialModalTitle').textContent = isGoogle ? 'เข้าสู่ระบบด้วย Google' : 'เข้าสู่ระบบด้วย Facebook';
+      document.getElementById('socialModalDesc').textContent = isGoogle ? 'เข้าสู่ระบบรวดเร็วด้วยบัญชี Google ของคุณ' : 'เข้าสู่ระบบรวดเร็วด้วยบัญชี Facebook ของคุณ';
+      document.getElementById('socialName').value = isGoogle ? 'Somchai (Google)' : 'Somchai (Facebook)';
+      document.getElementById('socialEmail').value = isGoogle ? 'somchai.google@gmail.com' : 'somchai.fb@facebook.com';
+      document.getElementById('social-error').style.display = 'none';
+      document.getElementById('socialModal').style.display = 'flex';
+    }
+
+    function closeSocialModal() {
+      document.getElementById('socialModal').style.display = 'none';
+    }
+
+    async function executeSocialLogin() {
+      const name = document.getElementById('socialName').value.trim();
+      const email = document.getElementById('socialEmail').value.trim();
+      const errBox = document.getElementById('social-error');
+      try {
+        const res = await fetch('/api/auth/social', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider: currentSocialProvider,
+            name: name || (currentSocialProvider === 'google' ? 'Google Traveler' : 'Facebook Traveler'),
+            email: email,
+            providerId: currentSocialProvider + '_' + Date.now()
+          })
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Social login failed');
+        closeSocialModal();
+        window.location.href = 'profile.html';
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.style.display = 'block';
       }
-    });
+    }
+
+    // Phone OTP Flow
+    function showPhoneModal() {
+      document.getElementById('phone-step-1').style.display = 'block';
+      document.getElementById('phone-step-2').style.display = 'none';
+      document.getElementById('phone-error').style.display = 'none';
+      document.getElementById('phoneModal').style.display = 'flex';
+    }
+
+    function closePhoneModal() {
+      document.getElementById('phoneModal').style.display = 'none';
+    }
+
+    async function requestPhoneOtp() {
+      const phone = document.getElementById('phoneInput').value.trim();
+      const errBox = document.getElementById('phone-error');
+      errBox.style.display = 'none';
+      try {
+        const res = await fetch('/api/auth/phone/otp-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone })
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to send OTP');
+        document.getElementById('phone-step-1').style.display = 'none';
+        document.getElementById('phone-step-2').style.display = 'block';
+        if (json.devOtp) {
+          document.getElementById('otpInput').value = json.devOtp;
+          document.getElementById('otpHint').innerHTML = `ส่งรหัส OTP ไปยัง <b>${phone}</b> แล้ว<br><small style="color:#2B6CB0;">(รหัสสำหรับทดสอบ: <b>${json.devOtp}</b>)</small>`;
+        } else {
+          document.getElementById('otpHint').textContent = `ส่งรหัส OTP 6 หลักไปยัง ${phone} เรียบร้อยแล้ว`;
+        }
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.style.display = 'block';
+      }
+    }
+
+    async function verifyPhoneOtp() {
+      const phone = document.getElementById('phoneInput').value.trim();
+      const otp = document.getElementById('otpInput').value.trim();
+      const errBox = document.getElementById('phone-error');
+      errBox.style.display = 'none';
+      try {
+        const res = await fetch('/api/auth/phone/otp-verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, otp })
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'OTP verification failed');
+        closePhoneModal();
+        window.location.href = 'profile.html';
+      } catch (err) {
+        errBox.textContent = err.message;
+        errBox.style.display = 'block';
+      }
+    }
   </script>
 
 </body>

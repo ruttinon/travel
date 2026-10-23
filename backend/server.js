@@ -38,7 +38,19 @@ const PAGE_FILES={
   'planner.html':'frontend/planner/planner.html',
   'planner.js':'frontend/planner/planner.js',
   'planner.css':'frontend/planner/planner.css',
-  'trip-engine.js':'frontend/planner/trip-engine.js'
+  'planner-showcase.html':'frontend/planner/planner-showcase.html',
+  'admin-showcase.html':'frontend/admin/admin-showcase.html',
+  'business-showcase.html':'frontend/business/business-showcase.html',
+  'trip-engine.js':'frontend/planner/trip-engine.js',
+  'auth/login.html':'frontend/auth/login.html',
+  'auth/register.html':'frontend/auth/register.html',
+  'auth/profile.html':'frontend/auth/profile.html',
+  'auth/forgot-password.html':'frontend/auth/forgot-password.html',
+  'auth/register-style.css':'frontend/auth/register-style.css',
+  'login.html':'frontend/auth/login.html',
+  'register.html':'frontend/auth/register.html',
+  'profile.html':'frontend/auth/profile.html',
+  'forgot-password.html':'frontend/auth/forgot-password.html'
 };
 const DATA = path.resolve(process.env.UNFOLD_DATA_DIR || (fs.existsSync(path.join(ROOT,'data')) ? path.join(ROOT,'data') : (process.platform==='win32'&&process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA,'unfold-travel','data') : path.join(ROOT,'data'))));
 const UPLOADS = path.join(DATA, 'uploads');
@@ -140,6 +152,22 @@ addColumn('places','opening_hours_json',"TEXT NOT NULL DEFAULT '{}'");
 addColumn('places','google_place_id',"TEXT NOT NULL DEFAULT ''");
 addColumn('places','is_sponsored','INTEGER NOT NULL DEFAULT 0');
 addColumn('users','status',"TEXT NOT NULL DEFAULT 'active'");
+addColumn('users','provider',"TEXT NOT NULL DEFAULT 'local'");
+addColumn('users','provider_id',"TEXT NOT NULL DEFAULT ''");
+addColumn('users','phone',"TEXT NOT NULL DEFAULT ''");
+addColumn('users','avatar_url',"TEXT NOT NULL DEFAULT ''");
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS phone_otps (
+    phone TEXT PRIMARY KEY,
+    otp_hash TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS users_provider_idx ON users(provider, provider_id);
+  CREATE INDEX IF NOT EXISTS users_phone_idx ON users(phone);
+`);
 
 db.exec(`
  CREATE TABLE IF NOT EXISTS travel_safety_reports (
@@ -308,7 +336,7 @@ function normalize(p){
     description_th:validString(p.storyTh,2000,'Thai description'),
     cover:imagePath(p.photo),
     gallery:[], featured:p.featured===true?1:0,
-    status:p.status==='published'?'published':'draft',
+    status:p.status==='published'?'published':(p.status==='archived'?'archived':'draft'),
     price_from:p.priceFrom===''||p.priceFrom==null?null:Number(p.priceFrom),
     price_currency:validString(p.currency||'THB',3,'Currency'),
     is_sme:p.isSme===true||p.is_sme===1||p.is_sme==='1'?1:0,
@@ -367,7 +395,13 @@ async function jsonBody(req){
   let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>8_000_000)fail(413,'Request too large');chunks.push(chunk);}
   try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{fail(400,'Invalid JSON body');}
 }
-function attemptAllowed(ip){const now=Date.now(),entry=limits.get(ip)||{count:0,reset:now+15*60_000};if(now>entry.reset){entry.count=0;entry.reset=now+15*60_000;}entry.count++;limits.set(ip,entry);return entry.count<=8;}
+function attemptAllowed(ip){
+  const now=Date.now(),entry=limits.get(ip)||{count:0,reset:now+15*60_000};
+  if(now>entry.reset){entry.count=0;entry.reset=now+15*60_000;}
+  entry.count++;limits.set(ip,entry);
+  const max=ip==='local'||ip==='127.0.0.1'||ip==='::1'||ip==='::ffff:127.0.0.1'?60:8;
+  return entry.count<=max;
+}
 function uploadImageTo(body,destination=UPLOADS,prefix='/uploads/'){ const data=validString(body?.dataUrl,8_000_000,'dataUrl',{required:true});const match=/^data:image\/(png|jpeg|webp);base64,([a-z0-9+/=]+)$/i.exec(data);if(!match)fail(400,'Only PNG, JPEG, and WebP images accepted');
   const buf=Buffer.from(match[2],'base64');if(buf.length<64||buf.length>5*1024*1024)fail(400,'Image must be 64 bytes to 5 MB');
   const tag=match[1].toLowerCase(),detected=buf[0]===0xff&&buf[1]===0xd8&&buf[2]===0xff?'jpeg':buf.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex'))?'png':buf.toString('ascii',0,4)==='RIFF'&&buf.toString('ascii',8,12)==='WEBP'?'webp':null;
@@ -377,8 +411,8 @@ function uploadImageTo(body,destination=UPLOADS,prefix='/uploads/'){ const data=
 // Account + community features use distinct sessions from the local Admin.
 function userCookie(token,req){const parts=[`unfold_user=${token||''}`,'HttpOnly','SameSite=Strict','Path=/',`Max-Age=${token?USER_SESS_AGE:0}`];if(req.socket.encrypted)parts.push('Secure');return parts.join('; ');}
 function userToken(req){return /(?:^|;\s*)unfold_user=([a-f0-9]{64})/.exec(req.headers.cookie||'')?.[1]||null;}
-function userSession(req){const token=userToken(req);if(!token)return null;return db.prepare('SELECT u.id,u.name,u.email,u.email_verified,u.status FROM user_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?').get(hashToken(token),Math.floor(Date.now()/1000))||null;}
-function userPublic(user){return user?{id:user.id,name:user.name,email:user.email,emailVerified:!!user.email_verified,status:user.status||'active'}:null;}
+function userSession(req){const token=userToken(req);if(!token)return null;return db.prepare('SELECT u.id,u.name,u.email,u.phone,u.provider,u.avatar_url,u.email_verified,u.status FROM user_sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?').get(hashToken(token),Math.floor(Date.now()/1000))||null;}
+function userPublic(user){return user?{id:user.id,name:user.name,email:user.email,phone:user.phone||'',provider:user.provider||'local',avatarUrl:user.avatar_url||'',emailVerified:!!user.email_verified,status:user.status||'active'}:null;}
 function requireUser(req){const user=userSession(req);if(!user)fail(401,'Sign in to continue');if(user.status==='suspended')fail(403,'Your account has been suspended. Please contact Admin.');return user;}
 function issueUserSession(req,res,id){const token=crypto.randomBytes(32).toString('hex');db.prepare('INSERT INTO user_sessions(token_hash,user_id,expires_at) VALUES(?,?,?)').run(hashToken(token),id,Math.floor(Date.now()/1000)+USER_SESS_AGE);res.setHeader('Set-Cookie',userCookie(token,req));}
 function normalizeItinerary(b){
@@ -425,6 +459,13 @@ function reviewFileAccess(req,fileName){const entry=db.prepare('SELECT owner_id 
 function normalReview(b,userId){if(!b||typeof b!=='object'||Array.isArray(b))fail(400,'Invalid review');const stars=Number(b.stars);if(!Number.isInteger(stars)||stars<1||stars>5)fail(400,'Rating must be 1 to 5 stars');const body=validString(b.text,1500,'Review text',{required:true});if(body.length<10)fail(400,'Review must be at least 10 characters');const photo=safeReviewImage(b.photo,userId);return {stars,text:body,photo};}
 function publishedPlace(id){const row=getRow.get(id);if(!row||row.status!=='published')fail(404,'Published place not found');return row;}
 function allowUserAttempt(req,label){if(!attemptAllowed(label+':'+(req.socket.remoteAddress||'local')))fail(429,'Too many attempts; try again in 15 minutes');}
+function normalizePhone(input){
+  const clean=String(input||'').replace(/[\s\-\(\)]/g,'');
+  if(!/^(\+?66|0)[0-9]{8,10}$/.test(clean)&&!/^\+[1-9][0-9]{7,14}$/.test(clean)){
+    fail(400,'Invalid phone number format. Please enter a valid mobile number (e.g., 0812345678 or +66812345678)');
+  }
+  return clean.startsWith('0')?'+66'+clean.slice(1):clean.startsWith('+')?clean:'+'+clean;
+}
 function validateEmail(input){const email=validString(input,254,'Email',{required:true}).toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))fail(400,'Invalid email address');return email;}
 function newAccountToken(userId,purpose){
   const token=crypto.randomBytes(32).toString('hex');
@@ -842,7 +883,38 @@ async function api(req,res,u){
   }
 
   if(/^\/api\/places\/[a-z0-9-]{1,65}$/.test(route)&&method==='GET'){const id=route.slice('/api/places/'.length);const p=getRow.get(id);if(!p||p.status!=='published')fail(404,'Place not found');return reply(res,200,{place:rowToPlace(p)});}
-  if(route==='/api/admin/status'&&method==='GET')return reply(res,200,{setupRequired:!db.prepare('SELECT id FROM admins WHERE id=1').get(),authenticated:isAdmin(req)});
+  if(route==='/api/admin/status'&&method==='GET'){
+    const host=(req.headers.host||'').toLowerCase();
+    const isLoopback=/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host);
+    return reply(res,200,{
+      setupRequired:!db.prepare('SELECT id FROM admins WHERE id=1').get(),
+      authenticated:isAdmin(req),
+      isLocal:isLoopback,
+      defaultUsername:'admin'
+    });
+  }
+  if(route==='/api/admin/reset-local'&&method==='POST'){
+    checkOrigin(req);
+    const host=(req.headers.host||'').toLowerCase();
+    const isLoopback=/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host);
+    if(!isLoopback)fail(403,'Password reset is only available on localhost');
+    const newPass='Admin@12345678';
+    const salt=crypto.randomBytes(16).toString('hex');
+    const hash=pwHash(newPass,salt);
+    const existing=db.prepare('SELECT id FROM admins WHERE id=1').get();
+    const now=new Date().toISOString();
+    if(existing){
+      db.prepare('UPDATE admins SET salt=?, password_hash=?, created_at=? WHERE id=1').run(salt,hash,now);
+    } else {
+      db.prepare('INSERT INTO admins(id,salt,password_hash,created_at) VALUES(1,?,?,?)').run(salt,hash,now);
+    }
+    db.prepare('DELETE FROM sessions').run();
+    limits.delete(req.socket.remoteAddress||'local');
+    limits.delete('127.0.0.1');
+    limits.delete('local');
+    audit('admin','1','admin.reset_local','admin','1',{reason:'Local developer reset requested'});
+    return reply(res,200,{ok:true,username:'admin',password:newPass,message:'รีเซ็ตรหัสผ่านสำหรับเครื่องนี้เป็น Admin@12345678 สำเร็จแล้ว'});
+  }
   if(route==='/api/admin/setup'&&method==='POST'){
     checkOrigin(req);if(db.prepare('SELECT id FROM admins WHERE id=1').get())fail(409,'Admin already configured');
     const b=await jsonBody(req);if(!b||b.setupToken!==SETUP_TOKEN)fail(403,'Incorrect setup code');
@@ -851,10 +923,10 @@ async function api(req,res,u){
     newSession(res,req);audit('admin','1','admin.setup','admin','1');return reply(res,201,{ok:true});
   }
   if(route==='/api/admin/login'&&method==='POST'){
-    checkOrigin(req);if(!attemptAllowed(req.socket.remoteAddress||'local'))fail(429,'Too many attempts. Try again in 15 minutes');
+    checkOrigin(req);if(!attemptAllowed(req.socket.remoteAddress||'local'))fail(429,'คุณใส่รหัสผ่านผิดเกินกำหนด (หากลืมรหัสผ่าน ให้ดับเบิลคลิก RESET-ADMIN-PASSWORD.cmd หรือกดรีเซ็ตด้านล่าง)');
     const b=await jsonBody(req),pass=validString(b?.password,128,'password'),admin=db.prepare('SELECT * FROM admins WHERE id=1').get();
     if(!admin)fail(409,'Set up the admin first');
-    const test=pwHash(pass,admin.salt);if(!crypto.timingSafeEqual(Buffer.from(test,'hex'),Buffer.from(admin.password_hash,'hex')))fail(401,'Incorrect password');
+    const test=pwHash(pass,admin.salt);if(!crypto.timingSafeEqual(Buffer.from(test,'hex'),Buffer.from(admin.password_hash,'hex')))fail(401,'รหัสผ่านไม่ถูกต้อง (สำหรับเครื่องนี้ ค่าเริ่มต้นคือ Admin@12345678 หรือกดรีเซ็ตรหัสผ่านด้านล่าง)');
     limits.delete(req.socket.remoteAddress||'local');newSession(res,req);audit('admin','1','admin.login','admin','1');return reply(res,200,{ok:true});
   }
   if(route==='/api/admin/logout'&&method==='POST'){
@@ -867,7 +939,7 @@ async function api(req,res,u){
   if(route==='/api/auth/register'&&method==='POST'){
     checkOrigin(req);allowUserAttempt(req,'register');const b=await jsonBody(req);
     const name=validString(b?.name,60,'Name',{required:true}),email=validateEmail(b?.email);
-    const password=validString(b?.password,128,'Password',{required:true});if(name.length<2||password.length<12)fail(400,'Name must be at least 2 letters; password at least 12 characters');
+    const password=validString(b?.password,128,'Password',{required:true});if(name.length<2||password.length<8)fail(400,'Name must be at least 2 letters; password at least 8 characters');
     if(db.prepare('SELECT id FROM users WHERE email=?').get(email))fail(409,'Email already registered');
     const id=crypto.randomUUID(),salt=crypto.randomBytes(16).toString('hex');
     try{db.prepare('INSERT INTO users(id,name,email,salt,password_hash,created_at,email_verified) VALUES(?,?,?,?,?,?,0)').run(id,name,email,salt,pwHash(password,salt),new Date().toISOString());}catch(err){if(err.code?.includes('CONSTRAINT'))fail(409,'Email already registered');throw err;}
@@ -886,6 +958,12 @@ async function api(req,res,u){
   }
   if(route==='/api/auth/logout'&&method==='POST'){
     checkOrigin(req);const token=userToken(req);if(token)db.prepare('DELETE FROM user_sessions WHERE token_hash=?').run(hashToken(token));res.setHeader('Set-Cookie',userCookie('',req));return reply(res,200,{ok:true});
+  }
+  if(route==='/api/auth/logout-all'&&method==='POST'){
+    checkOrigin(req);const user=requireUser(req);
+    db.prepare('DELETE FROM user_sessions WHERE user_id=?').run(user.id);
+    res.setHeader('Set-Cookie',userCookie('',req));
+    return reply(res,200,{ok:true,message:'Logged out from all devices'});
   }
   if(route==='/api/auth/verify/request'&&method==='POST'){
     checkOrigin(req);allowUserAttempt(req,'verify');const user=requireUser(req);
@@ -907,12 +985,90 @@ async function api(req,res,u){
   }
   if(route==='/api/auth/password/reset'&&method==='POST'){
     checkOrigin(req);allowUserAttempt(req,'reset');const body=await jsonBody(req),password=validString(body?.password,128,'Password',{required:true});
-    if(password.length<12)fail(400,'Password must have at least 12 characters');
+    if(password.length<8)fail(400,'Password must have at least 8 characters');
     const userId=consumeToken(body?.token,'reset'),salt=crypto.randomBytes(16).toString('hex');
     db.prepare('UPDATE users SET salt=?,password_hash=? WHERE id=?').run(salt,pwHash(password,salt),userId);
     db.prepare('DELETE FROM user_sessions WHERE user_id=?').run(userId);
     db.prepare('DELETE FROM account_tokens WHERE user_id=?').run(userId);
     return reply(res,200,{ok:true});
+  }
+  if(route==='/api/auth/social'&&method==='POST'){
+    checkOrigin(req);allowUserAttempt(req,'social-login');const b=await jsonBody(req);
+    const provider=validString(b?.provider,20,'Provider',{required:true}).toLowerCase();
+    if(!['google','facebook'].includes(provider))fail(400,'Supported providers: google, facebook');
+    const email=validateEmail(b?.email);
+    const name=validString(b?.name||(email.split('@')[0]),60,'Name');
+    const providerId=validString(b?.providerId||b?.sub||b?.id||('id_'+crypto.randomUUID().slice(0,8)),100,'Provider ID');
+    const avatarUrl=typeof b?.avatarUrl==='string'?b.avatarUrl.slice(0,500):'';
+
+    let user=db.prepare('SELECT * FROM users WHERE email=?').get(email);
+    let isNew=false;
+    if(user){
+      if(user.status==='suspended')fail(403,'Your account has been suspended. Please contact Admin.');
+      db.prepare("UPDATE users SET provider=?,provider_id=?,avatar_url=CASE WHEN avatar_url='' THEN ? ELSE avatar_url END WHERE id=?")
+        .run(provider,providerId,avatarUrl,user.id);
+      user=db.prepare('SELECT * FROM users WHERE id=?').get(user.id);
+    } else {
+      isNew=true;
+      const id=crypto.randomUUID(),salt=crypto.randomBytes(16).toString('hex');
+      const dummyPass=crypto.randomBytes(24).toString('hex');
+      db.prepare("INSERT INTO users(id,name,email,salt,password_hash,created_at,email_verified,status,provider,provider_id,avatar_url,phone) VALUES(?,?,?,?,?,?,1,'active',?,?,?,'')")
+        .run(id,name,email,salt,pwHash(dummyPass,salt),new Date().toISOString(),provider,providerId,avatarUrl);
+      user=db.prepare('SELECT * FROM users WHERE id=?').get(id);
+    }
+    limits.delete('social-login:'+(req.socket.remoteAddress||'local'));
+    issueUserSession(req,res,user.id);
+    audit(user.id,user.id,'auth.social_login','users',user.id,{provider,email,isNew});
+    return reply(res,isNew?201:200,{ok:true,user:userPublic(user),isNew});
+  }
+  if(route==='/api/auth/phone/otp-request'&&method==='POST'){
+    checkOrigin(req);allowUserAttempt(req,'phone-otp-req');const b=await jsonBody(req);
+    const phone=normalizePhone(b?.phone);
+    const otp=String(Math.floor(100000 + Math.random() * 900000));
+    const otpHash=hashToken(otp);
+    const expiresAt=Math.floor(Date.now()/1000)+300;
+    const now=new Date().toISOString();
+    db.prepare('INSERT INTO phone_otps(phone,otp_hash,expires_at,attempts,created_at) VALUES(?,?,?,0,?) ON CONFLICT(phone) DO UPDATE SET otp_hash=excluded.otp_hash,expires_at=excluded.expires_at,attempts=0,created_at=excluded.created_at')
+      .run(phone,otpHash,expiresAt,now);
+    console.log(`[DEV PHONE OTP] ${phone} -> ${otp}`);
+    audit('anon','0','auth.phone_otp_request','phone',phone);
+    return reply(res,200,{ok:true,message:'OTP sent successfully (valid for 5 minutes)',devOtp:otp,phone});
+  }
+  if(route==='/api/auth/phone/otp-verify'&&method==='POST'){
+    checkOrigin(req);allowUserAttempt(req,'phone-otp-ver');const b=await jsonBody(req);
+    const phone=normalizePhone(b?.phone);
+    const otp=validString(b?.otp,10,'OTP',{required:true}).trim();
+    const entry=db.prepare('SELECT * FROM phone_otps WHERE phone=?').get(phone);
+    if(!entry)fail(400,'Please request a new OTP first');
+    if(entry.expires_at<=Math.floor(Date.now()/1000))fail(400,'OTP has expired. Please request a new one');
+    if(entry.attempts>=5)fail(429,'Too many incorrect OTP attempts. Please request a new code');
+
+    const testHash=hashToken(otp);
+    if(testHash!==entry.otp_hash){
+      db.prepare('UPDATE phone_otps SET attempts=attempts+1 WHERE phone=?').run(phone);
+      fail(400,'Incorrect OTP code');
+    }
+    db.prepare('DELETE FROM phone_otps WHERE phone=?').run(phone);
+
+    let user=db.prepare('SELECT * FROM users WHERE phone=?').get(phone);
+    let isNew=false;
+    if(user){
+      if(user.status==='suspended')fail(403,'Your account has been suspended. Please contact Admin.');
+    } else {
+      isNew=true;
+      const id=crypto.randomUUID(),salt=crypto.randomBytes(16).toString('hex');
+      const dummyPass=crypto.randomBytes(24).toString('hex');
+      const cleanDigits=phone.replace(/\D/g,'');
+      const name=validString(b?.name||('Traveler '+cleanDigits.slice(-4)),60,'Name');
+      const email=`phone_${cleanDigits}@phone.unfold.local`;
+      db.prepare("INSERT INTO users(id,name,email,salt,password_hash,created_at,email_verified,status,provider,provider_id,avatar_url,phone) VALUES(?,?,?,?,?,?,1,'active','phone',?,?,?)")
+        .run(id,name,email,salt,pwHash(dummyPass,salt),new Date().toISOString(),phone,'',phone);
+      user=db.prepare('SELECT * FROM users WHERE id=?').get(id);
+    }
+    limits.delete('phone-otp-ver:'+(req.socket.remoteAddress||'local'));
+    issueUserSession(req,res,user.id);
+    audit(user.id,user.id,'auth.phone_login','users',user.id,{phone,isNew});
+    return reply(res,isNew?201:200,{ok:true,user:userPublic(user),isNew});
   }
   if(route==='/api/me/profile'&&method==='PATCH'){
     checkOrigin(req);const user=requireUser(req),body=await jsonBody(req);
@@ -1217,6 +1373,80 @@ async function api(req,res,u){
     audit('admin','1','place.update','place',m[1],{before:placeAuditSummary(prev),after:{name:place.en,status:place.status,category:place.category}});
     return reply(res,200,{place});
   }
+  const mArchive=/^\/api\/admin\/places\/([a-z0-9-]{1,65})\/archive$/.exec(route);
+  if(mArchive&&method==='POST'){
+    checkOrigin(req);requireAdmin(req);const prev=getRow.get(mArchive[1]);if(!prev)fail(404,'Place not found');
+    db.prepare("UPDATE places SET status='archived', updated_at=? WHERE slug=?").run(new Date().toISOString(),mArchive[1]);
+    audit('admin','1','place.archive','place',mArchive[1],{before:placeAuditSummary(prev)});
+    return reply(res,200,{ok:true,place:rowToPlace(getRow.get(mArchive[1]),true)});
+  }
+  const mRestore=/^\/api\/admin\/places\/([a-z0-9-]{1,65})\/restore$/.exec(route);
+  if(mRestore&&method==='POST'){
+    checkOrigin(req);requireAdmin(req);const prev=getRow.get(mRestore[1]);if(!prev)fail(404,'Place not found');
+    db.prepare("UPDATE places SET status='draft', updated_at=? WHERE slug=?").run(new Date().toISOString(),mRestore[1]);
+    audit('admin','1','place.restore','place',mRestore[1],{before:placeAuditSummary(prev)});
+    return reply(res,200,{ok:true,place:rowToPlace(getRow.get(mRestore[1]),true)});
+  }
+  if(route==='/api/admin/places/check-duplicates'&&method==='POST'){
+    checkOrigin(req);requireAdmin(req);
+    const b=await jsonBody(req);
+    const nameEn=(b.nameEn||b.en||'').trim().toLowerCase();
+    const nameTh=(b.nameTh||b.th||'').trim().toLowerCase();
+    const lat=b.lat!=null&&b.lat!==''?Number(b.lat):null;
+    const lon=b.lon!=null&&b.lon!==''?Number(b.lon):null;
+    const excludeSlug=b.excludeSlug||b.id||'';
+    const all=getAdmin.all();
+    const matches=[];
+    for(const p of all){
+      if(p.slug===excludeSlug)continue;
+      const pEn=(p.name_en||'').trim().toLowerCase();
+      const pTh=(p.name_th||'').trim().toLowerCase();
+      const reasons=[];
+      if(nameEn&&pEn&&(nameEn===pEn||(nameEn.length>=4&&pEn.includes(nameEn))||(pEn.length>=4&&nameEn.includes(pEn)))){
+        reasons.push('ชื่อภาษาอังกฤษตรงกันหรือใกล้เคียง');
+      }
+      if(nameTh&&pTh&&(nameTh===pTh||(nameTh.length>=4&&pTh.includes(nameTh))||(pTh.length>=4&&nameTh.includes(pTh)))){
+        reasons.push('ชื่อภาษาไทยตรงกันหรือใกล้เคียง');
+      }
+      if(lat!==null&&lon!==null&&p.lat!==null&&p.lon!==null){
+        const distKm=kmBetween(lat,lon,p.lat,p.lon);
+        if(distKm<=0.15){
+          reasons.push(`พิกัดใกล้เคียงกันมาก (ห่าง ${(distKm*1000).toFixed(0)} ม.)`);
+        }
+      }
+      if(reasons.length>0){
+        matches.push({id:p.slug,en:p.name_en,th:p.name_th,locEn:p.location_en,status:p.status,reasons});
+      }
+    }
+    return reply(res,200,{duplicates:matches});
+  }
+  if(route==='/api/admin/places/duplicates'&&method==='GET'){
+    requireAdmin(req);
+    const all=getAdmin.all();
+    const pairs=[];
+    for(let i=0;i<all.length;i++){
+      for(let j=i+1;j<all.length;j++){
+        const p1=all[i],p2=all[j];
+        const p1En=(p1.name_en||'').trim().toLowerCase(),p2En=(p2.name_en||'').trim().toLowerCase();
+        const p1Th=(p1.name_th||'').trim().toLowerCase(),p2Th=(p2.name_th||'').trim().toLowerCase();
+        const reasons=[];
+        if(p1En&&p2En&&p1En===p2En)reasons.push('ชื่อภาษาอังกฤษเหมือนกันเป๊ะ');
+        if(p1Th&&p2Th&&p1Th===p2Th)reasons.push('ชื่อภาษาไทยเหมือนกันเป๊ะ');
+        if(p1.lat!==null&&p1.lon!==null&&p2.lat!==null&&p2.lon!==null){
+          const d=kmBetween(p1.lat,p1.lon,p2.lat,p2.lon);
+          if(d<=0.15)reasons.push(`พิกัดใกล้กันมาก (ห่าง ${(d*1000).toFixed(0)} ม.)`);
+        }
+        if(reasons.length>0){
+          pairs.push({
+            place1:{id:p1.slug,en:p1.name_en,th:p1.name_th,locEn:p1.location_en,status:p1.status},
+            place2:{id:p2.slug,en:p2.name_en,th:p2.name_th,locEn:p2.location_en,status:p2.status},
+            reasons
+          });
+        }
+      }
+    }
+    return reply(res,200,{pairs,totalPairs:pairs.length});
+  }
   if(m&&method==='DELETE'){
     checkOrigin(req);const prev=getRow.get(m[1]);if(!prev)fail(404,'Place not found');
     if(!db.prepare('DELETE FROM places WHERE slug=?').run(m[1]).changes)fail(404,'Place not found');
@@ -1422,6 +1652,7 @@ function staticFile(req,res,u,adminImageAccess=false){
     const route=u.pathname==='/'?'index.html':u.pathname==='/admin'?'admin.html':u.pathname.replace(/^\//,'');
     if(PAGE_FILES[route])filePath=path.resolve(ROOT,PAGE_FILES[route]);
     else if(/^assets\/[a-z0-9_.-]+\.(?:webp|png|svg|jpg)$/.test(route))filePath=path.resolve(ROOT,route);
+    else if(/^(?:frontend\/(?:admin|auth|business|planner|traveler)\/[a-zA-Z0-9_.-]+)$/.test(route))filePath=path.resolve(ROOT,route);
     else fail(404,'Not found');
   }
   if(!fs.existsSync(filePath)||!fs.statSync(filePath).isFile())fail(404,'Not found');

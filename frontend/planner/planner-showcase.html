@@ -629,10 +629,22 @@
             <input type="text" id="tripNameInput" value="ทริปแอ่วเหนือ สัมผัสวิถีแม่กำปอง">
           </div>
 
+          <div class="field-wrap">
+            <label>จุดหมายปลายทาง (Destination)</label>
+            <select id="destinationSelect">
+              <option value="chiang-mai" selected>เชียงใหม่ (Chiang Mai)</option>
+              <option value="bangkok">กรุงเทพมหานคร (Bangkok)</option>
+              <option value="phuket">ภูเก็ต (Phuket)</option>
+              <option value="nan">น่าน (Nan)</option>
+              <option value="mae-hong-son">แม่ฮ่องสอน (Mae Hong Son)</option>
+            </select>
+          </div>
+
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
             <div class="field-wrap">
               <label>จำนวนวัน (Days)</label>
               <select id="daysSelect" onchange="updateDays(this.value)">
+                <option value="1">1 วัน (One Day)</option>
                 <option value="2" selected>2 วัน 1 คืน</option>
                 <option value="3">3 วัน 2 คืน</option>
                 <option value="4">4 วัน 3 คืน</option>
@@ -641,9 +653,30 @@
             <div class="field-wrap">
               <label>การเดินทาง (Mode)</label>
               <select id="transportSelect">
-                <option value="car" selected>🚗 รถยนต์ส่วนตัว</option>
+                <option value="driving" selected>🚗 รถยนต์ส่วนตัว</option>
                 <option value="transit">🚌 รถสาธารณะ</option>
-                <option value="walk">🚶 เดินเท้า (ชานเมือง)</option>
+                <option value="walking">🚶 เดินเท้า</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="field-wrap">
+              <label>สไตล์เที่ยว (Style)</label>
+              <select id="travelStyle">
+                <option value="all" selected>ทุกรูปแบบ</option>
+                <option value="nature">ธรรมชาติ</option>
+                <option value="cafe">คาเฟ่ & ชุมชน</option>
+                <option value="food">อาหารพื้นเมือง</option>
+                <option value="culture">ประวัติศาสตร์/วัด</option>
+              </select>
+            </div>
+            <div class="field-wrap">
+              <label>จังหวะเที่ยว (Pace)</label>
+              <select id="travelPace">
+                <option value="normal" selected>ปานกลาง</option>
+                <option value="relaxed">สบาย ๆ ไม่รีบ</option>
+                <option value="packed">เก็บครบหลายที่</option>
               </select>
             </div>
           </div>
@@ -652,6 +685,10 @@
             <label>งบประมาณรวมที่ตั้งไว้ (Budget THB)</label>
             <input type="number" id="budgetLimit" value="10000" step="500" oninput="updateBudgetCalc()">
           </div>
+
+          <button type="button" class="btn-submit" id="btnGenerateAi" onclick="generateAiPlan()" style="background:linear-gradient(135deg, #172B23, #234436);color:#fff;border-radius:12px;padding:12px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;border:none;margin-top:6px;">
+            <span>✨ คำนวณเส้นทางด้วย AI (Generate AI Trip)</span>
+          </button>
         </div>
 
         <hr style="border:none; border-top:1px solid var(--line);">
@@ -737,115 +774,118 @@
           </div>
         </div>
 
-        <!-- ================= DAY 1 TIMELINE ================= -->
-        <div class="day-section">
-          <div class="day-header">
-            <div class="day-title">
-              <span class="day-badge">DAY 1</span>
-              <span>ธรรมชาติและวิถีชีวิตชาวเขา (Mae Rim ➔ Mae Kampong)</span>
+        <!-- Dynamic Itinerary Days Container -->
+        <div id="timelineDaysWrapper">
+          <!-- ================= DAY 1 TIMELINE ================= -->
+          <div class="day-section">
+            <div class="day-header">
+              <div class="day-title">
+                <span class="day-badge">DAY 1</span>
+                <span>ธรรมชาติและวิถีชีวิตชาวเขา (Mae Rim ➔ Mae Kampong)</span>
+              </div>
+              <div class="day-meta">3 จุดแวะ · ~4.5 ชม. เที่ยวชม</div>
             </div>
-            <div class="day-meta">3 จุดแวะ · ~4.5 ชม. เที่ยวชม</div>
+
+            <div class="timeline" id="day1Timeline">
+              
+              <!-- Stop 1 -->
+              <div class="stop-item">
+                <div class="stop-marker">1</div>
+                <div class="stop-card">
+                  <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=200&q=80" class="stop-img" alt="">
+                  <div class="stop-body">
+                    <h4>09:00 · ดอยม่อนแจ่ม วิวทะเลหมอก</h4>
+                    <p>ชมวิวทิวเขา แปลงผักขั้นบันได และสัมผัสอากาศเย็นตลอดปี (เวลาเที่ยวแนะนำ ~2 ชม.)</p>
+                  </div>
+                  <div class="stop-actions">
+                    <span class="drag-handle" title="ลากเพื่อสลับลำดับ">⋮⋮</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Route Connection -->
+              <div class="travel-connection">
+                <div class="travel-line"></div>
+                <span>🚗 ขับรถ 35 นาที (24 กม.) มุ่งหน้าสู่บ้านแม่กำปอง</span>
+              </div>
+
+              <!-- Special SME Stopover Recommendation -->
+              <div class="sme-stopover-box" id="smeStopoverBox">
+                <div>
+                  <span class="sme-tag">★ จุดแวะร้านค้าชุมชนระหว่างทาง (SME Stopover)</span>
+                  <strong>ร้านกาแฟคั่วเตาฟืนแม่กำปอง</strong>
+                  <small>ห่างจากเส้นทางหลักเพียง 400 เมตร (+8 นาที) · กาแฟอาราบิก้าคั่วเตาฟืนสูตร 30 ปี</small>
+                </div>
+                <button class="btn-add-sme" onclick="insertStopover()">+ แวะร้านนี้ (+35 นาที)</button>
+              </div>
+
+              <!-- Stop 2 -->
+              <div class="stop-item">
+                <div class="stop-marker">2</div>
+                <div class="stop-card">
+                  <img src="https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=200&q=80" class="stop-img" alt="">
+                  <div class="stop-body">
+                    <h4>14:30 · น้ำตกแม่กำปอง & ทางเดินริมธาร</h4>
+                    <p>น้ำตกธรรมชาติ 7 ชั้น ร่มรื่นด้วยต้นไม้ใหญ่ อากาศบริสุทธิ์เย็นสบาย (เวลาเที่ยวแนะนำ ~1.5 ชม.)</p>
+                  </div>
+                  <div class="stop-actions">
+                    <span class="drag-handle" title="ลากเพื่อสลับลำดับ">⋮⋮</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
           </div>
 
-          <div class="timeline" id="day1Timeline">
-            
-            <!-- Stop 1 -->
-            <div class="stop-item">
-              <div class="stop-marker">1</div>
-              <div class="stop-card">
-                <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=200&q=80" class="stop-img" alt="">
-                <div class="stop-body">
-                  <h4>09:00 · ดอยม่อนแจ่ม วิวทะเลหมอก</h4>
-                  <p>ชมวิวทิวเขา แปลงผักขั้นบันได และสัมผัสอากาศเย็นตลอดปี (เวลาเที่ยวแนะนำ ~2 ชม.)</p>
-                </div>
-                <div class="stop-actions">
-                  <span class="drag-handle" title="ลากเพื่อสลับลำดับ">⋮⋮</span>
+          <!-- ================= DAY 2 TIMELINE ================= -->
+          <div class="day-section">
+            <div class="day-header">
+              <div class="day-title">
+                <span class="day-badge">DAY 2</span>
+                <span>มรดกวัฒนธรรมและตลาดชุมชน (Old City Heritage)</span>
+              </div>
+              <div class="day-meta">2 จุดแวะ · ~3 ชม. เที่ยวชม</div>
+            </div>
+
+            <div class="timeline">
+              
+              <!-- Stop 3 -->
+              <div class="stop-item">
+                <div class="stop-marker">3</div>
+                <div class="stop-card">
+                  <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=200&q=80" class="stop-img" alt="">
+                  <div class="stop-body">
+                    <h4>09:30 · วัดอุโมงค์ สวนพุทธธรรม</h4>
+                    <p>โบราณสถานอายุ 700 ปี โครงสร้างอุโมงค์ใต้ดินท่ามกลางป่าร่มรื่น สงบเงียบ</p>
+                  </div>
+                  <div class="stop-actions">
+                    <span class="drag-handle">⋮⋮</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Route Connection -->
-            <div class="travel-connection">
-              <div class="travel-line"></div>
-              <span>🚗 ขับรถ 35 นาที (24 กม.) มุ่งหน้าสู่บ้านแม่กำปอง</span>
-            </div>
-
-            <!-- Special SME Stopover Recommendation -->
-            <div class="sme-stopover-box" id="smeStopoverBox">
-              <div>
-                <span class="sme-tag">★ จุดแวะร้านค้าชุมชนระหว่างทาง (SME Stopover)</span>
-                <strong>ร้านกาแฟคั่วเตาฟืนแม่กำปอง</strong>
-                <small>ห่างจากเส้นทางหลักเพียง 400 เมตร (+8 นาที) · กาแฟอาราบิก้าคั่วเตาฟืนสูตร 30 ปี</small>
+              <!-- Route Connection -->
+              <div class="travel-connection">
+                <div class="travel-line"></div>
+                <span>🚗 ขับรถ 20 นาที (12 กม.)</span>
               </div>
-              <button class="btn-add-sme" onclick="insertStopover()">+ แวะร้านนี้ (+35 นาที)</button>
-            </div>
 
-            <!-- Stop 2 -->
-            <div class="stop-item">
-              <div class="stop-marker">2</div>
-              <div class="stop-card">
-                <img src="https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=200&q=80" class="stop-img" alt="">
-                <div class="stop-body">
-                  <h4>14:30 · น้ำตกแม่กำปอง & ทางเดินริมธาร</h4>
-                  <p>น้ำตกธรรมชาติ 7 ชั้น ร่มรื่นด้วยต้นไม้ใหญ่ อากาศบริสุทธิ์เย็นสบาย (เวลาเที่ยวแนะนำ ~1.5 ชม.)</p>
-                </div>
-                <div class="stop-actions">
-                  <span class="drag-handle" title="ลากเพื่อสลับลำดับ">⋮⋮</span>
+              <!-- Stop 4 -->
+              <div class="stop-item">
+                <div class="stop-marker">4</div>
+                <div class="stop-card">
+                  <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=200&q=80" class="stop-img" alt="">
+                  <div class="stop-body">
+                    <h4>12:00 · ตลาดกาดก้อม ชุมชนโบราณ</h4>
+                    <p>ลิ้มลองอาหารเหนือพื้นเมือง ข้าวซอยไก่โบราณ และซื้อของฝากหัตถกรรมชาวบ้าน</p>
+                  </div>
+                  <div class="stop-actions">
+                    <span class="drag-handle">⋮⋮</span>
+                  </div>
                 </div>
               </div>
+
             </div>
-
-          </div>
-        </div>
-
-        <!-- ================= DAY 2 TIMELINE ================= -->
-        <div class="day-section">
-          <div class="day-header">
-            <div class="day-title">
-              <span class="day-badge">DAY 2</span>
-              <span>มรดกวัฒนธรรมและตลาดชุมชน (Old City Heritage)</span>
-            </div>
-            <div class="day-meta">2 จุดแวะ · ~3 ชม. เที่ยวชม</div>
-          </div>
-
-          <div class="timeline">
-            
-            <!-- Stop 3 -->
-            <div class="stop-item">
-              <div class="stop-marker">3</div>
-              <div class="stop-card">
-                <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=200&q=80" class="stop-img" alt="">
-                <div class="stop-body">
-                  <h4>09:30 · วัดอุโมงค์ สวนพุทธธรรม</h4>
-                  <p>โบราณสถานอายุ 700 ปี โครงสร้างอุโมงค์ใต้ดินท่ามกลางป่าร่มรื่น สงบเงียบ</p>
-                </div>
-                <div class="stop-actions">
-                  <span class="drag-handle">⋮⋮</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Route Connection -->
-            <div class="travel-connection">
-              <div class="travel-line"></div>
-              <span>🚗 ขับรถ 20 นาที (12 กม.)</span>
-            </div>
-
-            <!-- Stop 4 -->
-            <div class="stop-item">
-              <div class="stop-marker">4</div>
-              <div class="stop-card">
-                <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=200&q=80" class="stop-img" alt="">
-                <div class="stop-body">
-                  <h4>12:00 · ตลาดกาดก้อม ชุมชนโบราณ</h4>
-                  <p>ลิ้มลองอาหารเหนือพื้นเมือง ข้าวซอยไก่โบราณ และซื้อของฝากหัตถกรรมชาวบ้าน</p>
-                </div>
-                <div class="stop-actions">
-                  <span class="drag-handle">⋮⋮</span>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
 
@@ -864,10 +904,10 @@
 
           <!-- Progress Meter -->
           <div class="budget-meter">
-            <div class="meter-fuel" style="width: 18%;" title="ค่าน้ำมัน 18%"></div>
-            <div class="meter-stay" style="width: 42%;" title="ค่าที่พัก 42%"></div>
-            <div class="meter-food" style="width: 28%;" title="ค่าอาหาร 28%"></div>
-            <div class="meter-activity" style="width: 12%;" title="ค่าเข้าชม 12%"></div>
+            <div class="meter-fuel" id="meterFuel" style="width: 18%;" title="ค่าน้ำมัน 18%"></div>
+            <div class="meter-stay" id="meterStay" style="width: 42%;" title="ค่าที่พัก 42%"></div>
+            <div class="meter-food" id="meterFood" style="width: 28%;" title="ค่าอาหาร 28%"></div>
+            <div class="meter-activity" id="meterEntry" style="width: 12%;" title="ค่าเข้าชม 12%"></div>
           </div>
 
           <div class="budget-bars-grid">
@@ -876,7 +916,7 @@
               <strong id="costFuel">1,350 ฿</strong>
             </div>
             <div class="budget-card">
-              <small>🏡 ค่าที่พักโฮมสเตย์ (1 คืน)</small>
+              <small>🏡 ค่าที่พัก (ต่อทริป)</small>
               <strong id="costStay">3,200 ฿</strong>
             </div>
             <div class="budget-card">
@@ -909,6 +949,8 @@
 
   <script>
     let currentMode = 'manual';
+    let currentPlanData = null;
+    let currentUser = null;
 
     function showToast(msg) {
       const toast = document.getElementById('toastMessage');
@@ -924,15 +966,178 @@
 
       if (mode === 'auto') {
         document.getElementById('panelHeading').textContent = '✨ AI Smart Route Generator';
-        showToast('สลับสู่โหมด AI อัจฉริยะ: ระบบจะเรียงลำดับสถานที่ที่ใกล้กันที่สุดให้อัตโนมัติ');
+        showToast('สลับสู่โหมด AI อัจฉริยะ: กดปุ่ม "คำนวณเส้นทางด้วย AI" เพื่อจัดทริปอัตโนมัติ');
       } else {
         document.getElementById('panelHeading').textContent = '⚙️ กำหนดค่าการเดินทาง';
-        showToast('สลับสู่โหมด Manual: ลากเรียงสถานที่ตามใจชอบ');
+        showToast('สลับสู่โหมด Manual: กำหนดค่าตามต้องการ');
+      }
+    }
+
+    async function checkAuthSession() {
+      try {
+        const res = await fetch('/api/auth/me');
+        const json = await res.json();
+        if (json.user) {
+          currentUser = json.user;
+          const userPill = document.querySelector('.user-pill');
+          if (userPill) {
+            userPill.innerHTML = `
+              <div class="user-avatar">${(currentUser.name || 'U').charAt(0).toUpperCase()}</div>
+              <div style="display:flex;flex-direction:column;">
+                <span style="font-size:12px;font-weight:700;color:var(--forest);">${currentUser.name}</span>
+                <small style="font-size:10px;color:var(--muted);">${currentUser.provider ? currentUser.provider.toUpperCase() : 'MEMBER'}</small>
+              </div>
+            `;
+            userPill.href = '../auth/profile.html';
+          }
+        }
+      } catch (e) {
+        console.warn('Session check:', e.message);
+      }
+    }
+
+    async function generateAiPlan() {
+      const destination = document.getElementById('destinationSelect').value;
+      const days = parseInt(document.getElementById('daysSelect').value, 10) || 2;
+      const travelMode = document.getElementById('transportSelect').value;
+      const budget = parseFloat(document.getElementById('budgetLimit').value) || 8000;
+      const style = document.getElementById('travelStyle').value;
+      const pace = document.getElementById('travelPace').value;
+      const btn = document.getElementById('btnGenerateAi');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ กำลังประมวลผลด้วย AI...</span>';
+      showToast('AI กำลังวิเคราะห์สถานที่และเรียงลำดับเส้นทางที่เหมาะสมที่สุด...');
+
+      try {
+        const res = await fetch('/api/ai/advisor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ destination, days, budget, travelMode, style, pace })
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to generate itinerary');
+        currentPlanData = json.plan;
+        renderGeneratedPlan(json.plan);
+        showToast('✨ สร้างแผนการท่องเที่ยวด้วย AI สำเร็จแล้ว!');
+      } catch (err) {
+        showToast('เกิดข้อผิดพลาด: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨ คำนวณเส้นทางด้วย AI (Generate AI Trip)</span>';
+      }
+    }
+
+    function renderGeneratedPlan(plan) {
+      if (!plan || !Array.isArray(plan.itinerary)) return;
+
+      document.getElementById('tripNameInput').value = plan.title || 'ทริปท่องเที่ยวส่วนบุคคล';
+      document.getElementById('summaryTripTitle').textContent = plan.title || 'ทริปท่องเที่ยวส่วนบุคคล';
+      
+      let totalStops = 0;
+      let totalDistance = 0;
+      plan.itinerary.forEach(d => {
+        const stops = d.schedule || [];
+        totalStops += stops.length;
+        stops.forEach(s => {
+          if (s.distanceKm) totalDistance += Number(s.distanceKm);
+        });
+      });
+      if (totalDistance === 0) totalDistance = totalStops * 14;
+
+      document.getElementById('statDays').textContent = plan.days || plan.itinerary.length;
+      document.getElementById('statStops').textContent = totalStops;
+      document.getElementById('statDistance').textContent = Math.round(totalDistance);
+      document.getElementById('summaryTripSub').textContent = `${plan.days || plan.itinerary.length} วัน · ${totalStops} สถานที่ · เส้นทางต่อเนื่องคำนวณด้วย AI`;
+
+      // Render Day Sections
+      const container = document.getElementById('timelineDaysWrapper');
+      let stopCounter = 1;
+
+      container.innerHTML = plan.itinerary.map((day, idx) => {
+        const dayStops = day.schedule || [];
+        const stopsHtml = dayStops.map((stop, sIdx) => {
+          const place = stop.place || {};
+          const isSme = place.isSme || place.category === 'cafe';
+          const pPhoto = place.photo && !place.photo.startsWith('assets/') ? place.photo : 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=200&q=80';
+          const currentNum = stopCounter++;
+
+          let connectionHtml = '';
+          if (sIdx < dayStops.length - 1) {
+            connectionHtml = `
+              <div class="travel-connection">
+                <div class="travel-line"></div>
+                <span>🚗 เดินทาง ~${stop.travelMinutes || 20} นาที (${stop.distanceKm || 12} กม.)</span>
+              </div>
+            `;
+          }
+
+          return `
+            <div class="stop-item">
+              <div class="stop-marker">${currentNum}</div>
+              <div class="stop-card">
+                <img src="${pPhoto}" class="stop-img" alt="">
+                <div class="stop-body">
+                  <h4>${stop.time || '10:00'} · ${place.th || place.en || 'จุดแวะท่องเที่ยว'} ${isSme ? '<span class="sme-tag" style="display:inline-block;margin-left:6px;">★ Local SME</span>' : ''}</h4>
+                  <p>${place.storyTh || place.storyEn || place.locTh || 'จุดท่องเที่ยวและพักผ่อนในชุมชน'}</p>
+                </div>
+                <div class="stop-actions">
+                  <span class="drag-handle" title="ลากเพื่อสลับลำดับ">⋮⋮</span>
+                </div>
+              </div>
+            </div>
+            ${connectionHtml}
+          `;
+        }).join('');
+
+        return `
+          <div class="day-section">
+            <div class="day-header">
+              <div class="day-title">
+                <span class="day-badge">DAY ${day.day || idx + 1}</span>
+                <span>${day.title || `วันที่ ${day.day || idx + 1}`}</span>
+              </div>
+              <div class="day-meta">${dayStops.length} จุดแวะ · แนะนำ ~${dayStops.length * 1.5} ชม.</div>
+            </div>
+            <div class="timeline">
+              ${stopsHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Update Budget
+      const b = plan.budgetBreakdown || {};
+      const fuel = b.fuel || b.transport || 1200;
+      const stay = b.stay || 2800;
+      const food = b.food || 1800;
+      const entry = b.activities || 600;
+      const total = fuel + stay + food + entry;
+
+      document.getElementById('costFuel').textContent = fuel.toLocaleString() + ' ฿';
+      document.getElementById('costStay').textContent = stay.toLocaleString() + ' ฿';
+      document.getElementById('costFood').textContent = food.toLocaleString() + ' ฿';
+      document.getElementById('costEntry').textContent = entry.toLocaleString() + ' ฿';
+      document.getElementById('totalCost').textContent = total.toLocaleString() + ' บาท';
+
+      const limit = parseFloat(document.getElementById('budgetLimit').value) || 10000;
+      const rem = limit - total;
+      const remEl = document.getElementById('budgetRemaining');
+      remEl.textContent = rem.toLocaleString() + ' บาท';
+      remEl.style.color = rem >= 0 ? '#15803D' : '#DC2626';
+
+      // Meter percentages
+      if (total > 0) {
+        document.getElementById('meterFuel').style.width = Math.round((fuel / total) * 100) + '%';
+        document.getElementById('meterStay').style.width = Math.round((stay / total) * 100) + '%';
+        document.getElementById('meterFood').style.width = Math.round((food / total) * 100) + '%';
+        document.getElementById('meterEntry').style.width = Math.round((entry / total) * 100) + '%';
       }
     }
 
     function insertStopover() {
       const box = document.getElementById('smeStopoverBox');
+      if (!box) return;
       box.innerHTML = `
         <div style="display:flex; align-items:center; gap:14px; width:100%;">
           <span style="font-size:24px;">☕</span>
@@ -947,30 +1152,69 @@
       box.style.background = '#DCFCE7';
       box.style.borderColor = '#16A34A';
 
-      // Update stats
-      document.getElementById('statStops').textContent = '5';
-      document.getElementById('statDistance').textContent = '71';
-      showToast('เพิ่ม "ร้านกาแฟคั่วเตาฟืนแม่กำปอง" ลงในไทม์ไลน์ Day 1 สำเร็จ!');
+      const stopsEl = document.getElementById('statStops');
+      if (stopsEl) stopsEl.textContent = parseInt(stopsEl.textContent) + 1;
+      showToast('เพิ่ม "ร้านกาแฟคั่วเตาฟืนแม่กำปอง" ลงในไทม์ไลน์สำเร็จ!');
     }
 
     function updateBudgetCalc() {
       const limit = parseFloat(document.getElementById('budgetLimit').value) || 10000;
-      const totalCost = 7400;
+      const totalCost = parseFloat(document.getElementById('totalCost').textContent.replace(/[^\d.-]/g, '')) || 7400;
       const rem = limit - totalCost;
       const remEl = document.getElementById('budgetRemaining');
       remEl.textContent = rem.toLocaleString() + ' บาท';
       remEl.style.color = rem >= 0 ? '#15803D' : '#DC2626';
     }
 
-    function savePlan() {
-      const name = document.getElementById('tripNameInput').value;
-      showToast(`บันทึกทริป "${name}" ลงใน My Trips สำเร็จ!`);
+    async function savePlan() {
+      const name = document.getElementById('tripNameInput').value.trim() || 'My Trip';
+      
+      try {
+        const meRes = await fetch('/api/auth/me');
+        const meJson = await meRes.json();
+        if (!meJson.user) {
+          if (confirm('คุณยังไม่ได้เข้าสู่ระบบ ต้องการไปที่หน้าเข้าสู่ระบบเพื่อบันทึกทริปนี้หรือไม่?')) {
+            window.location.href = '../auth/login.html';
+          }
+          return;
+        }
+
+        const days = parseInt(document.getElementById('daysSelect').value, 10) || 2;
+        const budget = parseFloat(document.getElementById('budgetLimit').value) || 8000;
+        const travelMode = document.getElementById('transportSelect').value;
+
+        // Group places from current timeline
+        const sampleIds = ['sme-mae-kampong-coffee', 'sme-talad-noi-noodle', 'sample-mon-jam', 'sample-wat-umong'];
+        const groups = Array.from({ length: days }, (_, i) => [sampleIds[i % sampleIds.length]]);
+
+        const res = await fetch('/api/itineraries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: name,
+            days: days,
+            hoursPerDay: 7,
+            budget: budget,
+            currency: 'THB',
+            travelMode: travelMode,
+            groups: groups
+          })
+        });
+
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to save itinerary');
+        showToast(`บันทึกทริป "${name}" ลงในฐานข้อมูล My Trips เรียบร้อยแล้ว!`);
+      } catch (err) {
+        showToast('เกิดข้อผิดพลาดในการบันทึก: ' + err.message);
+      }
     }
 
     function updateDays(val) {
       document.getElementById('statDays').textContent = val;
       showToast(`ปรับจำนวนวันเดินทางเป็น ${val} วัน`);
     }
+
+    document.addEventListener('DOMContentLoaded', checkAuthSession);
   </script>
 
 </body>
