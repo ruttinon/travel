@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unfold · Business Portal & SME Promotions (UX/UI Prototype)</title>
+  <title>Traval · Business Portal & SME Merchant Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -737,6 +737,11 @@
         <span>โปรไฟล์ร้าน & Local Story</span>
       </button>
 
+      <button class="nav-btn" onclick="switchView('claim', this)">
+        <span class="icon">🏷️</span>
+        <span>อ้างสิทธิ์ร้านค้า (Claim)</span>
+      </button>
+
       <button class="nav-btn" onclick="window.location.href='../admin/admin-showcase.html'">
         <span class="icon">🛡️</span>
         <span>Admin Control Studio ↗</span>
@@ -971,6 +976,20 @@
               </div>
             </div>
 
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <small style="color:var(--muted);font-size:12px;">คลิกบนแผนที่ด้านล่างเพื่อปักหมุดตำแหน่งร้าน หรือกดปุ่มดึงพิกัดจาก GPS</small>
+              <button type="button" onclick="useCurrentGpsForBiz()" style="background:#FFF;border:1px solid var(--line);font-size:11px;padding:6px 14px;border-radius:99px;font-weight:700;color:var(--forest);cursor:pointer;">
+                📍 ใช้ตำแหน่งปัจจุบัน (GPS)
+              </button>
+            </div>
+            <div id="bizMiniMap" onclick="onBizMapClick(event)" style="height:180px;border-radius:14px;background:#E2E8F0;position:relative;overflow:hidden;border:1px solid var(--line);margin-bottom:16px;cursor:crosshair;display:flex;align-items:center;justify-content:center;">
+              <img src="https://tile.openstreetmap.org/13/6410/3505.png" style="width:100%;height:100%;object-fit:cover;opacity:0.85;" alt="Map preview">
+              <div id="bizMapMarker" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);pointer-events:none;font-size:28px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.4));">
+                📍
+              </div>
+              <span style="position:absolute;bottom:8px;right:10px;background:rgba(255,255,255,0.9);font-size:10px;padding:2px 8px;border-radius:99px;color:#333;">คลิกบนแผนที่เพื่อย้ายหมุด</span>
+            </div>
+
             <div class="field-wrap">
               <label>ที่อยู่ / จุดสังเกต (ภาษาไทย) *</label>
               <input type="text" id="wizAddress" value="หมู่ 3 ต.ห้วยแก้ว อ.แม่ออน จ.เชียงใหม่ (ตรงข้ามสะพานไม้)">
@@ -1186,6 +1205,44 @@
           </div>
         </div>
       </div>
+
+    <!-- ============================================== -->
+    <!-- TAB 5: CLAIM A PLACE (อ้างสิทธิ์ความเป็นเจ้าของ) -->
+    <!-- ============================================== -->
+    <section class="tab-view" id="view-claim">
+      <div class="page-head">
+        <div>
+          <span class="overline">OWNERSHIP / CLAIM A PLACE</span>
+          <h1 class="page-title">อ้างสิทธิ์ความเป็นเจ้าของร้านค้า<span>.</span></h1>
+          <p class="page-sub">หากร้านค้าของคุณมีข้อมูลอยู่บน Traval แล้ว คุณสามารถยื่นคำขอเพื่อรับสิทธิ์ในการจัดการและซื้อโปรโมตได้</p>
+        </div>
+      </div>
+
+      <div class="adm-card" style="max-width:680px;background:#FFF;border-radius:20px;padding:28px;border:1px solid var(--line);">
+        <form onsubmit="submitClaimRequest(event)" style="display:flex;flex-direction:column;gap:14px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:var(--forest);margin-bottom:4px;">เลือกร้านค้าที่ต้องการอ้างสิทธิ์ *</label>
+            <select id="claimPlaceSelect" required style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;">
+              <option value="">-- กำลังโหลดรายชื่อสถานที่ --</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:var(--forest);margin-bottom:4px;">ชื่อและตำแหน่งของคุณ *</label>
+            <input id="claimOwnerName" required placeholder="เช่น สมชาย ใจดี (เจ้าของร้าน)" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;box-sizing:border-box;">
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:var(--forest);margin-bottom:4px;">เบอร์โทรศัพท์สำหรับติดต่อยืนยัน *</label>
+            <input id="claimPhone" required placeholder="081-234-5678" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;box-sizing:border-box;">
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:var(--forest);margin-bottom:4px;">เอกสารหรือเหตุผลยืนยันสิทธิ์ *</label>
+            <textarea id="claimNote" required rows="3" placeholder="ระบุหลักฐาน เช่น ทะเบียนการค้า หรือหน้าเพจ Official ที่แอดมินสามารถตรวจสอบได้" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;box-sizing:border-box;"></textarea>
+          </div>
+          <button type="submit" class="btn-action primary" style="padding:12px;border-radius:99px;margin-top:8px;">ยื่นคำขออ้างสิทธิ์ (Claim Place) ↗</button>
+        </form>
+      </div>
+    </section>
+
     </section>
 
   </main>
@@ -1408,6 +1465,66 @@
     window.addEventListener('DOMContentLoaded', () => {
       loadBusinessOverview();
     });
+
+    function useCurrentGpsForBiz() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          document.getElementById('wizLat').value = pos.coords.latitude.toFixed(4);
+          document.getElementById('wizLon').value = pos.coords.longitude.toFixed(4);
+          showToast('ดึงพิกัด GPS สำเร็จ (' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4) + ')');
+        }, () => {
+          showToast('ไม่สามารถรับตำแหน่ง GPS ได้ โปรดอนุญาตในเบราว์เซอร์');
+        });
+      }
+    }
+
+    function onBizMapClick(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const marker = document.getElementById('bizMapMarker');
+      if (marker) {
+        marker.style.left = x + 'px';
+        marker.style.top = y + 'px';
+      }
+      const baseLat = 18.8651, baseLon = 99.3498;
+      const deltaLat = ((rect.height / 2 - y) / 1000).toFixed(4);
+      const deltaLon = ((x - rect.width / 2) / 1000).toFixed(4);
+      const newLat = (baseLat + parseFloat(deltaLat)).toFixed(4);
+      const newLon = (baseLon + parseFloat(deltaLon)).toFixed(4);
+      document.getElementById('wizLat').value = newLat;
+      document.getElementById('wizLon').value = newLon;
+      showToast('ปักหมุดพิกัดใหม่: ' + newLat + ', ' + newLon);
+    }
+
+    async function loadClaimablePlaces() {
+      try {
+        const res = await fetch('/api/places');
+        if (!res.ok) return;
+        const { places } = await res.json();
+        const select = document.getElementById('claimPlaceSelect');
+        if (select && places) {
+          select.innerHTML = '<option value="">-- เลือกร้านค้าของคุณ --</option>' + 
+            places.map(p => `<option value="${p.id}">${p.th || p.en} (${p.locTh || p.locEn})</option>`).join('');
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+
+    async function submitClaimRequest(e) {
+      e.preventDefault();
+      const placeId = document.getElementById('claimPlaceSelect').value;
+      const ownerName = document.getElementById('claimOwnerName').value;
+      const phone = document.getElementById('claimPhone').value;
+      const note = document.getElementById('claimNote').value;
+      if (!placeId) {
+        showToast('โปรดเลือกร้านค้าที่ต้องการอ้างสิทธิ์');
+        return;
+      }
+      showToast('ยื่นคำขออ้างสิทธิ์สำเร็จ! เจ้าหน้าที่จะตรวจสอบข้อมูลและติดต่อกลับทางเบอร์ ' + phone);
+      switchView('overview', document.querySelectorAll('.nav-btn')[0]);
+    }
   </script>
 
 </body>

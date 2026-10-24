@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unfold · Admin Studio & Moderation (UX/UI Prototype)</title>
+  <title>Traval · Admin Control Studio & Moderation</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -581,6 +581,14 @@
       </button>
 
       <span class="rail-heading">Content & Access</span>
+      <button class="nav-btn" onclick="switchTab('users', this)">
+        <span class="icon">👥</span>
+        <span>จัดการผู้ใช้งาน (Users)</span>
+      </button>
+      <button class="nav-btn" onclick="switchTab('campaigns', this)">
+        <span class="icon">📢</span>
+        <span>แคมเปญ & แบนเนอร์ (CMS)</span>
+      </button>
       <button class="nav-btn" onclick="switchTab('analytics', this)">
         <span class="icon">📊</span>
         <span>SME Analytics</span>
@@ -612,7 +620,9 @@
     <!-- Topbar -->
     <header class="admin-topbar">
       <div class="breadcrumb">unfold / <strong id="sectionBreadcrumb">Dashboard Overview</strong></div>
-      <div class="admin-avatar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="btn-action" onclick="exportDataCsv()" style="background:#FFF;color:var(--forest);border:1px solid var(--line);font-size:12px;padding:8px 16px;border-radius:99px;cursor:pointer;font-weight:700;">📥 ส่งออกรายงาน (CSV)</button>
+        <div class="admin-avatar">
         <div class="avatar-circle">AD</div>
         <span style="font-size: 13px; font-weight: 600;">Super Administrator</span>
       </div>
@@ -1020,6 +1030,97 @@
           </tbody>
         </table>
       </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 5: USER MANAGEMENT (จัดการผู้ใช้งาน) -->
+    <!-- ========================================== -->
+    <section class="tab-view" id="view-users">
+      <div class="page-head">
+        <div>
+          <span class="overline">USERS / ACCESS CONTROL</span>
+          <h1 class="page-title">จัดการผู้ใช้งาน<span>.</span></h1>
+          <p class="page-sub">ตรวจสอบรายชื่อผู้ใช้ ค้นหา และระงับสิทธิ์บัญชีที่ละเมิดข้อกำหนด</p>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <input type="text" id="userSearchInput" placeholder="ค้นหาชื่อ หรืออีเมล..." oninput="filterUsers()" style="padding:10px 16px;border:1px solid var(--line);border-radius:99px;font-size:12px;width:240px;outline:none;">
+        </div>
+      </div>
+
+      <div class="adm-card" style="padding:0; overflow:hidden;">
+        <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+          <thead style="background: #F8FAF8; border-bottom: 1px solid var(--line); color: var(--forest);">
+            <tr>
+              <th style="padding: 16px 20px;">ผู้ใช้งาน</th>
+              <th style="padding: 16px 20px;">อีเมล</th>
+              <th style="padding: 16px 20px;">ช่องทาง (Provider)</th>
+              <th style="padding: 16px 20px;">สถานะ</th>
+              <th style="padding: 16px 20px; text-align: right;">จัดการสิทธิ์</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr>
+              <td colspan="5" style="padding:30px; text-align:center; color:#78857B;">กำลังโหลดรายชื่อผู้ใช้...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 6: CAMPAIGNS & CMS (แคมเปญ & แบนเนอร์) -->
+    <!-- ========================================== -->
+    <section class="tab-view" id="view-campaigns">
+      <div class="page-head">
+        <div>
+          <span class="overline">MARKETING / CMS</span>
+          <h1 class="page-title">แคมเปญ & แบนเนอร์หน้าแรก<span>.</span></h1>
+          <p class="page-sub">จัดการแบนเนอร์โปรโมตร้านค้าชุมชน Local SME Spotlight บนหน้าแรกของนักท่องเที่ยว</p>
+        </div>
+      </div>
+
+      <div class="content-grid-2">
+        <!-- Form to Add Campaign -->
+        <div class="adm-card">
+          <h2 style="font-size:18px; margin-bottom:16px; color:var(--forest);">+ สร้างแคมเปญโปรโมตใหม่</h2>
+          <form id="campaignForm" onsubmit="submitNewCampaign(event)" style="display:flex;flex-direction:column;gap:14px;">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--forest);">หัวข้อแคมเปญ *</label>
+              <input id="campTitle" required placeholder="เช่น เทศกาลกาแฟคั่วเตาฟืน ชุมชนแม่กำปอง" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;box-sizing:border-box;">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--forest);">ข้อความป้ายกำกับ (Badge)</label>
+                <input id="campBadge" placeholder="เช่น Local Pick, Hidden Gem" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--forest);">รหัสสถานที่เป้าหมาย (Slug)</label>
+                <input id="campSlug" placeholder="เช่น sme-mae-kampong-coffee" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;box-sizing:border-box;">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--forest);">ลำดับความสำคัญ (Priority)</label>
+                <input id="campPriority" type="number" value="10" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--forest);">รูปภาพแบนเนอร์ (URL หรือ Asset)</label>
+                <input id="campImage" placeholder="hero-forest.webp" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;box-sizing:border-box;">
+              </div>
+            </div>
+            <button type="submit" class="btn-action primary" style="padding:12px;border-radius:99px;margin-top:6px;">บันทึกและเผยแพร่แคมเปญ ↗</button>
+          </form>
+        </div>
+
+        <!-- Campaign List -->
+        <div class="adm-card">
+          <h2 style="font-size:18px; margin-bottom:16px; color:var(--forest);">แคมเปญที่กำลังเผยแพร่</h2>
+          <div id="campaignsListContainer" style="display:flex;flex-direction:column;gap:12px;">
+            <p style="color:#78857B;font-size:13px;">กำลังโหลดรายการแคมเปญ...</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     </section>
 
   </main>
@@ -1047,13 +1148,17 @@
         overview: 'Dashboard Overview',
         businesses: 'SME Store Verification',
         safety: 'Travel Safety & Scam Moderation',
-        analytics: 'SME Performance Analytics'
+        analytics: 'SME Performance Analytics',
+        users: 'User Management & Access Control',
+        campaigns: 'Spotlight Campaigns & Banners (CMS)'
       };
       document.getElementById('sectionBreadcrumb').textContent = titles[tabId] || 'Admin';
 
       if (tabId === 'businesses') loadBusinessSubmissions();
       else if (tabId === 'safety') loadSafetyReports();
       else if (tabId === 'analytics') loadSmeAnalytics();
+      else if (tabId === 'users') loadUsers();
+      else if (tabId === 'campaigns') loadCampaigns();
     }
 
     async function ensureAdminAuth() {
@@ -1376,6 +1481,182 @@
       await ensureAdminAuth();
       loadDashboardStats();
     });
+
+    // User Management
+    let allUsersCache = [];
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/admin/users');
+        if (!res.ok) return;
+        const data = await res.json();
+        allUsersCache = data.users || [];
+        renderUsersTable(allUsersCache);
+      } catch (err) {
+        console.warn('Load users failed:', err);
+      }
+    }
+
+    function renderUsersTable(users) {
+      const tbody = document.getElementById('usersTableBody');
+      if (!tbody) return;
+      if (!users || !users.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:30px;text-align:center;color:#78857B;">ไม่พบรายชื่อผู้ใช้งาน</td></tr>';
+        return;
+      }
+      tbody.innerHTML = users.map(u => {
+        const isSuspended = u.status === 'suspended';
+        return `
+          <tr style="border-bottom: 1px solid #EDF0EA;">
+            <td style="padding: 14px 20px;">
+              <strong style="color:var(--forest);font-size:14px;">${u.name || 'ไม่ระบุชื่อ'}</strong>
+              <br><small style="color:#78857B;">ID: ${u.id.slice(0, 8)}... · วันที่สมัคร: ${new Date(u.createdAt).toLocaleDateString('th-TH')}</small>
+            </td>
+            <td style="padding: 14px 20px;">${u.email}</td>
+            <td style="padding: 14px 20px;">
+              <span style="background:#EDF2EB;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;">
+                ${u.provider === 'google' ? 'Google' : u.provider === 'facebook' ? 'Facebook' : u.provider === 'phone' ? 'Phone OTP' : 'Email'}
+              </span>
+            </td>
+            <td style="padding: 14px 20px;">
+              <span class="status-badge ${isSuspended ? 'rejected' : 'verified'}">
+                ${isSuspended ? 'SUSPENDED' : 'ACTIVE'}
+              </span>
+            </td>
+            <td style="padding: 14px 20px; text-align: right;">
+              <button class="btn-sm ${isSuspended ? 'approve' : 'reject'}" onclick="toggleUserStatus('${u.id}', '${isSuspended ? 'active' : 'suspended'}')">
+                ${isSuspended ? '✓ ปลดระงับ' : '✕ ระงับบัญชี'}
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterUsers() {
+      const q = (document.getElementById('userSearchInput')?.value || '').toLowerCase().trim();
+      if (!q) {
+        renderUsersTable(allUsersCache);
+      } else {
+        const filtered = allUsersCache.filter(u => 
+          (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)
+        );
+        renderUsersTable(filtered);
+      }
+    }
+
+    async function toggleUserStatus(userId, nextStatus) {
+      try {
+        const res = await fetch(`/api/admin/users/${userId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: nextStatus })
+        });
+        if (res.ok) {
+          showToast(`อัปเดตสถานะผู้ใช้เป็น ${nextStatus} เรียบร้อยแล้ว`);
+          loadUsers();
+        } else {
+          const err = await res.json();
+          showToast('เกิดข้อผิดพลาด: ' + (err.error || 'ทำรายการไม่สำเร็จ'));
+        }
+      } catch (e) {
+        showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      }
+    }
+
+    // Campaigns CMS
+    async function loadCampaigns() {
+      try {
+        const res = await fetch('/api/admin/campaigns');
+        if (!res.ok) return;
+        const data = await res.json();
+        const container = document.getElementById('campaignsListContainer');
+        if (!container) return;
+        if (!data.campaigns || !data.campaigns.length) {
+          container.innerHTML = '<p style="color:#78857B;font-size:13px;padding:20px;text-align:center;">ยังไม่มีแคมเปญที่สร้างไว้</p>';
+          return;
+        }
+        container.innerHTML = data.campaigns.map(c => `
+          <div style="border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <span style="background:#8DE026;color:#0D2C1C;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;">${c.badgeText || 'PROMO'}</span>
+              <strong style="display:block;margin:4px 0 2px;color:var(--forest);font-size:14px;">${c.title}</strong>
+              <small style="color:#78857B;">เป้าหมาย: ${c.targetSlug || 'หน้าแรก'} · ลำดับ: ${c.priority || 10}</small>
+            </div>
+            <button class="btn-sm reject" onclick="deleteCampaign('${c.id}')">ลบ</button>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.warn('Load campaigns failed:', err);
+      }
+    }
+
+    async function submitNewCampaign(e) {
+      e.preventDefault();
+      const title = document.getElementById('campTitle').value.trim();
+      const badgeText = document.getElementById('campBadge').value.trim();
+      const targetSlug = document.getElementById('campSlug').value.trim();
+      const priority = Number(document.getElementById('campPriority').value) || 10;
+      const imageUrl = document.getElementById('campImage').value.trim();
+
+      try {
+        const res = await fetch('/api/admin/campaigns', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, badgeText, targetSlug, priority, imageUrl })
+        });
+        if (res.ok) {
+          showToast('สร้างแคมเปญสำเร็จ เผยแพร่บนหน้าแรกแล้ว');
+          document.getElementById('campaignForm').reset();
+          loadCampaigns();
+        } else {
+          const err = await res.json();
+          showToast('ผิดพลาด: ' + (err.error || 'บันทึกไม่สำเร็จ'));
+        }
+      } catch (e) {
+        showToast('เชื่อมต่อล้มเหลว');
+      }
+    }
+
+    async function deleteCampaign(id) {
+      if (!confirm('ยืนยันลบแคมเปญนี้หรือไม่?')) return;
+      try {
+        const res = await fetch(`/api/admin/campaigns/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          showToast('ลบแคมเปญสำเร็จ');
+          loadCampaigns();
+        }
+      } catch (e) {
+        showToast('ลบล้มเหลว');
+      }
+    }
+
+    // CSV Export
+    async function exportDataCsv() {
+      try {
+        const res = await fetch('/api/places');
+        if (!res.ok) { showToast('ไม่สามารถดึงข้อมูลได้'); return; }
+        const { places } = await res.json();
+        if (!places || !places.length) { showToast('ไม่มีข้อมูลที่จะส่งออก'); return; }
+
+        let csv = 'ID,Name_TH,Name_EN,Category,Region,Is_SME,PriceFrom,Rating\r\n';
+        places.forEach(p => {
+          const safeNameTh = (p.th || '').replace(/"/g, '""');
+          const safeNameEn = (p.en || '').replace(/"/g, '""');
+          csv += `"${p.id}","${safeNameTh}","${safeNameEn}","${p.category}","${p.region}",${p.isSme ? 1 : 0},${p.priceFrom || 0},${p.rating || 0}\r\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `traval_places_export_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('ดาวน์โหลดรายงาน CSV สำเร็จ');
+      } catch (e) {
+        showToast('เกิดข้อผิดพลาดในการส่งออกข้อมูล');
+      }
+    }
   </script>
 
 </body>

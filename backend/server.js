@@ -41,6 +41,8 @@ const PAGE_FILES={
   'planner-showcase.html':'frontend/planner/planner-showcase.html',
   'admin-showcase.html':'frontend/admin/admin-showcase.html',
   'business-showcase.html':'frontend/business/business-showcase.html',
+  'google-maps-poc.html':'frontend/poc/google-maps-poc.html',
+  'poc/google-maps-poc.html':'frontend/poc/google-maps-poc.html',
   'trip-engine.js':'frontend/planner/trip-engine.js',
   'auth/login.html':'frontend/auth/login.html',
   'auth/register.html':'frontend/auth/register.html',
@@ -272,6 +274,26 @@ db.exec(`
  CREATE INDEX IF NOT EXISTS itinerary_by_user ON user_itineraries(user_id,updated_at);
 `);
 addColumn('user_itineraries','budget_breakdown_json',"TEXT NOT NULL DEFAULT '{}'");
+
+// v2.7: Custom User Collection Folders (categorize places by province or theme)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS user_folders (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    color TEXT DEFAULT '#172B23',
+    icon TEXT DEFAULT '📁',
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS folder_by_user ON user_folders(user_id,created_at);
+  CREATE TABLE IF NOT EXISTS folder_places (
+    folder_id TEXT NOT NULL REFERENCES user_folders(id) ON DELETE CASCADE,
+    place_slug TEXT NOT NULL REFERENCES places(slug) ON DELETE CASCADE,
+    position INTEGER NOT NULL DEFAULT 0,
+    added_at TEXT NOT NULL,
+    PRIMARY KEY(folder_id,place_slug)
+  );
+`);
 
 // Immutable-by-API administrative audit trail, append-only and local-only.
 // Older databases are upgraded additively and are never cleared.
@@ -788,7 +810,25 @@ function generateAiTripPlan(params){
 async function api(req,res,u){
   const method=req.method,route=u.pathname;
   if(route==='/api/health'&&method==='GET')return reply(res,200,{ok:true,version:'2.7.0',storage:'SQLite',published:db.prepare("SELECT count(*) AS n FROM places WHERE status='published'").get().n});
-  if(route==='/api/places'&&method==='GET')return reply(res,200,{places:getPublic.all().map(p=>rowToPlace(p)),mode:'live'});
+  if(route==='/api/places'&&method==='GET'){
+    let places=getPublic.all();
+    const cat=u.searchParams.get('category');
+    const reg=u.searchParams.get('region');
+    const sme=u.searchParams.get('sme')||u.searchParams.get('isSme');
+    const feat=u.searchParams.get('featured');
+    const q=(u.searchParams.get('q')||u.searchParams.get('search')||'').trim().toLowerCase();
+    if(cat&&cat!=='all') places=places.filter(p=>p.category===cat);
+    if(reg&&reg!=='all') places=places.filter(p=>p.region===reg);
+    if(sme==='1'||sme==='true') places=places.filter(p=>p.is_sme===1);
+    if(feat==='1'||feat==='true') places=places.filter(p=>p.featured===1);
+    if(q) places=places.filter(p=>
+      (p.name_en&&p.name_en.toLowerCase().includes(q))||
+      (p.name_th&&p.name_th.toLowerCase().includes(q))||
+      (p.location_en&&p.location_en.toLowerCase().includes(q))||
+      (p.location_th&&p.location_th.toLowerCase().includes(q))
+    );
+    return reply(res,200,{places:places.map(p=>rowToPlace(p)),count:places.length,mode:'live'});
+  }
   if(route==='/api/places/nearby'&&method==='GET')return reply(res,200,getNearby(u));
   if(route==='/api/places/sme'&&method==='GET'){
     const type=u.searchParams.get('type')||'all';
@@ -807,12 +847,32 @@ async function api(req,res,u){
   }
   if(route==='/api/trips/recommend-sme'&&method==='POST'){
     const body=await jsonBody(req);
-    const placeIds=Array.isArray(body?.places)?body.places.filter(id=>typeof id==='string'):[];
+    const rawStops=Array.isArray(body?.stops)?body.stops:Array.isArray(body?.places)?body.places:[];
     const maxDetourKm=Number.isFinite(Number(body?.maxDetourKm))?Math.min(50,Math.max(1,Number(body.maxDetourKm))):15;
     const limit=Number.isFinite(Number(body?.limit))?Math.min(20,Math.max(1,Number(body.limit))):5;
-    const waypoints=placeIds.map(id=>getRow.get(id)).filter(p=>p&&p.status==='published'&&p.lat!==null&&p.lon!==null);
-    if(!waypoints.length)return reply(res,200,{recommendations:[],count:0});
-    const existing=new Set(placeIds);
+    const waypoints=[];
+    const existing=new Set();
+    for(const s of rawStops){
+      if(typeof s==='string'){
+        const p=getRow.get(s);
+        if(p&&p.lat!==null&&p.lon!==null){
+          waypoints.push({slug:p.slug,name_th:p.name_th,name_en:p.name_en,lat:p.lat,lon:p.lon});
+          existing.add(p.slug);
+        }
+      }else if(s&&typeof s==='object'){
+        const id=s.id||s.slug||s.placeId;
+        if(id) existing.add(id);
+        if(Number.isFinite(Number(s.lat))&&Number.isFinite(Number(s.lon))){
+          waypoints.push({slug:id||'stop',name_th:s.name_th||s.th||s.name||'จุดแวะ',name_en:s.name_en||s.en||s.name||'Stop',lat:Number(s.lat),lon:Number(s.lon)});
+        }else if(id){
+          const p=getRow.get(id);
+          if(p&&p.lat!==null&&p.lon!==null){
+            waypoints.push({slug:p.slug,name_th:p.name_th,name_en:p.name_en,lat:p.lat,lon:p.lon});
+          }
+        }
+      }
+    }
+    if(!waypoints.length)return reply(res,200,{recommendations:[],stopovers:[],count:0});
     const smePlaces=getPublic.all().filter(p=>p.is_sme===1&&!existing.has(p.slug)&&p.lat!==null&&p.lon!==null);
     const recs=[];
     for(const sme of smePlaces){
@@ -833,7 +893,8 @@ async function api(req,res,u){
       }
     }
     recs.sort((a,b)=>a.detourKm-b.detourKm);
-    return reply(res,200,{recommendations:recs.slice(0,limit),count:Math.min(recs.length,limit)});
+    const sliced=recs.slice(0,limit);
+    return reply(res,200,{recommendations:sliced,stopovers:sliced,count:sliced.length});
   }
   if(route==='/api/trips/estimate-cost'&&method==='GET'){
     const dist=parsedCoord(u.searchParams.get('distanceKm'),'distanceKm',0,5000);
@@ -1093,12 +1154,12 @@ async function api(req,res,u){
   }
 
   // Private trip plans are owned by the authenticated traveller, not the business account.
-  if(route==='/api/me/itineraries'&&method==='GET'){
+  if((route==='/api/me/itineraries'||route==='/api/itineraries')&&method==='GET'){
     const user=requireUser(req);
     const rows=db.prepare('SELECT * FROM user_itineraries WHERE user_id=? ORDER BY updated_at DESC LIMIT 100').all(user.id);
     return reply(res,200,{itineraries:rows.map(itineraryPublic)});
   }
-  if(route==='/api/me/itineraries'&&method==='POST'){
+  if((route==='/api/me/itineraries'||route==='/api/itineraries')&&method==='POST'){
     checkOrigin(req);const user=requireUser(req),p=normalizeItinerary(await jsonBody(req));
     const count=db.prepare('SELECT count(*) AS n FROM user_itineraries WHERE user_id=?').get(user.id).n;
     if(count>=40)fail(429,'Maximum 40 trip plans per account');
@@ -1107,7 +1168,7 @@ async function api(req,res,u){
      .run(id,user.id,p.title,p.days,p.hoursPerDay,p.currency,p.budget,p.travelMode,JSON.stringify(p.groups),now,now,JSON.stringify(p.budgetBreakdown||{}));
     return reply(res,201,{itinerary:itineraryPublic(db.prepare('SELECT * FROM user_itineraries WHERE id=?').get(id))});
   }
-  const addStopMatch=/^\/api\/me\/itineraries\/([a-f0-9-]{36})\/add-stop$/.exec(route);
+  const addStopMatch=/^\/api\/(?:me\/)?itineraries\/([a-f0-9-]{36})\/add-stop$/.exec(route);
   if(addStopMatch&&method==='POST'){
     checkOrigin(req);const user=requireUser(req);
     const row=db.prepare('SELECT * FROM user_itineraries WHERE id=? AND user_id=?').get(addStopMatch[1],user.id);
@@ -1127,7 +1188,7 @@ async function api(req,res,u){
       .run(JSON.stringify(groups),now,row.id,user.id);
     return reply(res,200,{itinerary:itineraryPublic(db.prepare('SELECT * FROM user_itineraries WHERE id=?').get(row.id))});
   }
-  const tripMatch=/^\/api\/me\/itineraries\/([a-f0-9-]{36})$/.exec(route);
+  const tripMatch=/^\/api\/(?:me\/)?itineraries\/([a-f0-9-]{36})$/.exec(route);
   if(tripMatch){
     const user=requireUser(req);
     const row=db.prepare('SELECT * FROM user_itineraries WHERE id=? AND user_id=?').get(tripMatch[1],user.id);
@@ -1172,6 +1233,68 @@ async function api(req,res,u){
     }catch(e){db.exec('ROLLBACK');throw e;}
     return reply(res,200,{saved:collectionList(user.id,'saved'),trip:collectionList(user.id,'trip')});
   }
+  // v2.7: Custom User Folders (by province/theme)
+  if(route==='/api/me/folders'&&method==='GET'){
+    const user=requireUser(req);
+    const folders=db.prepare('SELECT * FROM user_folders WHERE user_id=? ORDER BY created_at ASC').all(user.id);
+    const countStmt=db.prepare('SELECT count(*) AS n FROM folder_places WHERE folder_id=?');
+    const result=folders.map(f=>{
+      const placeCount=countStmt.get(f.id).n;
+      return {id:f.id,name:f.name,color:f.color,icon:f.icon,createdAt:f.created_at,placeCount};
+    });
+    return reply(res,200,{folders:result});
+  }
+  if(route==='/api/me/folders'&&method==='POST'){
+    checkOrigin(req);const user=requireUser(req);
+    const b=await jsonBody(req);
+    const name=validString(b?.name,60,'Folder name',{required:true});
+    const color=validString(b?.color||'#172B23',20,'Color');
+    const icon=validString(b?.icon||'📁',10,'Icon');
+    const id=crypto.randomUUID(),now=new Date().toISOString();
+    db.prepare('INSERT INTO user_folders(id,user_id,name,color,icon,created_at) VALUES(?,?,?,?,?,?)')
+      .run(id,user.id,name,color,icon,now);
+    return reply(res,201,{folder:{id,name,color,icon,createdAt:now,placeCount:0}});
+  }
+  const folderMatch=/^\/api\/me\/folders\/([a-f0-9-]{36})$/.exec(route);
+  if(folderMatch&&method==='DELETE'){
+    checkOrigin(req);const user=requireUser(req);
+    const f=db.prepare('SELECT id FROM user_folders WHERE id=? AND user_id=?').get(folderMatch[1],user.id);
+    if(!f)fail(404,'Folder not found');
+    db.prepare('DELETE FROM user_folders WHERE id=? AND user_id=?').run(f.id,user.id);
+    return reply(res,200,{ok:true});
+  }
+  const folderPlacesMatch=/^\/api\/me\/folders\/([a-f0-9-]{36})\/places$/.exec(route);
+  if(folderPlacesMatch&&method==='GET'){
+    const user=requireUser(req);
+    const f=db.prepare('SELECT id,name FROM user_folders WHERE id=? AND user_id=?').get(folderPlacesMatch[1],user.id);
+    if(!f)fail(404,'Folder not found');
+    const rows=db.prepare('SELECT p.* FROM places p JOIN folder_places fp ON fp.place_slug=p.slug WHERE fp.folder_id=? ORDER BY fp.position ASC, fp.added_at DESC').all(f.id);
+    return reply(res,200,{folderId:f.id,folderName:f.name,places:rows.map(r=>rowToPlace(r))});
+  }
+  if(folderPlacesMatch&&method==='POST'){
+    checkOrigin(req);const user=requireUser(req);
+    const f=db.prepare('SELECT id FROM user_folders WHERE id=? AND user_id=?').get(folderPlacesMatch[1],user.id);
+    if(!f)fail(404,'Folder not found');
+    const b=await jsonBody(req);
+    const placeSlug=validString(b?.placeId||b?.placeSlug,65,'Place ID',{required:true});
+    publishedPlace(placeSlug);
+    const exists=db.prepare('SELECT 1 FROM folder_places WHERE folder_id=? AND place_slug=?').get(f.id,placeSlug);
+    if(!exists){
+      const pos=db.prepare('SELECT count(*) AS n FROM folder_places WHERE folder_id=?').get(f.id).n;
+      db.prepare('INSERT INTO folder_places(folder_id,place_slug,position,added_at) VALUES(?,?,?,?)')
+        .run(f.id,placeSlug,pos,new Date().toISOString());
+    }
+    return reply(res,200,{ok:true,placeId:placeSlug});
+  }
+  const folderPlaceDeleteMatch=/^\/api\/me\/folders\/([a-f0-9-]{36})\/places\/([a-z0-9-]{1,65})$/.exec(route);
+  if(folderPlaceDeleteMatch&&method==='DELETE'){
+    checkOrigin(req);const user=requireUser(req);
+    const f=db.prepare('SELECT id FROM user_folders WHERE id=? AND user_id=?').get(folderPlaceDeleteMatch[1],user.id);
+    if(!f)fail(404,'Folder not found');
+    db.prepare('DELETE FROM folder_places WHERE folder_id=? AND place_slug=?').run(f.id,folderPlaceDeleteMatch[2]);
+    return reply(res,200,{ok:true});
+  }
+
   if(route==='/api/me/reviews'&&method==='GET'){
     const user=requireUser(req);const rows=db.prepare('SELECT r.*,u.name FROM reviews r JOIN users u ON u.id=r.user_id WHERE r.user_id=? ORDER BY r.updated_at DESC').all(user.id);return reply(res,200,{reviews:rows.map(r=>reviewPublic(r,true))});
   }

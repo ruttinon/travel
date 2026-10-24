@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unfold · Trip Planner & Smart Route Optimizer (UX/UI Prototype)</title>
+  <title>Traval · Trip Planner & Smart Route Optimizer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1135,26 +1135,62 @@
       }
     }
 
-    function insertStopover() {
+    async function insertStopover() {
       const box = document.getElementById('smeStopoverBox');
       if (!box) return;
-      box.innerHTML = `
-        <div style="display:flex; align-items:center; gap:14px; width:100%;">
-          <span style="font-size:24px;">☕</span>
-          <div style="flex:1;">
-            <span class="sme-tag">✓ เพิ่มจุดแวะเรียบร้อยแล้ว</span>
-            <strong style="color:#172B23;">12:00 · แวะร้านกาแฟคั่วเตาฟืนแม่กำปอง (Local SME)</strong>
-            <small style="color:#5D6F63;">พักจิบกาแฟริมธาร และทานอาหารกลางวันพื้นบ้าน (~45 นาที)</small>
+      try {
+        const res = await fetch('/api/trips/recommend-sme', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            stops: [
+              { lat: 18.7904, lon: 98.9853, name: 'Chiang Mai City' },
+              { lat: 18.8654, lon: 99.3497, name: 'Mae Kampong' }
+            ],
+            maxDetourKm: 15
+          })
+        });
+        const data = await res.json();
+        const sme = (data.recommendations && data.recommendations[0]) || {
+          th: 'ร้านกาแฟคั่วเตาฟืนแม่กำปอง',
+          detourKm: 2.1,
+          addedMinutes: 25,
+          category: 'cafe'
+        };
+        box.innerHTML = `
+          <div style="display:flex; align-items:center; gap:14px; width:100%;">
+            <span style="font-size:24px;">☕</span>
+            <div style="flex:1;">
+              <span class="sme-tag">✓ เพิ่มจุดแวะร้านชุมชนเรียบร้อยแล้ว</span>
+              <strong style="color:#172B23;">12:00 · แวะ${sme.th || sme.en || 'ร้านกาแฟคั่วเตาฟืนแม่กำปอง'} (Local SME)</strong>
+              <small style="color:#5D6F63;">เบี่ยงเส้นทางเพียง ${sme.detourKm ? sme.detourKm.toFixed(1) : '2.1'} กม. · อุดหนุนรายได้ตรงสู่ชุมชน (~45 นาที)</small>
+            </div>
+            <span style="font-size:12px; color:#15803D; font-weight:800;">+50 ฿ ชุมชน</span>
           </div>
-          <span style="font-size:12px; color:#15803D; font-weight:800;">+50 ฿ ชุมชน</span>
-        </div>
-      `;
-      box.style.background = '#DCFCE7';
-      box.style.borderColor = '#16A34A';
-
-      const stopsEl = document.getElementById('statStops');
-      if (stopsEl) stopsEl.textContent = parseInt(stopsEl.textContent) + 1;
-      showToast('เพิ่ม "ร้านกาแฟคั่วเตาฟืนแม่กำปอง" ลงในไทม์ไลน์สำเร็จ!');
+        `;
+        box.style.background = '#DCFCE7';
+        box.style.borderColor = '#16A34A';
+        const stopsEl = document.getElementById('statStops');
+        if (stopsEl) stopsEl.textContent = parseInt(stopsEl.textContent) + 1;
+        showToast(`เพิ่ม "${sme.th || sme.en || 'ร้านกาแฟคั่วเตาฟืนแม่กำปอง'}" ลงในไทม์ไลน์สำเร็จ!`);
+      } catch (e) {
+        box.innerHTML = `
+          <div style="display:flex; align-items:center; gap:14px; width:100%;">
+            <span style="font-size:24px;">☕</span>
+            <div style="flex:1;">
+              <span class="sme-tag">✓ เพิ่มจุดแวะเรียบร้อยแล้ว</span>
+              <strong style="color:#172B23;">12:00 · แวะร้านกาแฟคั่วเตาฟืนแม่กำปอง (Local SME)</strong>
+              <small style="color:#5D6F63;">พักจิบกาแฟริมธาร และทานอาหารกลางวันพื้นบ้าน (~45 นาที)</small>
+            </div>
+            <span style="font-size:12px; color:#15803D; font-weight:800;">+50 ฿ ชุมชน</span>
+          </div>
+        `;
+        box.style.background = '#DCFCE7';
+        box.style.borderColor = '#16A34A';
+        const stopsEl = document.getElementById('statStops');
+        if (stopsEl) stopsEl.textContent = parseInt(stopsEl.textContent) + 1;
+        showToast('เพิ่ม "ร้านกาแฟคั่วเตาฟืนแม่กำปอง" ลงในไทม์ไลน์สำเร็จ!');
+      }
     }
 
     function updateBudgetCalc() {
@@ -1183,9 +1219,24 @@
         const budget = parseFloat(document.getElementById('budgetLimit').value) || 8000;
         const travelMode = document.getElementById('transportSelect').value;
 
-        // Group places from current timeline
-        const sampleIds = ['sme-mae-kampong-coffee', 'sme-talad-noi-noodle', 'sample-mon-jam', 'sample-wat-umong'];
-        const groups = Array.from({ length: days }, (_, i) => [sampleIds[i % sampleIds.length]]);
+        // Group places from real AI timeline
+        let groups = [];
+        if (currentPlanData && Array.isArray(currentPlanData.itinerary)) {
+          groups = currentPlanData.itinerary.map(day => (day.schedule || []).map(s => s.place?.id || s.place?.slug).filter(Boolean));
+        }
+        if (!groups.length || !groups.flat().length) {
+          try {
+            const placesRes = await fetch('/api/places');
+            const pJson = await placesRes.json();
+            const pList = (pJson.places || []).slice(0, days * 2);
+            if (pList.length) {
+              groups = Array.from({ length: days }, (_, i) => [pList[i % pList.length]?.id].filter(Boolean));
+            }
+          } catch(e) {}
+        }
+        if (!groups.length) {
+          groups = Array.from({ length: days }, () => []);
+        }
 
         const res = await fetch('/api/itineraries', {
           method: 'POST',

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Traval · Google Maps & Places Integration POC (Tommy)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root {
+      --forest: #172B23;
+      --lime: #8DE026;
+      --paper: #FFFFFF;
+      --cream: #F8F7F3;
+      --ink: #131B17;
+      --muted: #627267;
+      --line: #E5E9E2;
+      --font: 'Inter', 'Prompt', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: var(--cream);
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      background: var(--paper);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-badge {
+      background: var(--forest);
+      color: var(--lime);
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 400px;
+      background: var(--paper);
+      border-right: 1px solid var(--line);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+    .map-container {
+      flex: 1;
+      position: relative;
+    }
+    #mapLeaflet, #mapGoogle {
+      width: 100%;
+      height: 100%;
+    }
+    .card {
+      background: #FBFBF9;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 8px;
+    }
+    .btn {
+      background: var(--forest);
+      color: #FFFFFF;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: #244437; }
+    .btn-lime { background: var(--lime); color: var(--forest); font-weight: 700; }
+    .btn-lime:hover { background: #7ccb1f; }
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .pill-sme { background: #FEF8EC; color: #925C08; border: 1px solid #F59E0B; }
+    .pill-active { background: #DCFCE7; color: #166534; border: 1px solid #86EFAC; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <strong style="font-size: 20px; color: var(--forest);">Traval</strong>
+      <span class="brand-badge">GOOGLE INTEGRATION POC</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span style="font-size:12px; color:var(--muted);">ผู้รับผิดชอบ: <strong>Tommy</strong> (Integration & QA)</span>
+      <a href="../traveler/index.html" class="btn" style="padding:6px 12px; font-size:12px;">← กลับหน้าหลัก</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="sidebar">
+      <div>
+        <h2 style="font-size: 18px; color: var(--forest); font-weight: 800;">Google Services Explorer</h2>
+        <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">ต้นแบบการเชื่อมโยง Google Maps, Places API และ GPS กับฐานข้อมูล Traval SQLite</p>
+      </div>
+
+      <!-- Engine Switcher -->
+      <div class="card">
+        <h3>1. เลือกระบบแผนที่ (Map Engine)</h3>
+        <select id="engineSelect" onchange="switchEngine()">
+          <option value="leaflet" selected>🌱 Leaflet + OpenStreetMap (ฟรี / Local Development)</option>
+          <option value="google">🌐 Google Maps JavaScript API (Production Mode)</option>
+        </select>
+
+        <div id="googleKeyBox" style="display:none; margin-top:12px;">
+          <label style="font-size:11px; font-weight:600; color:var(--muted);">ใส่ Google Maps API Key:</label>
+          <input type="text" id="gApiKey" placeholder="AIzaSy..." />
+          <button class="btn btn-lime" style="width:100%; margin-top:8px; justify-content:center;" onclick="loadGoogleMaps()">เชื่อมต่อ Google Maps</button>
+        </div>
+      </div>
+
+      <!-- GPS Coordinate Picker -->
+      <div class="card">
+        <h3>2. พิกัด GPS & Reverse Geocoding</h3>
+        <p style="font-size: 11px; color: var(--muted); margin-bottom: 8px;">คลิกบนแผนที่เพื่อดึงพิกัด หรือกดปุ่มด้านล่างเพื่อใช้ GPS อุปกรณ์</p>
+        <button class="btn" style="width:100%; justify-content:center;" onclick="getCurrentGPS()">📍 ดึงพิกัดตำแหน่งของฉัน (Browser GPS)</button>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px;">
+          <div><small style="font-size:10px; color:var(--muted);">Latitude:</small><input type="text" id="dispLat" readonly value="18.7904" /></div>
+          <div><small style="font-size:10px; color:var(--muted);">Longitude:</small><input type="text" id="dispLon" readonly value="98.9853" /></div>
+        </div>
+        <div style="margin-top:8px;">
+          <small style="font-size:10px; color:var(--muted);">Google Place ID (จำลอง/ค้นพบ):</small>
+          <input type="text" id="dispPlaceId" readonly value="ChIJF1_Z1c7e2jARU26vG1tQJtI" />
+        </div>
+      </div>
+
+      <!-- Routes API POC -->
+      <div class="card">
+        <h3>3. Routes API & Google Directions Link</h3>
+        <p style="font-size: 11px; color: var(--muted); margin-bottom: 8px;">ทดสอบส่งเส้นทางไปยังแอป Google Maps นำทางจริง</p>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <button class="btn" onclick="openDirections('driving')">🚗 เปิด Google Maps (ขับรถ)</button>
+          <button class="btn" style="background:#4B6A5B;" onclick="openDirections('walking')">🚶 เปิด Google Maps (เดินเท้า)</button>
+        </div>
+      </div>
+
+      <!-- SQLite Places Sync -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h3>4. ฐานข้อมูล Traval SQLite</h3>
+          <span class="pill pill-active" id="placesCountBadge">กำลังโหลด...</span>
+        </div>
+        <p style="font-size: 11px; color: var(--muted); margin-top: 4px;">หมุดสถานที่บนแผนที่ถูกดึงสดจาก <code>GET /api/places</code> ของ Prom</p>
+      </div>
+    </div>
+
+    <!-- Map Viewport -->
+    <div class="map-container">
+      <div id="mapLeaflet"></div>
+      <div id="mapGoogle" style="display:none;"></div>
+    </div>
+  </div>
+
+  <script>
+    let lMap, gMap;
+    let markers = [];
+    let currentLat = 18.7904, currentLon = 98.9853;
+
+    function initLeaflet() {
+      lMap = L.map('mapLeaflet').setView([currentLat, currentLon], 11);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '© CartoDB © OpenStreetMap | Traval Clean Style'
+      }).addTo(lMap);
+
+      lMap.on('click', function(e) {
+        updateSelectedCoord(e.latlng.lat, e.latlng.lng);
+      });
+
+      loadBackendPlaces();
+    }
+
+    async function loadBackendPlaces() {
+      try {
+        const res = await fetch('/api/places');
+        const data = await res.json();
+        const places = data.places || [];
+        document.getElementById('placesCountBadge').textContent = places.length + ' แห่ง';
+
+        places.forEach(p => {
+          if (!p.lat || !p.lon) return;
+          const isSme = p.isSme;
+          const marker = L.marker([p.lat, p.lon]).addTo(lMap);
+          marker.bindPopup(`
+            <div style="font-family:sans-serif; max-width:200px;">
+              <strong>${p.th || p.en}</strong><br/>
+              ${isSme ? '<span style="background:#FEF8EC;color:#925C08;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;">★ Local SME</span><br/>' : ''}
+              <small style="color:#666;">${p.locTh || p.locEn}</small><br/>
+              <button onclick="updateSelectedCoord(${p.lat}, ${p.lon}, '${p.id}')" style="margin-top:6px;padding:3px 8px;font-size:11px;background:#172B23;color:#fff;border:none;border-radius:4px;cursor:pointer;">เลือกพิกัดนี้</button>
+            </div>
+          `);
+        });
+      } catch (e) {
+        document.getElementById('placesCountBadge').textContent = 'Mock Mode';
+      }
+    }
+
+    function updateSelectedCoord(lat, lon, placeId = null) {
+      currentLat = lat;
+      currentLon = lon;
+      document.getElementById('dispLat').value = lat.toFixed(5);
+      document.getElementById('dispLon').value = lon.toFixed(5);
+      if (placeId) {
+        document.getElementById('dispPlaceId').value = 'traval_' + placeId;
+      } else {
+        document.getElementById('dispPlaceId').value = 'ChIJ' + Math.random().toString(36).substr(2, 9).toUpperCase();
+      }
+    }
+
+    function getCurrentGPS() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          updateSelectedCoord(pos.coords.latitude, pos.coords.longitude);
+          if (lMap) {
+            lMap.setView([pos.coords.latitude, pos.coords.longitude], 14);
+            L.circleMarker([pos.coords.latitude, pos.coords.longitude], {
+              radius: 8,
+              color: '#8DE026',
+              fillColor: '#172B23',
+              fillOpacity: 0.9
+            }).addTo(lMap).bindPopup('ตำแหน่งปัจจุบันของคุณ').openPopup();
+          }
+        }, err => alert('ไม่สามารถดึง GPS ได้: ' + err.message));
+      } else {
+        alert('เบราว์เซอร์ไม่รองรับ Geolocation');
+      }
+    }
+
+    function openDirections(mode) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${currentLat},${currentLon}&travelmode=${mode}`;
+      window.open(url, '_blank');
+    }
+
+    function switchEngine() {
+      const mode = document.getElementById('engineSelect').value;
+      if (mode === 'google') {
+        document.getElementById('googleKeyBox').style.display = 'block';
+      } else {
+        document.getElementById('googleKeyBox').style.display = 'none';
+        document.getElementById('mapLeaflet').style.display = 'block';
+        document.getElementById('mapGoogle').style.display = 'none';
+      }
+    }
+
+    function loadGoogleMaps() {
+      const key = document.getElementById('gApiKey').value.trim();
+      if (!key) {
+        alert('กรุณากรอก Google Maps API Key ก่อน หรือใช้ Leaflet ในการทดสอบแบบฟรี');
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&callback=initGoogleMap`;
+      script.async = true;
+      document.head.appendChild(script);
+    }
+
+    window.initGoogleMap = function() {
+      document.getElementById('mapLeaflet').style.display = 'none';
+      document.getElementById('mapGoogle').style.display = 'block';
+      gMap = new google.maps.Map(document.getElementById('mapGoogle'), {
+        center: { lat: currentLat, lng: currentLon },
+        zoom: 12
+      });
+      new google.maps.Marker({
+        position: { lat: currentLat, lng: currentLon },
+        map: gMap,
+        title: 'Traval Selected Location'
+      });
+      alert('เชื่อมต่อ Google Maps JavaScript API สำเร็จ!');
+    };
+
+    document.addEventListener('DOMContentLoaded', initLeaflet);
+  </script>
+</body>
+</html>

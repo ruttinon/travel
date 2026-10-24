@@ -440,6 +440,81 @@ test('Prom Backend: SME First, Spotlight, Safety Reports & Admin Stats Lifecycle
     assert.equal(r.status, 200);
     const activeCookie = r.cookie;
 
+    // 22b. Filtered Places Queries (Backend Enhancement for Frontend)
+    r = await request(base, '/api/places?q=grand');
+    assert.equal(r.status, 200);
+    assert.ok(r.json.places.some(p => p.id === 'grand-temple'));
+
+    // 22c. Recommend SME with stops coordinates and stopovers response
+    r = await request(base, '/api/trips/recommend-sme', {
+      method: 'POST',
+      body: { stops: [{ lat: 13.750, lon: 100.490 }], maxDetourKm: 10 }
+    });
+    assert.equal(r.status, 200);
+    assert.ok(Array.isArray(r.json.stopovers));
+    assert.equal(r.json.stopovers[0].place.id, 'talat-noi-old-noodle-house');
+
+    // 22d. Alias /api/itineraries endpoint for Frontend Planner
+    r = await request(base, '/api/itineraries', {
+      method: 'POST',
+      cookie: activeCookie,
+      origin: base,
+      body: {
+        title: 'Trip via alias',
+        days: 1,
+        hoursPerDay: 6,
+        currency: 'THB',
+        travelMode: 'driving',
+        groups: [['grand-temple']]
+      }
+    });
+    assert.equal(r.status, 201);
+    assert.equal(r.json.itinerary.title, 'Trip via alias');
+
+    // 22e. Custom User Collection Folders (/api/me/folders)
+    r = await request(base, '/api/me/folders', {
+      method: 'POST',
+      cookie: activeCookie,
+      origin: base,
+      body: { name: 'วัดและโบราณสถาน', color: '#10B981', icon: '🛕' }
+    });
+    assert.equal(r.status, 201);
+    const folderId = r.json.folder.id;
+    assert.equal(r.json.folder.name, 'วัดและโบราณสถาน');
+
+    // Add place to folder
+    r = await request(base, `/api/me/folders/${folderId}/places`, {
+      method: 'POST',
+      cookie: activeCookie,
+      origin: base,
+      body: { placeId: 'grand-temple' }
+    });
+    assert.equal(r.status, 200);
+
+    // List places in folder
+    r = await request(base, `/api/me/folders/${folderId}/places`, {
+      cookie: activeCookie
+    });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.places.length, 1);
+    assert.equal(r.json.places[0].id, 'grand-temple');
+
+    // Delete place from folder
+    r = await request(base, `/api/me/folders/${folderId}/places/grand-temple`, {
+      method: 'DELETE',
+      cookie: activeCookie,
+      origin: base
+    });
+    assert.equal(r.status, 200);
+
+    // Delete folder
+    r = await request(base, `/api/me/folders/${folderId}`, {
+      method: 'DELETE',
+      cookie: activeCookie,
+      origin: base
+    });
+    assert.equal(r.status, 200);
+
     // 23. User Account Erasure / PDPA Self-Deletion (Section 1.6)
     r = await request(base, '/api/me/account', {
       method: 'DELETE',

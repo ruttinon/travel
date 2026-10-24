@@ -1172,6 +1172,17 @@ function safetyModal(){
             <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">สถานที่เกิดเหตุ *</label>
             <input name="locationName" required placeholder="เช่น ซอยสุขุมวิท 11, หน้าสถานีรถไฟเชียงใหม่" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"/>
           </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">ละติจูด (Lat)</label>
+              <input id="safety-lat" name="lat" placeholder="13.7370" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">ลองจิจูด (Lon)</label>
+              <input id="safety-lon" name="lon" placeholder="100.5600" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"/>
+            </div>
+          </div>
+          <button type="button" data-action="use-safety-gps" style="align-self:flex-start;background:#F8F7F3;color:#0D2C1C;border:1px solid #CCD2C8;padding:6px 14px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;">📍 ดึงพิกัดปัจจุบันของฉัน (GPS)</button>
           <div>
             <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">ภาพถ่ายหลักฐาน (ไม่เกิน 10 MB)</label>
             <input type="file" id="safety-photo-input" accept="image/*" style="font-size:12px;"/>
@@ -1355,7 +1366,9 @@ function drawMap(){
      tile.style.left=(x*256-origin.x+w/2)+'px';
      tile.style.top=(y*256-origin.y+h/2)+'px';
      tile.onerror=()=>{tile.remove()};
-     tile.src=`https://tile.openstreetmap.org/${z}/${((x%max)+max)%max}/${y}.png`;
+     const sub=['a','b','c','d'][Math.abs(x+y)%4];
+     tile.src=`https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${((x%max)+max)%max}/${y}.png`;
+     tile.onerror=()=>{tile.src=`https://tile.openstreetmap.org/${z}/${((x%max)+max)%max}/${y}.png`;tile.onerror=()=>{tile.remove();};};
      fragment.append(tile);
    }
  }
@@ -1365,6 +1378,14 @@ function drawMap(){
  const region=state.region==='all'?'north':state.region;
  const rawList=(state.nearbyActive?filteredPlaces():PLACES.filter(p=>state.region==='all'||p.region===region));
  const clustered = clusterMapPlaces(rawList, z);
+ const safetyPins = (state.safetyReports || []).filter(r => r.lat && r.lon).map(r => {
+   const xy = merc(r.lat, r.lon, z);
+   const px = xy.x - origin.x + w/2, py = xy.y - origin.y + h/2;
+   if (px < -50 || px > w+50 || py < -50 || py > h+50) return '';
+   return `<button class="map-pin pin-safety" style="left:${px}px;top:${py}px;position:absolute;transform:translate(-50%,-100%);pointer-events:auto;background:#DC2626;border:2px solid #FFF;border-radius:50% 50% 50% 0;rotate:-45deg;width:34px;height:34px;display:grid;place-items:center;color:#FFF;box-shadow:0 6px 16px rgba(220,38,38,0.4);z-index:20;" data-action="safety-pin-click" data-id="${r.id}" title="⚠️ ${html(r.title)}">
+     <span style="rotate:45deg;font-size:12px;">🛡️</span>
+   </button>`;
+ }).join('');
 
  pinLayer.innerHTML = clustered.map(item=>{
    const xy=merc(item.lat,item.lon,z);
@@ -1381,7 +1402,7 @@ function drawMap(){
    return `<button class="map-pin ${isSelected?'active':''} ${item.isSme?'pin-sme':''}" style="left:${px}px;top:${py}px;position:absolute;transform:translate(-50%,-100%);pointer-events:auto;background:${item.isSme?'#E5A836':'#0D2C1C'};border:2px solid #FFF;border-radius:50% 50% 50% 0;rotate:-45deg;width:38px;height:38px;display:grid;place-items:center;color:#FFF;box-shadow:0 6px 16px rgba(0,0,0,0.25);" data-action="map-select" data-id="${item.id}" aria-label="${html(name(item))}">
      <span style="rotate:45deg;font-size:13px;">${item.isSme?'★':ico(item.category==='food'?'coffee':item.category==='stay'?'bed':'pin',16)}</span>
    </button>`;
- }).join('') + (state.nearbyPoint?`
+ }).join('') + safetyPins + (state.nearbyPoint?`
    <div class="map-me-pin" style="left:${merc(state.nearbyPoint.lat,state.nearbyPoint.lon,z).x-origin.x+w/2}px;top:${merc(state.nearbyPoint.lat,state.nearbyPoint.lon,z).y-origin.y+h/2}px;" title="ตำแหน่งของคุณ (You Are Here)">
      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;background:rgba(37,99,235,0.25);border:1px solid #2563EB;animation:pulseAccuracy 2s infinite ease-out;pointer-events:none;"></div>
      <span style="position:relative;z-index:2;display:block;width:16px;height:16px;border-radius:50%;background:#2563EB;border:3px solid #FFF;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></span>
@@ -1441,7 +1462,7 @@ if('geolocation' in navigator){
  },()=>{},{enableHighAccuracy:true,maximumAge:15000});
 }
 
-function dispatch(event){
+async function dispatch(event){
  const target=event.target.closest('[data-action]');
  const localCheck=event.target.closest('#check-local-only');
  if(localCheck){
@@ -1576,6 +1597,26 @@ function dispatch(event){
    case'close-safety':state.safetyModalOpen=false;render({keepScroll:true});break;
    case'open-safety-form':state.safetyFormOpen=true;render({keepScroll:true});break;
    case'cancel-safety-form':state.safetyFormOpen=false;render({keepScroll:true});break;
+   case'safety-pin-click':{
+     const rep=(state.safetyReports||[]).find(r=>r.id===id);
+     if(rep){
+       toast(`⚠️ [เตือนภัย] ${rep.title}: ${rep.description}`);
+       state.safetyModalOpen=true;
+       render({keepScroll:true});
+     }
+     break;
+   }
+   case'use-safety-gps':
+     if(navigator.geolocation){
+       navigator.geolocation.getCurrentPosition(pos=>{
+         const latInput=document.getElementById('safety-lat');
+         const lonInput=document.getElementById('safety-lon');
+         if(latInput)latInput.value=pos.coords.latitude.toFixed(4);
+         if(lonInput)lonInput.value=pos.coords.longitude.toFixed(4);
+         toast(state.lang==='th'?'ดึงพิกัด GPS ปัจจุบันสำเร็จ':'Current GPS acquired');
+       },()=>{toast(t('locationDenied'));},{enableHighAccuracy:true,timeout:8000});
+     }
+     break;
    case'delete-account':
      if(confirm(state.lang==='th'?'คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีและข้อมูลทั้งหมดของคุณอย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้ตามข้อกำหนด PDPA':'Are you sure you want to permanently erase your account and all associated data under PDPA? This action cannot be undone.')){
        userApi('/api/me/account','DELETE').then(()=>{
@@ -1678,11 +1719,15 @@ document.addEventListener('submit', async event => {
           photoUrl = uploadJson.photoUrl;
         }
       }
+      const latVal = fd.get('lat') ? parseFloat(fd.get('lat')) : undefined;
+      const lonVal = fd.get('lon') ? parseFloat(fd.get('lon')) : undefined;
       await userApi('/api/safety/reports', 'POST', {
         category: fd.get('category'),
         title: fd.get('title'),
         description: fd.get('description'),
         locationName: fd.get('locationName'),
+        lat: Number.isFinite(latVal) ? latVal : undefined,
+        lon: Number.isFinite(lonVal) ? lonVal : undefined,
         photo: photoUrl
       });
       state.safetyFormOpen = false;
