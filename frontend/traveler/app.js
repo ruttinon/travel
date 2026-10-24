@@ -1647,9 +1647,8 @@ function onInput(event){
 function onChange(event){
  if(event.target.id==='map-region'){
    state.region=event.target.value;
-   const reg=state.region==='all'?'north':state.region;
-   const mapRegions={north:{lat:18.868,lon:99.35,z:10},central:{lat:13.75,lon:100.5,z:11},south:{lat:8.5,lon:98.6,z:9},northeast:{lat:16.4,lon:103.5,z:8},east:{lat:12.8,lon:101.5,z:9},west:{lat:14.2,lon:99.2,z:9}};
-   state.mapCenter={...(mapRegions[reg]||mapRegions.north)};
+   const mapRegions={all:{lat:13.736,lon:100.523,z:6},north:{lat:18.868,lon:99.35,z:10},central:{lat:13.75,lon:100.5,z:11},south:{lat:8.5,lon:98.6,z:9},northeast:{lat:16.4,lon:103.5,z:8},east:{lat:12.8,lon:101.5,z:9},west:{lat:14.2,lon:99.2,z:9}};
+   state.mapCenter={...(mapRegions[state.region]||mapRegions.all)};
    render({keepScroll:true});
  }
 }

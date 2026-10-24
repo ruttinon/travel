@@ -934,12 +934,15 @@ async function api(req,res,u){
   }
   if(route==='/api/analytics/event'&&method==='POST'){
     checkOrigin(req);const b=await jsonBody(req);
-    const placeSlug=validString(b?.placeSlug||b?.place_slug,65,'Place ID',{required:true});
-    const eventType=validString(b?.eventType||b?.event_type,30,'Event type',{required:true});
+    const placeSlug=validString(b?.placeSlug||b?.place_slug||b?.placeId||b?.place_id,65,'Place ID',{required:true});
+    const rawEvent=validString(b?.eventType||b?.event_type,30,'Event type',{required:true});
+    const eventType=rawEvent==='save'?'favorite':rawEvent==='trip_add'?'add_trip':rawEvent;
     if(!['view','direction','phone','website','favorite','add_trip','sme_impression'].includes(eventType))fail(400,'Invalid event type');
-    publishedPlace(placeSlug);
-    const now=new Date().toISOString();
-    db.prepare('INSERT INTO place_events(place_slug,event_type,created_at) VALUES(?,?,?)').run(placeSlug,eventType,now);
+    const row=getRow.get(placeSlug);
+    if(row&&row.status==='published'){
+      const now=new Date().toISOString();
+      db.prepare('INSERT INTO place_events(place_slug,event_type,created_at) VALUES(?,?,?)').run(placeSlug,eventType,now);
+    }
     return reply(res,200,{ok:true});
   }
 
