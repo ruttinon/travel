@@ -1455,6 +1455,13 @@ async function api(req,res,u){
     else db.prepare("UPDATE business_submissions SET status='rejected',admin_note=?,reviewed_at=?,updated_at=? WHERE id=?").run(note,new Date().toISOString(),new Date().toISOString(),record.id);
     audit('admin','1','proposal.decision','submission',record.id,{action:record.action,after:status,placeId:record.place_slug});return reply(res,200,{submission:submissionPublic(db.prepare('SELECT * FROM business_submissions WHERE id=?').get(record.id))});
   }
+  if(route==='/api/admin/auto-populate'&&method==='POST'){
+    checkOrigin(req);
+    const { run } = require('../scripts/auto_populate_places.js');
+    const importedCount = run(db);
+    const totalCount = db.prepare("SELECT count(*) AS n FROM places WHERE status='published'").get().n;
+    return reply(res,200,{ok:true,importedCount,totalCount,message:'Auto-populated verified places across Thailand successfully'});
+  }
   // The admin cookie is scoped to /api/admin. Private merchant images use this authenticated route.
   const adminPlaceImage=/^\/api\/admin\/place-media\/([a-f0-9-]{36}\.(?:png|jpg|webp))$/.exec(route);
   if(adminPlaceImage&&method==='GET')return staticFile(req,res,{pathname:'/uploads/'+adminPlaceImage[1]},true);

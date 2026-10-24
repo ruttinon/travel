@@ -637,9 +637,10 @@
           <span class="overline">OVERVIEW / CONTROL TOWER</span>
           <h1 class="page-title">Dashboard<span>.</span></h1>
           <p class="page-sub">ภาพรวมระบบ สถานที่ ร้านค้าชุมชน และงานรอตรวจสอบทั้งหมด</p>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-action primary" onclick="autoPopulatePlaces()" style="background:#172B23; color:#8DE026; border:1px solid #8DE026;">⚡ นำเข้าข้อมูลสถานที่ทั่วไทย (Auto-Populate)</button>
+          <button class="btn-action primary" onclick="window.open('../../business-showcase.html', '_blank')">+ ลงทะเบียนร้านค้าใหม่ ↗</button>
         </div>
-        <button class="btn-action primary" onclick="showToast('เปิดหน้าต่างเพิ่มสถานที่ใหม่')">+ เพิ่มสถานที่ใหม่</button>
-      </div>
 
       <!-- 4 KPI Cards -->
       <div class="kpi-grid">
@@ -1474,6 +1475,23 @@
           card.style.display = 'none';
         }
       });
+    }
+
+    async function autoPopulatePlaces() {
+      showToast('⏳ กำลังนำเข้าข้อมูลสถานที่และร้านค้าชุมชนทั่วไทย...');
+      try {
+        const res = await fetch('/api/admin/auto-populate', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`✓ สำเร็จ! ขณะนี้มีสถานที่ในระบบทั้งหมด ${data.totalCount} แห่งแล้ว`);
+          loadDashboardStats();
+          loadAdminStats();
+        } else {
+          showToast('เกิดข้อผิดพลาด: ' + (data.error || 'นำเข้าไม่สำเร็จ'));
+        }
+      } catch(e) {
+        showToast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: ' + e.message);
+      }
     }
 
     // Auto initialize on load
