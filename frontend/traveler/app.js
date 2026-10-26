@@ -122,6 +122,7 @@ const getPlace=id=>PLACES.find(p=>p.id===id);
 const KEY='unfold-v2-user';
 function readStore(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return{}}}
 const stored=readStore();
+const ONBOARD_KEY='traval-moo-onboard-v3';
 
 const state={
  page:'welcome',previous:'discover',lang:stored.lang==='th'?'th':'en',category:'all',query:'',
@@ -130,25 +131,29 @@ const state={
  trip:Array.isArray(stored.trip)?stored.trip.filter(x=>getPlace(x)):[],
  notes:stored.notes&&typeof stored.notes==='object'?stored.notes:{},
  suggestions:Array.isArray(stored.suggestions)?stored.suggestions:[],
+ boxes:Array.isArray(stored.boxes)?stored.boxes:[],
  detail:null,mapCenter:{lat:18.868,lon:99.35,z:10},mapSelected:'sme-mae-kampong-coffee',mapDisabled:false,
  account:null,authMode:'login',reviewCache:{},myReviews:[],reviewPhoto:'',accountBusy:false,
  resetToken:'',accountMessage:'',nearbyActive:false,nearbyBusy:false,nearbyList:[],
  nearbyPoint:null,nearbyRadius:1,nearbyMaxPrice:'',nearbyCurrency:'THB',travelMode:'driving',filtersOpen:false,
- localOnly:false,followMe:false,heading:0,collectionFilter:'all',
- bottomSheetState:'closed',bottomSheetPlaceId:null,mapPannedAway:false,
- aiModalOpen:false,aiLoading:false,aiResult:null,aiForm:{province:'chiang-mai',days:2,budget:3500,style:'all',pace:'normal',quickWalk:false},
- safetyModalOpen:false,safetyReports:[],safetyFormOpen:false,campaigns:[],spotlightPlaces:[]
+ localOnly:false,followMe:false,heading:null,accuracyM:0,geoStatus:'idle',pickOnMap:false,
+ collectionFilter:'all',collectionQuery:'',selectMode:false,selectedIds:[],minRating:0,
+ bottomSheetState:'closed',bottomSheetPlaceId:null,mapPannedAway:false,galleryIndex:0,
+ onboarding:!localStorage.getItem(ONBOARD_KEY),
+ spotlightPlaces:[],placesError:''
 };
 
 const guestSaved=[...state.saved],guestTrip=[...state.trip];
 
 Object.assign(I18N.en,{
  accountTitle:'Your account',createAccount:'Create an account',signIn:'Sign in',signUp:'Sign up',signOut:'Sign out',displayName:'Your name',email:'Email address',password:'Password',accountIntro:'Save favourites across devices.',accountReady:'Synced to your account',guestIntro:'Explore as a guest, or sign in to sync.',publicReviews:'Traveller reviews',writeReview:'Share your experience',reviewBody:'Your review',photoUpload:'Add photo',submitReview:'Submit review',reviewPending:'Awaiting moderation',reviewRejected:'Not published',reviewApproved:'Published',noReviews:'No public reviews yet.',removeReview:'Delete review',authNeeded:'Sign in to review real places.',accountSuccess:'Account ready',accountError:'Unable to complete request',rating:'Rating',guestSaved:'Guest lists stay on this device',reviewCheck:'Reviews are published after approval.',
- nearMe:'Around Me',nearActive:'Around Me',locating:'Locating…',stopNear:'Show all',radius:'Radius',budget:'Budget',anyBudget:'Any price',noLocal:'No published places nearby.',locationDenied:'Location unavailable. Please allow GPS.',localOnly:'Nearby works with published places.',distKm:'km away',startingFrom:'From',modeDrive:'Drive',modeWalk:'Walk',modeTransit:'Transit',verifyEmail:'Verify email',emailUnverified:'Email not verified',emailVerified:'Email verified',sendVerify:'Send verification link',forgotPassword:'Forgot password?',resetPassword:'Reset password',sendReset:'Send reset link',backToLogin:'Back to sign in',emailCheck:'Check email link.',resetReady:'Password changed.',changeName:'Edit display name',saveName:'Update name',profileUpdated:'Profile updated',sendLink:'Send link',filters:'Filters'
+ nearMe:'Around Me',nearActive:'Around Me',locating:'Locating…',stopNear:'Show all',radius:'Radius',budget:'Budget',anyBudget:'Any price',noLocal:'No published places nearby.',locationDenied:'Location unavailable. Please allow GPS.',localOnly:'Local Only',distKm:'km away',startingFrom:'From',modeDrive:'Drive',modeWalk:'Walk',modeTransit:'Transit',verifyEmail:'Verify email',emailUnverified:'Email not verified',emailVerified:'Email verified',sendVerify:'Send verification link',forgotPassword:'Forgot password?',resetPassword:'Reset password',sendReset:'Send reset link',backToLogin:'Back to sign in',emailCheck:'Check email link.',resetReady:'Password changed.',changeName:'Edit display name',saveName:'Update name',profileUpdated:'Profile updated',sendLink:'Send link',filters:'Filters',
+ hoursUnknown:'Hours unknown',sponsored:'Sponsored',smeShort:'Local SME',hiddenGem:'Hidden Gem',newLocal:'New local shop',localPick:'Local Pick',recommended:'Recommended',byProvince:'By province',localDirectory:'Local shops',exploreNearby:'Explore nearby',openMaps:'Open in Google Maps',openAi:'AI Advisor',startLoc:'Start location',stopLoc:'Stop location',geoIdle:'Location off — your position is never shared with others.',geoOn:'Location on this device only',pickProvince:'Choose a province',pickMap:'Drop a pin on the map',noPlacesHere:'No places in this area',searchingArea:'Searching this area…',verifiedData:'Listing verified',pendingData:'Details may need an update',notQuality:'This status is about data freshness, not a quality rating.',onboardTitle:'Discover local Thailand',onboardBody:'Search nearby, save Hidden Gems, and support Local SMEs. You can skip this anytime.',dismiss:'Got it',minRating:'Min rating',createBox:'New collection',sendTrip:'Add selected to trip',openNineTrips:'Open My Trips',selectPlaces:'Select',share:'Share',address:'Address',gps:'GPS',priceBand:'Price',specialties:'Specialties',teamLogin:'Full login page',teamRegister:'Register'
 });
 Object.assign(I18N.th,{
  accountTitle:'บัญชีของคุณ',createAccount:'สร้างบัญชี',signIn:'เข้าสู่ระบบ',signUp:'สมัครสมาชิก',signOut:'ออกจากระบบ',displayName:'ชื่อที่แสดง',email:'อีเมล',password:'รหัสผ่าน',accountIntro:'บันทึกสถานที่และทริปข้ามอุปกรณ์',accountReady:'ซิงก์เข้าบัญชีแล้ว',guestIntro:'ใช้แบบผู้เยี่ยมชมหรือเข้าสู่ระบบเพื่อซิงก์ข้อมูล',publicReviews:'รีวิวจากผู้เดินทาง',writeReview:'แบ่งปันประสบการณ์',reviewBody:'รีวิวของคุณ',photoUpload:'เพิ่มรูปภาพ',submitReview:'ส่งรีวิว',reviewPending:'รอตรวจสอบ',reviewRejected:'ยังไม่ได้เผยแพร่',reviewApproved:'เผยแพร่แล้ว',noReviews:'ยังไม่มีรีวิวที่เผยแพร่',removeReview:'ลบรีวิวของฉัน',authNeeded:'เข้าสู่ระบบก่อนรีวิวสถานที่จริง',accountSuccess:'บัญชีพร้อมใช้งาน',accountError:'ทำรายการไม่สำเร็จ',rating:'คะแนน',guestSaved:'ข้อมูลผู้เยี่ยมชมเก็บในเครื่องนี้',reviewCheck:'รีวิวจะเผยแพร่หลังผู้ดูแลตรวจสอบ',
- nearMe:'รอบตัวฉัน (Around Me)',nearActive:'สำรวจรอบตัว',locating:'กำลังระบุพิกัด…',stopNear:'ดูทั้งหมด',radius:'รัศมี',budget:'งบประมาณ',anyBudget:'ทุกราคา',noLocal:'ยังไม่มีสถานที่จริงที่เผยแพร่ใกล้ตำแหน่งนี้',locationDenied:'ไม่สามารถรับตำแหน่งได้ โปรดอนุญาต GPS ในเบราว์เซอร์',localOnly:'ค้นหาใกล้ฉันรองรับสถานที่ที่เผยแพร่แล้วเท่านั้น',distKm:'กม.',startingFrom:'เริ่มต้น',modeDrive:'รถยนต์',modeWalk:'เดิน',modeTransit:'ขนส่งสาธารณะ',verifyEmail:'ยืนยันอีเมล',emailUnverified:'ยังไม่ได้ยืนยันอีเมล',emailVerified:'ยืนยันอีเมลแล้ว',sendVerify:'ส่งลิงก์ยืนยันอีเมล',forgotPassword:'ลืมรหัสผ่าน?',resetPassword:'ตั้งรหัสผ่านใหม่',sendReset:'ส่งลิงก์ตั้งรหัสผ่าน',backToLogin:'กลับไปเข้าสู่ระบบ',emailCheck:'ตรวจอีเมล หรือดูหน้าต่างเซิร์ฟเวอร์',resetReady:'เปลี่ยนรหัสผ่านสำเร็จ',changeName:'แก้ชื่อที่แสดง',saveName:'บันทึกชื่อ',profileUpdated:'อัปเดตโปรไฟล์แล้ว',sendLink:'ส่งลิงก์',filters:'ตัวกรอง'
+ nearMe:'รอบตัวฉัน (Around Me)',nearActive:'สำรวจรอบตัว',locating:'กำลังระบุพิกัด…',stopNear:'ดูทั้งหมด',radius:'รัศมี',budget:'งบประมาณ',anyBudget:'ทุกราคา',noLocal:'ยังไม่มีสถานที่จริงที่เผยแพร่ใกล้ตำแหน่งนี้',locationDenied:'ไม่สามารถรับตำแหน่งได้ โปรดอนุญาต GPS ในเบราว์เซอร์',localOnly:'เฉพาะร้านชุมชน',distKm:'กม.',startingFrom:'เริ่มต้น',modeDrive:'รถยนต์',modeWalk:'เดิน',modeTransit:'ขนส่งสาธารณะ',verifyEmail:'ยืนยันอีเมล',emailUnverified:'ยังไม่ได้ยืนยันอีเมล',emailVerified:'ยืนยันอีเมลแล้ว',sendVerify:'ส่งลิงก์ยืนยันอีเมล',forgotPassword:'ลืมรหัสผ่าน?',resetPassword:'ตั้งรหัสผ่านใหม่',sendReset:'ส่งลิงก์ตั้งรหัสผ่าน',backToLogin:'กลับไปเข้าสู่ระบบ',emailCheck:'ตรวจอีเมล หรือดูหน้าต่างเซิร์ฟเวอร์',resetReady:'เปลี่ยนรหัสผ่านสำเร็จ',changeName:'แก้ชื่อที่แสดง',saveName:'บันทึกชื่อ',profileUpdated:'อัปเดตโปรไฟล์แล้ว',sendLink:'ส่งลิงก์',filters:'ตัวกรอง',
+ hoursUnknown:'ไม่ทราบเวลาเปิด–ปิด',sponsored:'โฆษณา / Sponsored',smeShort:'ร้านชุมชน',hiddenGem:'Hidden Gem',newLocal:'ร้านใหม่',localPick:'Local Pick',recommended:'แนะนำสำหรับคุณ',byProvince:'ตามจังหวัด',localDirectory:'ไดเรกทอรีร้านท้องถิ่น',exploreNearby:'สำรวจรอบจุดนี้',openMaps:'เปิดใน Google Maps',openAi:'ที่ปรึกษา AI',startLoc:'เริ่มตำแหน่ง',stopLoc:'หยุดตำแหน่ง',geoIdle:'ปิดตำแหน่งอยู่ — พิกัดของคุณไม่ถูกส่งให้คนอื่น',geoOn:'ใช้ตำแหน่งบนเครื่องนี้เท่านั้น',pickProvince:'เลือกจังหวัด',pickMap:'ปักหมุดบนแผนที่เอง',noPlacesHere:'ไม่พบสถานที่บริเวณนี้',searchingArea:'กำลังค้นหาบริเวณนี้…',verifiedData:'ข้อมูลร้านได้รับการยืนยัน',pendingData:'ข้อมูลอาจรออัปเดต',notQuality:'สถานะนี้บอกความสดของข้อมูล ไม่ใช่การรับรองคุณภาพ',onboardTitle:'เริ่มค้นหาประเทศไทยในมุมคนท้องถิ่น',onboardBody:'ค้นหารอบตัว บันทึก Hidden Gems และสนับสนุนร้าน SME ได้เลย ปิดหน้าต่างนี้ได้ทุกเมื่อ',dismiss:'เข้าใจแล้ว',minRating:'คะแนนขั้นต่ำ',createBox:'สร้างคอลเลกชัน',sendTrip:'ส่งรายการที่เลือกเข้าทริป',openNineTrips:'เปิด My Trips',selectPlaces:'เลือกหลายรายการ',share:'แชร์',address:'ที่อยู่',gps:'พิกัด',priceBand:'ช่วงราคา',specialties:'ไฮไลต์',teamLogin:'หน้าเข้าสู่ระบบเต็ม',teamRegister:'สมัครสมาชิก'
 });
 
 const t=k=>I18N[state.lang]?.[k]||k;
@@ -158,7 +163,33 @@ const story=p=>state.lang==='th'?(p.storyTh||p.storyEn):p.storyEn;
 const photo=p=>typeof p==='string' && p.startsWith('/uploads/')?p:`assets/${p||'hero-forest.webp'}`;
 
 function store(){
- try{localStorage.setItem(KEY,JSON.stringify({lang:state.lang,saved:state.account?guestSaved:state.saved,trip:state.account?guestTrip:state.trip,notes:state.notes,suggestions:state.suggestions}))}catch{}
+ try{localStorage.setItem(KEY,JSON.stringify({lang:state.lang,saved:state.account?guestSaved:state.saved,trip:state.account?guestTrip:state.trip,notes:state.notes,suggestions:state.suggestions,boxes:state.boxes}))}catch{}
+}
+
+function hoursStatus(p){
+ if(!p) return 'unknown';
+ if(p.hoursStatus==='open'||p.hoursStatus==='closed'||p.hoursStatus==='unknown') return p.hoursStatus;
+ if(p.isOpen===true) return 'open';
+ if(p.isOpen===false) return 'closed';
+ return 'unknown';
+}
+function hoursLabel(p){
+ const s=hoursStatus(p);
+ return s==='open'?t('openNow'):s==='closed'?t('closedNow'):t('hoursUnknown');
+}
+function safeImg(src,alt,cls=''){
+ return `<img class="${cls}" src="${html(typeof src==='string'&&src.startsWith('assets/')||(typeof src==='string'&&src.startsWith('/'))||(typeof src==='string'&&src.startsWith('data:'))?src:photo(src))}" alt="${html(alt||'')}" loading="lazy" onerror="this.onerror=null;this.src='assets/hero-forest.webp'"/>`;
+}
+function catLabel(p){return t(p.category||'all')}
+function sponsored(p){return Boolean(p.isSponsored||p.sponsored)}
+function badgeRow(p){
+ const bits=[];
+ if(sponsored(p)) bits.push(`<span class="badge-sponsored">${html(t('sponsored'))}</span>`);
+ if(p.isSme) bits.push(`<span class="badge-sme">★ ${html(p.smeBadge&&!/sponsored/i.test(p.smeBadge)?p.smeBadge:t('smeShort'))}</span>`);
+ if(String(p.smeBadge||'').toLowerCase().includes('hidden')) bits.push(`<span class="badge-hidden">${html(t('hiddenGem'))}</span>`);
+ if(String(p.smeBadge||'').toLowerCase().includes('new')) bits.push(`<span class="badge-new">${html(t('newLocal'))}</span>`);
+ if(String(p.smeBadge||'').toLowerCase().includes('pick')) bits.push(`<span class="badge-pick">${html(t('localPick'))}</span>`);
+ return bits.length?`<div class="card-badges">${bits.join('')}</div>`:'';
 }
 
 async function userApi(route,method='GET',data){
@@ -185,11 +216,9 @@ async function refreshSession(){
 
 async function initRealData(){
   try{
-    const [placesRes,spotRes,campRes,safetyRes]=await Promise.allSettled([
+    const [placesRes,spotRes]=await Promise.allSettled([
       userApi('/api/places'),
-      userApi('/api/places/spotlight'),
-      userApi('/api/campaigns'),
-      userApi('/api/safety/reports?verified=1')
+      userApi('/api/places/spotlight')
     ]);
     if(placesRes.status==='fulfilled'&&Array.isArray(placesRes.value.places)&&placesRes.value.places.length){
       const realPlaces=placesRes.value.places.map(p=>({
@@ -198,25 +227,23 @@ async function initRealData(){
         visit:p.visit||'1-2h',priceFrom:p.priceFrom,currency:p.currency||'THB',
         storyEn:p.storyEn||'',storyTh:p.storyTh||'',photo:p.photo||'assets/hero-forest.webp',
         gallery:p.gallery||[],isSme:Boolean(p.isSme),smeType:p.smeType||'',
-        smeBadge:p.spotlightBadge||(p.isSme?'Local SME Spotlight':''),
-        featured:Boolean(p.featured),openHours:'เปิดบริการตามปกติ',isOpen:true,
-        phone:p.contactPhone||'',specialtiesTh:p.localStoryTh?[p.localStoryTh.slice(0,30)]:undefined
+        smeBadge:p.spotlightBadge||p.smeBadge||(p.isSme?'Local SME Spotlight':''),
+        featured:Boolean(p.featured),openHours:p.openHours||p.openingHours||'',isOpen:p.isOpen,
+        hoursStatus:p.hoursStatus||(p.isOpen===true?'open':p.isOpen===false?'closed':'unknown'),
+        isSponsored:Boolean(p.isSponsored),province:p.province,provinceTh:p.provinceTh,provinceEn:p.provinceEn,
+        phone:p.contactPhone||'',specialtiesTh:p.localStoryTh?[p.localStoryTh.slice(0,30)]:undefined,
+        rating:p.rating,reviewsCount:p.reviewsCount
       }));
       const ids=new Set(realPlaces.map(x=>x.id));
       PLACES=[...realPlaces,...SAMPLE_PLACES.filter(s=>!ids.has(s.id))];
       LIVE_DATA=true;API_ONLINE=true;
     }
-    if(spotRes.status==='fulfilled'&&Array.isArray(spotRes.value.places)){
-      state.spotlightPlaces=spotRes.value.places;
-    }
-    if(campRes.status==='fulfilled'&&Array.isArray(campRes.value.campaigns)){
-      state.campaigns=campRes.value.campaigns;
-    }
-    if(safetyRes.status==='fulfilled'&&Array.isArray(safetyRes.value.reports)){
-      state.safetyReports=safetyRes.value.reports;
+    if(spotRes.status==='fulfilled'){
+      const spotList = spotRes.value.places || spotRes.value.spotlight;
+      if(Array.isArray(spotList)) state.spotlightPlaces=spotList;
     }
     render({keepScroll:true});
-  }catch(e){console.info('initRealData fallback:',e.message)}
+  }catch(e){state.placesError=e.message;console.info('initRealData fallback:',e.message)}
 }
 
 let persistOrder=Promise.resolve();
@@ -266,7 +293,7 @@ function actionBtn(action,content,extra='',attributes=''){
 
 function brand(){
  return `<button class="brand" data-action="navigate" data-page="welcome" aria-label="Traval - ${html(t('homeLink'))}">
-  <span class="brand-mark" style="color:var(--traval-lime, #8DE026)">T<span class="brand-dot" style="color:var(--traval-sme-gold, #E5A836)">.</span></span>
+  <span class="brand-mark">T<span class="brand-dot" style="color:#8DE026;">.</span></span>
   <span class="brand-full" style="font-family:var(--font-base)">Traval</span>
  </button>`;
 }
@@ -275,16 +302,14 @@ function header(){
  return `<header class="site-header">
   ${brand()}
   <nav class="header-links" aria-label="Primary">
-    ${[['discover','discover'],['map','map'],['saved','saved'],['trip','trip']].map(([page,label])=>`
+    ${[['discover','discover'],['map','map'],['saved','saved'],['trip','trip'],['profile','profile']].map(([page,label])=>`
       <button data-action="navigate" data-page="${page}" class="${state.page===page?'selected':''}">
         ${html(t(label))}
         ${page==='saved'&&state.saved.length?`<span class="badge-counter" style="background:#8DE026;color:#0D2C1C;font-size:10px;padding:1px 6px;border-radius:99px;margin-left:4px;font-weight:700;">${state.saved.length}</span>`:''}
       </button>
     `).join('')}
   </nav>
-  <div class="head-actions" style="display:flex;align-items:center;gap:6px;">
-    <button class="header-icon" data-action="open-ai" title="AI Travel Advisor" style="font-size:12px;font-weight:800;color:#0D2C1C;background:#8DE026;padding:6px 12px;border-radius:99px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">✨ AI Plan</button>
-    <button class="header-icon" data-action="open-safety" title="Travel Safety" style="font-size:14px;background:none;border:none;cursor:pointer;padding:6px;">🛡️</button>
+  <div class="head-actions">
     <button class="language-btn" data-action="language" aria-label="Change language">${state.lang==='en'?'TH':'EN'}</button>
     ${actionBtn('search-open',ico('search',20),'header-icon','aria-label="Search"')}
     ${actionBtn('menu-open',ico('menu',23),'header-icon menu-trigger','aria-label="Open menu"')}
@@ -293,18 +318,9 @@ function header(){
 }
 
 function bottomNav(){
- return `<nav class="bottom-nav" aria-label="App navigation" style="display:flex;">
-  ${[['discover','home'],['map','compass'],['saved','heart'],['profile','user']].map(([page,glyph])=>`
-    <button data-action="navigate" data-page="${page}" class="${state.page===page||(page==='saved'&&state.page==='trip')?'selected':''}" aria-label="${html(t(page))}" ${state.page===page?'aria-current="page"':''}>
-      ${ico(glyph,23)}
-      <span class="nav-tooltip">
-        ${html(t(page))}
-        ${page==='saved'&&state.saved.length?` (${state.saved.length})`:''}
-      </span>
-    </button>
-  `).join('')}
- </nav>`;
+ return '';
 }
+
 
 function landing(){
  return `<div class="landing" id="landing">
@@ -318,7 +334,7 @@ function landing(){
     </div>
   </div>
   <div class="landing-copy">
-    <p class="mini-overline" style="color:#8DE026;font-weight:800;">${html(t('homeEyebrow'))}</p>
+    <p class="mini-overline">${html(t('homeEyebrow'))}</p>
     <h1>${html(t('homeTitle')).replace('\n','<br>')}</h1>
     <p class="landing-subline">${html(t('homeDesc'))}</p>
     <button data-action="navigate" data-page="discover" class="landing-cta" style="background:#0D2C1C;">
@@ -353,6 +369,7 @@ function filteredPlaces(){
    if(state.category!=='all' && state.category!=='sme' && p.category!==state.category) return false;
    if(state.region!=='all' && p.region!==state.region) return false;
    if(state.nearbyMaxPrice!=='' && p.priceFrom!=null && p.priceFrom>Number(state.nearbyMaxPrice)) return false;
+   if(state.minRating && Number(p.rating||0)<state.minRating) return false;
    if(!q) return true;
    return [p.en,p.th,p.locEn,p.locTh,p.storyEn,p.storyTh,p.provinceTh,p.provinceEn].filter(Boolean).join(' ').toLowerCase().includes(q);
  });
@@ -369,18 +386,32 @@ function heartButton(p,moreClass=''){
 
 function placeCard(p,compact=false){
  const dist = state.nearbyPoint && p.lat && p.lon ? calcDistance(state.nearbyPoint.lat, state.nearbyPoint.lon, p.lat, p.lon) : p.distanceKm;
+ const planned=state.trip.includes(p.id);
  return `<article class="place-card ${compact?'compact':''}" data-place="${p.id}">
   <div class="place-picture">
-    <img src="${photo(p.photo)}" alt="${html(name(p))}" loading="lazy"/>
+    <img src="${photo(p.photo)}" alt="${html(p.en||p.th||'')}" loading="lazy" onerror="this.onerror=null;this.src='assets/hero-forest.webp'"/>
     <span class="card-gradient"></span>
     <button class="place-card-link" data-action="place" data-id="${p.id}" aria-label="${html(t('view'))}: ${html(name(p))}"></button>
-    ${p.isSme?`<span style="position:absolute;top:14px;left:14px;z-index:2;background:#FEF8EC;color:#925C08;border:1px solid #F59E0B;font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;">★ Local SME</span>`:''}
+    ${badgeRow(p)}
     ${heartButton(p)}
     <span class="card-caption">
       <b>${html(name(p))}</b>
-      <small>${html(loc(p))}${dist!=null?` · 📍 ${html(String(dist))} ${html(t('distKm'))}`:''}${p.rating?` · ★ ${p.rating}`:''}</small>
+      <small>${html(loc(p))}${dist!=null?` · ${html(String(dist))} ${html(t('distKm'))}`:''}${p.rating?` · ★ ${p.rating}${p.reviewsCount?` (${p.reviewsCount})`:''}`:''}</small>
     </span>
   </div>
+  ${compact?'':`
+  <div class="place-card-body">
+    <div class="place-card-meta">
+      <span>${html(catLabel(p))}</span>
+      <span class="hours-${hoursStatus(p)}">${html(hoursLabel(p))}</span>
+      ${p.priceFrom!=null?`<span>${html(t('startingFrom'))} ฿${Number(p.priceFrom).toLocaleString()}</span>`:''}
+    </div>
+    <div class="place-card-actions">
+      <button type="button" class="${state.saved.includes(p.id)?'on':''}" data-action="save" data-id="${p.id}" aria-label="${html(t('save'))}">${ico('heart',14)} <span>${html(t(state.saved.includes(p.id)?'unsave':'save'))}</span></button>
+      <button type="button" class="${planned?'on':''}" data-action="trip-toggle" data-id="${p.id}" aria-label="${html(t('addTrip'))}">${ico(planned?'check':'plus',14)} <span>${html(t(planned?'removeTrip':'addTrip'))}</span></button>
+      <button type="button" class="btn-dir" data-action="directions" data-id="${p.id}" aria-label="${html(t('route'))}">${ico('route',14)} <span>${html(t('route'))}</span></button>
+    </div>
+  </div>`}
  </article>`;
 }
 
@@ -411,31 +442,58 @@ function smeSpotlightCard(p){
 }
 
 function nearbyControls(){
- const radii = [0.3, 0.5, 1, 3, 5, 25, 100];
- return `<div class="around-me-panel" style="background:#FFF;border:1px solid #E6E8E2;border-radius:18px;padding:12px 16px;margin:0 0 20px 0;box-shadow:0 2px 10px rgba(0,0,0,0.03);">
-  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <button type="button" class="nearby-toggle ${state.nearbyActive?'on':''}" data-action="${state.nearbyActive?'nearby-stop':'nearby-start'}" ${state.nearbyBusy?'disabled':''} style="border-radius:99px;padding:8px 16px;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
-        <span style="width:8px;height:8px;border-radius:50%;background:${state.nearbyActive?'#8DE026':'#2563EB'};display:inline-block;"></span>
-        ${html(t(state.nearbyBusy?'locating':state.nearbyActive?'stopNear':'nearMe'))}
-      </button>
-
-      <!-- Radius selection chips -->
-      <div style="display:flex;gap:4px;overflow-x:auto;">
-        ${radii.map(r=>`
-          <button type="button" data-action="set-radius" data-radius="${r}" style="font-size:11px;font-weight:600;padding:5px 10px;border-radius:99px;border:1px solid ${state.nearbyRadius===r?'#0D2C1C':'#E6E8E2'};background:${state.nearbyRadius===r?'#0D2C1C':'#F8F7F3'};color:${state.nearbyRadius===r?'#FFF':'#56685B'};">
-            ${r < 1 ? (r * 1000) + ' ม.' : r + ' กม.'}
-          </button>
-        `).join('')}
-      </div>
-    </div>
-
-    <!-- Local Only toggle -->
-    <label style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#925C08;background:#FEF8EC;padding:6px 12px;border-radius:99px;border:1px solid #F59E0B;cursor:pointer;">
-      <input type="checkbox" id="check-local-only" ${state.localOnly?'checked':''} style="accent-color:#E5A836;cursor:pointer;"/>
+ const radii = [0.3, 0.5, 1, 3, 5];
+ const n = state.nearbyActive ? filteredPlaces().length : 0;
+ const status = state.nearbyBusy ? t('locating')
+   : state.geoStatus==='denied' ? t('locationDenied')
+   : state.nearbyActive ? (n ? `${n} place${n===1?'':'s'}` : t('noLocal'))
+   : t('geoIdle');
+ return `<div class="around-me-panel nearby-tools">
+  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
+    <button type="button" class="nearby-toggle ${state.nearbyActive?'on':''}" data-action="${state.nearbyActive?'nearby-stop':'nearby-start'}" ${state.nearbyBusy?'disabled':''} aria-pressed="${state.nearbyActive}">
+      <span style="width:8px;height:8px;border-radius:50%;background:${state.nearbyActive?'#8DE026':'#2563EB'};display:inline-block;"></span>
+      ${html(t(state.nearbyBusy?'locating':state.nearbyActive?'stopNear':'nearMe'))}
+    </button>
+    <button type="button" class="nearby-filter-toggle ${state.filtersOpen?'active':''}" data-action="filter-toggle" aria-expanded="${state.filtersOpen}">${ico('sliders',16)} ${html(t('filters'))}</button>
+    <label class="filter-chip sme" style="min-height:39px;">
+      <input type="checkbox" id="check-local-only" ${state.localOnly?'checked':''} style="accent-color:#E5A836;"/>
       <span>${html(t('localOnly'))}</span>
     </label>
   </div>
+  <div class="nearby-filter-fields ${state.filtersOpen?'expanded':''}">
+    <div class="filter-chip-row" role="group" aria-label="${html(t('radius'))}">
+      ${radii.map(r=>`
+        <button type="button" class="filter-chip ${state.nearbyRadius===r?'active':''}" data-action="set-radius" data-radius="${r}" aria-pressed="${state.nearbyRadius===r}">
+          ${r < 1 ? Math.round(r*1000)+' m' : r+' km'}
+        </button>
+      `).join('')}
+    </div>
+    <label>${html(t('budget'))}
+      <select id="near-price" aria-label="${html(t('budget'))}">
+        <option value="" ${state.nearbyMaxPrice===''?'selected':''}>${html(t('anyBudget'))}</option>
+        <option value="300" ${state.nearbyMaxPrice==='300'?'selected':''}>≤ ฿300</option>
+        <option value="1000" ${state.nearbyMaxPrice==='1000'?'selected':''}>≤ ฿1,000</option>
+        <option value="3000" ${state.nearbyMaxPrice==='3000'?'selected':''}>≤ ฿3,000</option>
+      </select>
+    </label>
+    <label>${html(t('minRating'))}
+      <select id="min-rating" aria-label="${html(t('minRating'))}">
+        <option value="0" ${state.minRating===0?'selected':''}>${html(t('all'))}</option>
+        <option value="4" ${state.minRating===4?'selected':''}>★ 4+</option>
+        <option value="4.5" ${state.minRating===4.5?'selected':''}>★ 4.5+</option>
+      </select>
+    </label>
+  </div>
+  <p class="nearby-status">${html(status)}</p>
+  ${state.geoStatus==='denied'?`
+    <div class="geo-banner denied" style="margin-top:10px;font-size:12px;padding:8px 12px;border-radius:12px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
+      <span>📍 ${html(t('pickProvince'))}:</span>
+      <button type="button" class="filter-chip" data-action="set-manual-point" data-lat="18.7883" data-lon="98.9853" data-name="Chiang Mai" style="min-height:30px;padding:2px 10px;font-size:11px;">${state.lang==='th'?'เชียงใหม่':'Chiang Mai'}</button>
+      <button type="button" class="filter-chip" data-action="set-manual-point" data-lat="13.7563" data-lon="100.5018" data-name="Bangkok" style="min-height:30px;padding:2px 10px;font-size:11px;">${state.lang==='th'?'กรุงเทพฯ':'Bangkok'}</button>
+      <button type="button" class="filter-chip" data-action="set-manual-point" data-lat="19.1764" data-lon="100.9152" data-name="Nan" style="min-height:30px;padding:2px 10px;font-size:11px;">${state.lang==='th'?'น่าน':'Nan'}</button>
+      <button type="button" class="filter-chip" data-action="set-manual-point" data-lat="8.9165" data-lon="98.5320" data-name="Surat Thani" style="min-height:30px;padding:2px 10px;font-size:11px;">${state.lang==='th'?'สุราษฎร์ฯ':'Surat Thani'}</button>
+    </div>
+  `:''}
  </div>`;
 }
 
@@ -464,65 +522,70 @@ async function fetchNearby(){
 }
 
 function startNearby(){
- if(!navigator.geolocation){toast(t('locationDenied'));return}
+ if(!navigator.geolocation){state.geoStatus='denied';toast(t('locationDenied'));render({keepScroll:true});return}
  state.nearbyBusy=true;render({keepScroll:true});
  navigator.geolocation.getCurrentPosition(pos=>{
+   state.geoStatus='allowed';
    state.nearbyPoint={lat:pos.coords.latitude,lon:pos.coords.longitude};
    state.mapCenter={...state.nearbyPoint,z:state.nearbyRadius<=1?14:state.nearbyRadius<=5?12:10};
    fetchNearby();
  },()=>{
-   state.nearbyBusy=false;toast(t('locationDenied'));render({keepScroll:true});
+   state.nearbyBusy=false;state.geoStatus='denied';toast(t('locationDenied'));render({keepScroll:true});
  },{enableHighAccuracy:true,timeout:10000,maximumAge:60000});
 }
 
 function discover(){
  const found=filteredPlaces();
  const top=found.slice(0,state.showAll||state.category!=='all'||state.query||state.nearbyActive?found.length:6);
- const smePlaces=PLACES.filter(p=>p.isSme);
+ const smePlaces=PLACES.filter(p=>p.isSme&&!sponsored(p));
+ const sponsoredPlaces=PLACES.filter(sponsored);
+ const hidden=PLACES.filter(p=>/hidden/i.test(p.smeBadge||''));
+ const provinces=[...new Map(PLACES.filter(p=>p.province).map(p=>[p.province,p]))];
 
  return `<div class="app-shell explore-page">
   ${header()}
   <main class="content-area">
     <div class="explore-heading">
       <div>
-        <p class="mini-overline" style="color:var(--traval-lime-deep, #66B212);">${html(t('exploreEyebrow'))}</p>
+        <p class="mini-overline" style="color:#2D5A3A;font-weight:800;">${html(t('exploreEyebrow'))}</p>
         <h1>${html(t('exploreTitle')).replace('\n','<br>')}</h1>
       </div>
       <button data-action="search-open" class="vertical-search" aria-label="${html(t('searchShort'))}">${ico('search',25)}</button>
       <p class="explore-quiet">${html(t('exploreIntro'))}</p>
     </div>
 
+    ${state.onboarding?`
+      <aside class="onboarding-card" role="dialog" aria-label="${html(t('onboardTitle'))}">
+        <div>
+          <h3>${html(t('onboardTitle'))}</h3>
+          <p>${html(t('onboardBody'))}</p>
+        </div>
+        <button class="ob-close" data-action="dismiss-onboard" aria-label="${html(t('dismiss'))}">${ico('x',18)}</button>
+      </aside>
+    `:''}
+
+    <form class="hero-search" id="home-search" role="search">
+      <span aria-hidden="true">${ico('search',18)}</span>
+      <input id="home-query" type="search" placeholder="${html(t('search'))}" value="${html(state.query)}" aria-label="${html(t('search'))}" autocomplete="off"/>
+      <button class="search-go" type="submit">${html(t('searchShort'))}</button>
+    </form>
+
     ${categoryButtons()}
     ${nearbyControls()}
 
-    ${state.campaigns && state.campaigns.length ? `
-      <div style="margin-bottom:24px;border-radius:18px;overflow:hidden;position:relative;background:linear-gradient(90deg,#0D2C1C,#1E4E35);color:#FFF;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;gap:14px;box-shadow:0 4px 18px rgba(0,0,0,0.08);">
-        <div>
-          ${state.campaigns[0].badgeText?`<span style="background:#8DE026;color:#0D2C1C;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;text-transform:uppercase;">★ ${html(state.campaigns[0].badgeText)}</span>`:''}
-          <h3 style="margin:6px 0 2px 0;font-size:16px;color:#FFF;">${html(state.campaigns[0].title)}</h3>
-          <p style="margin:0;font-size:11px;color:#CDE3D3;">แคมเปญโปรโมตเพื่อสนับสนุนร้านค้าชุมชนและวิถีท้องถิ่น</p>
-        </div>
-        ${state.campaigns[0].targetSlug?`
-          <button data-action="place" data-id="${html(state.campaigns[0].targetSlug)}" style="background:#FFF;color:#0D2C1C;border:none;border-radius:99px;padding:8px 16px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">
-            ดูรายละเอียด ↗
-          </button>
-        `:''}
-      </div>
+
+    ${state.placesError?`<div class="state-panel" role="alert"><h2>${html(t('accountError'))}</h2><p>${html(state.placesError)}</p></div>`:''}
+
+    ${!state.nearbyActive && sponsoredPlaces.length?`
+      <section class="sponsored-rail" aria-label="${html(t('sponsored'))}">
+        <h2>${html(t('sponsored'))}</h2>
+        <p>${state.lang==='th'?'รายการนี้เป็นพื้นที่โฆษณา ไม่ใช่การจัดอันดับตามความนิยม':'Paid placements — not a natural ranking.'}</p>
+        <div class="section-rail">${sponsoredPlaces.map(p=>smeSpotlightCard(p)).join('')}</div>
+      </section>
     `:''}
 
-    <section style="background:linear-gradient(135deg, #0D2C1C 0%, #16422C 100%);color:#FFF;border-radius:20px;padding:20px 24px;margin-bottom:28px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 8px 24px rgba(13,44,28,0.14);">
-      <div style="flex:1;min-width:240px;">
-        <span style="color:#8DE026;font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;">✨ AI TRAVEL ADVISOR</span>
-        <h3 style="margin:4px 0 6px 0;font-size:17px;font-weight:700;">วางแผนเที่ยวอัตโนมัติด้วย AI พร้อมแนะนำร้านชุมชน</h3>
-        <p style="margin:0;font-size:12px;color:#CDE3D3;line-height:1.4;">ประเมินงบประมาณ แนะนำร้าน SME แวะรายทาง และค้นหาเส้นทางเดิน 10 นาที</p>
-      </div>
-      <button type="button" data-action="open-ai" style="background:#8DE026;color:#0D2C1C;border:none;border-radius:99px;padding:10px 22px;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-        เปิด AI วางแผนทริป ↗
-      </button>
-    </section>
-
     <!-- Local SME Spotlight Rail -->
-    ${smePlaces.length && (!state.category || state.category==='all' || state.category==='sme') ? `
+    ${!state.nearbyActive && smePlaces.length && (!state.category || state.category==='all' || state.category==='sme') ? `
       <section style="margin-bottom:34px;">
         <div class="section-line">
           <h2><span style="color:#E5A836">★</span> ${html(t('spotlightTitle'))}</h2>
@@ -554,6 +617,31 @@ function discover(){
         </div>
       `}
     </section>
+
+    ${!state.nearbyActive && hidden.length?`
+      <section class="secondary-section">
+        <div class="section-line"><h2>${html(t('hiddenGem'))}</h2></div>
+        <div class="mini-grid">${hidden.map(p=>`
+          <button class="mini-discovery" data-action="place" data-id="${p.id}">
+            <img src="${photo(p.photo)}" alt="" onerror="this.onerror=null;this.src='assets/hero-forest.webp'"/>
+            <span><b>${html(name(p))}</b><small>${html(loc(p))}</small></span>
+          </button>`).join('')}
+        </div>
+      </section>
+    `:''}
+
+    ${!state.nearbyActive && provinces.length?`
+      <section class="secondary-section">
+        <div class="section-line"><h2>${html(t('byProvince'))}</h2>
+          <button class="quiet-link" data-action="navigate" data-page="local">${html(t('localDirectory'))}</button>
+        </div>
+        <div class="filter-chip-row">
+          ${provinces.map(([key,p])=>`
+            <button class="filter-chip" data-action="province-filter" data-province="${html(key)}">${html(state.lang==='th'?p.provinceTh||p.locTh:p.provinceEn||p.locEn)}</button>
+          `).join('')}
+        </div>
+      </section>
+    `:''}
 
     <!-- Editorial Callout -->
     <div class="editorial-band" style="background:#0D2C1C;color:#FFF;border-radius:22px;padding:36px;margin-top:40px;">
@@ -647,6 +735,10 @@ function bottomSheet(p){
 function detail(p){
  const saved=state.saved.includes(p.id);
  const planned=state.trip.includes(p.id);
+ const hStatus = hoursStatus(p);
+ const isThai = state.lang==='th';
+ const dist = state.nearbyPoint && p.lat && p.lon ? calcDistance(state.nearbyPoint.lat, state.nearbyPoint.lon, p.lat, p.lon) : p.distanceKm;
+
  return `<div class="detail-page">
   ${header()}
   <main class="detail-grid">
@@ -663,18 +755,40 @@ function detail(p){
       </div>
     </div>
     <div class="detail-info">
-      <div class="detail-overline">
-        ${p.isSme?`<span style="background:#FEF8EC;color:#925C08;padding:3px 8px;border-radius:99px;font-weight:700;">★ Local SME Spotlight</span>`:''}
+      <div class="detail-overline" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+        ${sponsored(p)?`<span class="badge-sponsored" style="background:#7C3AED;color:#FFF;padding:3px 8px;border-radius:99px;font-size:10px;font-weight:800;">AD / SPONSORED</span>`:''}
+        ${p.isSme?`<span style="background:#FEF8EC;color:#925C08;border:1px solid #F59E0B;padding:3px 10px;border-radius:99px;font-weight:700;font-size:11px;">★ ${html(p.smeBadge||'Local SME Spotlight')}</span>`:''}
+        ${p.isSme?`<span class="sme-verified-badge" title="${html(t('notQuality'))}">✓ ${html(t('verifiedData'))}</span>`:''}
+        <span class="${hStatus==='open'?'status-pill-open':hStatus==='closed'?'status-pill-closed':'status-pill-unknown'}">
+          ● ${html(hoursLabel(p))}
+        </span>
       </div>
+
       <div class="detail-title">
         <h2>${html(name(p))}</h2>
-        <small>${ico('pin',15)} ${html(loc(p))}</small>
+        <div style="display:flex;align-items:center;gap:10px;color:#57685D;font-size:13px;margin-top:4px;flex-wrap:wrap;">
+          <span>${ico('pin',15)} ${html(loc(p))}</span>
+          ${dist!=null?`<span style="color:#2563EB;font-weight:700;">· 📍 ห่าง ${dist} กม.</span>`:''}
+          ${p.rating?`<span style="color:#E5A836;font-weight:700;">· ★ ${p.rating} (${p.reviewsCount||120} ${isThai?'รีวิว':'reviews'})</span>`:''}
+        </div>
+      </div>
+
+      <div style="background:#F8F7F3;border-radius:14px;padding:12px 16px;margin:16px 0;display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px;">
+        <div>
+          <span style="color:#78857B;display:block;margin-bottom:2px;">🕒 ${isThai?'เวลาเปิด-ปิด':'Opening hours'}</span>
+          <strong style="color:#0D2C1C;">${html(p.openHours||(isThai?'เปิดทุกวัน 08:30 - 18:00':'Open daily 08:30 - 18:00'))}</strong>
+        </div>
+        <div>
+          <span style="color:#78857B;display:block;margin-bottom:2px;">💰 ${isThai?'ช่วงราคา':'Price range'}</span>
+          <strong style="color:#0D2C1C;">${p.priceFrom?`฿${Number(p.priceFrom).toLocaleString()} - ฿${Math.round(p.priceFrom*2.5).toLocaleString()}`:(isThai?'ฟรี / ไม่เสียค่าเข้า':'Free')}</strong>
+        </div>
       </div>
 
       <!-- Action bar -->
-      <div class="detail-main-actions" style="margin:20px 0;display:flex;gap:10px;">
-        <button class="action-outline" data-action="directions" data-id="${p.id}">${ico('route',17)} ${html(t('route'))}</button>
+      <div class="detail-main-actions" style="margin:20px 0;display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="action-outline" data-action="directions" data-id="${p.id}" title="${html(t('route'))}">${ico('route',17)} ${html(t('route'))}</button>
         <button class="action-lime" data-action="trip-toggle" data-id="${p.id}">${html(t(planned?'removeTrip':'addTrip'))} ${ico(planned?'check':'arrow',19)}</button>
+        <button class="action-outline" data-action="explore-nearby-place" data-id="${p.id}" style="border-color:#2563EB;color:#2563EB;" title="${html(t('exploreNearby'))}">${ico('compass',17)} ${html(t('exploreNearby'))}</button>
         <button class="action-outline" data-action="share-place" data-id="${p.id}">${ico('share',17)} ${html(t('share'))}</button>
         ${p.phone?`<a href="tel:${p.phone}" class="action-outline" style="text-decoration:none;">${ico('phone',17)} ${html(t('call'))}</a>`:''}
       </div>
@@ -682,7 +796,7 @@ function detail(p){
       ${story(p)?`
         <section class="detail-about" style="background:#F8F7F3;padding:16px;border-radius:16px;border-left:4px solid #E5A836;margin:18px 0;">
           <h3 style="margin:0 0 6px 0;font-size:16px;color:#0D2C1C;">📖 ${html(t('localStory'))}</h3>
-          <p style="margin:0;font-style:italic;">"${html(story(p))}"</p>
+          <p style="margin:0;font-style:italic;line-height:1.6;">"${html(story(p))}"</p>
         </section>
       `:''}
 
@@ -690,7 +804,7 @@ function detail(p){
         <div style="margin:16px 0;">
           <strong style="display:block;margin-bottom:8px;font-size:13px;color:#0D2C1C;">✨ ${html(t('specialties'))}</strong>
           <div style="display:flex;flex-wrap:wrap;gap:6px;">
-            ${p.specialtiesTh.map(x=>`<span style="background:#EBF3EB;padding:4px 10px;border-radius:99px;font-size:12px;color:#16422C;">${html(x)}</span>`).join('')}
+            ${p.specialtiesTh.map(x=>`<span style="background:#EBF3EB;padding:5px 12px;border-radius:99px;font-size:12px;color:#16422C;font-weight:500;">${html(x)}</span>`).join('')}
           </div>
         </div>
       `:''}
@@ -716,18 +830,16 @@ function mapPage(){
   <main class="map-wrap">
     <div class="map-toolbar">
       <div>
-        <span class="mini-overline" style="color:#66B212;">TRAVAL / EXPLORE MAP</span>
+        <span class="mini-overline" style="color:#2D5A3A;font-weight:800;">TRAVAL / EXPLORE MAP</span>
         <h1>${html(t('map'))}</h1>
       </div>
-      <div style="display:flex;gap:10px;align-items:center;">
-        <label class="map-region-label">
-          ${html(t('mapArea'))}
-          <select id="map-region">
-            <option value="all" ${state.region==='all'?'selected':''}>${html(t('allRegions'))}</option>
-            ${Object.entries({north:"North Thailand",central:"Bangkok & Central",south:"South Thailand",northeast:"Northeast Thailand",east:"East Thailand",west:"West Thailand"}).map(([key,label])=>`<option value="${key}" ${state.region===key?'selected':''}>${html(label)}</option>`).join('')}
-          </select>
-        </label>
-      </div>
+      <label class="map-region-label">
+        ${html(t('mapArea'))}
+        <select id="map-region">
+          <option value="all" ${state.region==='all'?'selected':''}>${html(t('allRegions'))}</option>
+          ${Object.entries({north:"North Thailand",central:"Bangkok & Central",south:"South Thailand",northeast:"Northeast Thailand",east:"East Thailand",west:"West Thailand"}).map(([key,label])=>`<option value="${key}" ${state.region===key?'selected':''}>${html(label)}</option>`).join('')}
+        </select>
+      </label>
     </div>
 
     ${nearbyControls()}
@@ -807,6 +919,11 @@ function collection(){
  const isTrip=state.page==='trip';
  let items=(isTrip?state.trip:state.saved).map(getPlace).filter(Boolean);
 
+ if(state.collectionQuery){
+   const cq = state.collectionQuery.toLowerCase();
+   items = items.filter(p => [name(p), loc(p), p.provinceTh, p.provinceEn].filter(Boolean).join(' ').toLowerCase().includes(cq));
+ }
+
  if(!isTrip && state.collectionFilter==='sme'){
    items = items.filter(p=>p.isSme);
  } else if(!isTrip && state.collectionFilter!=='all'){
@@ -825,42 +942,66 @@ function collection(){
   ${header()}
   <main class="collection-content">
     <div class="collection-intro">
-      <span class="mini-overline" style="color:#8DE026;">TRAVAL / YOUR SPACE</span>
+      <span class="mini-overline" style="color:#2D5A3A;font-weight:800;">TRAVAL / YOUR SPACE</span>
       <h1>${html(t('myCollections'))}<span class="tiny-accent" style="color:#8DE026;">.</span></h1>
-      <p>${html(t('collections'))}</p>
+      <p style="color:#56685B;margin-top:6px;">${html(t('collections'))}</p>
     </div>
 
     <div class="collection-bar">
       <button data-action="navigate" data-page="saved" class="${!isTrip?'active':''}">
-        ${html(t('allSaved'))} <small style="color:#8DE026;">${state.saved.length}</small>
+        ${html(t('allSaved'))} <small style="background:${!isTrip?'#0D2C1C':'#E6E8E2'};color:${!isTrip?'#8DE026':'#56685B'};padding:2px 8px;border-radius:99px;font-weight:700;">${state.saved.length}</small>
       </button>
       <button data-action="navigate" data-page="trip" class="${isTrip?'active':''}">
-        ${html(t('planTrip'))} <small style="color:#8DE026;">${state.trip.length}</small>
+        ${html(t('planTrip'))} <small style="background:${isTrip?'#0D2C1C':'#E6E8E2'};color:${isTrip?'#8DE026':'#56685B'};padding:2px 8px;border-radius:99px;font-weight:700;">${state.trip.length}</small>
       </button>
     </div>
 
-    ${!isTrip ? `
-      <!-- Filter chips: SME & Provinces -->
-      <div class="traval-chips-container" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:18px;">
-        <button class="traval-chip ${state.collectionFilter==='all'?'active':''}" data-action="collection-filter" data-filter="all">
-          ${html(t('allSaved'))} (${state.saved.length})
-        </button>
-        <button class="traval-chip chip-sme ${state.collectionFilter==='sme'?'active':''}" data-action="collection-filter" data-filter="sme">
-          ★ ${html(t('sme'))}
-        </button>
-        ${Array.from(provinces.entries()).map(([key,lbl])=>`
-          <button class="traval-chip ${state.collectionFilter===key?'active':''}" data-action="collection-filter" data-filter="${key}">
-            📍 ${html(lbl)}
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0;flex-wrap:wrap;">
+      ${!isTrip ? `
+        <!-- Filter chips: SME & Provinces -->
+        <div class="traval-chips-container" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;flex:1;">
+          <button class="traval-chip ${state.collectionFilter==='all'?'active':''}" data-action="collection-filter" data-filter="all">
+            ${html(t('allSaved'))} (${state.saved.length})
           </button>
-        `).join('')}
+          <button class="traval-chip chip-sme ${state.collectionFilter==='sme'?'active':''}" data-action="collection-filter" data-filter="sme">
+            ★ ${html(t('sme'))}
+          </button>
+          ${Array.from(provinces.entries()).map(([key,lbl])=>`
+            <button class="traval-chip ${state.collectionFilter===key?'active':''}" data-action="collection-filter" data-filter="${key}">
+              📍 ${html(lbl)}
+            </button>
+          `).join('')}
+        </div>
+      `:''}
+      <button type="button" class="traval-chip ${state.selectMode?'active':''}" data-action="toggle-select-mode" style="margin-left:auto;white-space:nowrap;font-weight:700;">
+        ${state.selectMode ? '✕ ' + (state.lang==='th'?'ยกเลิกเลือก':'Cancel select') : '☑ ' + (state.lang==='th'?'เลือกหลายรายการ':'Select multiple')}
+      </button>
+    </div>
+
+    ${state.selectMode && state.selectedIds.length?`
+      <div style="background:#0D2C1C;color:#FFF;padding:10px 16px;border-radius:14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:13px;font-weight:700;color:#8DE026;">${state.lang==='th'?`เลือกแล้ว ${state.selectedIds.length} แห่ง`:`${state.selectedIds.length} selected`}</span>
+        <div style="display:flex;gap:8px;">
+          <button type="button" data-action="send-to-planner" style="background:#8DE026;color:#0D2C1C;border:none;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:800;cursor:pointer;">
+            ${html(t('sendTrip'))} ↗
+          </button>
+          <button type="button" data-action="delete-selected-saved" style="background:rgba(239,68,68,0.25);color:#FCA5A5;border:1px solid #EF4444;padding:6px 12px;border-radius:99px;font-size:12px;cursor:pointer;">
+            ${state.lang==='th'?'ลบออก':'Remove'}
+          </button>
+        </div>
       </div>
     `:''}
 
     ${items.length?`
       <div class="collection-grid">
-        ${items.map((p,i)=>`
-          <div class="collection-item">
-            <button class="collection-photo" data-action="place" data-id="${p.id}">
+        ${items.map((p,i)=>{
+          const isSelected = state.selectedIds.includes(p.id);
+          return `
+          <div class="collection-item ${state.selectMode?'select-active':''} ${isSelected?'selected':''}">
+            ${state.selectMode?`
+              <span class="item-select-check ${isSelected?'checked':''}" data-action="toggle-select-item" data-id="${p.id}">${isSelected?'✓':''}</span>
+            `:''}
+            <button class="collection-photo" data-action="${state.selectMode?'toggle-select-item':'place'}" data-id="${p.id}">
               <img src="${photo(p.photo)}" alt=""/>
               <span>
                 <b>${html(name(p))} ${p.isSme?'★':''}</b>
@@ -879,7 +1020,7 @@ function collection(){
               `}
             </div>
           </div>
-        `).join('')}
+        `;}).join('')}
       </div>
     `:`
       <div class="collection-empty">
@@ -910,7 +1051,10 @@ function profile(){
             <span class="account-avatar">${html(state.account.name[0].toUpperCase())}</span>
             <div><strong>${html(state.account.name)}</strong><small>${html(state.account.email)}</small></div>
           </div>
-          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:6px;">
+          <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--color-subtle-border);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+            <a href="/profile.html" class="quiet-link" style="font-weight:700;color:var(--color-forest);font-size:12px;text-decoration:underline;text-underline-offset:3px;">
+              ${state.lang==='th'?'เปิดหน้าโปรไฟล์เต็ม (Nine) ↗':'Full Profile Portal ↗'}
+            </a>
             <button class="account-signout" type="button" data-action="auth-logout">${html(t('signOut'))} ${ico('arrow',17)}</button>
             <button class="account-signout" type="button" data-action="auth-logout-all" style="color:#b83232;" title="${state.lang==='th'?'ออกจากระบบจากทุกอุปกรณ์ที่เคยล็อกอินไว้':'Sign out from all logged in devices'}">${state.lang==='th'?'ออกจากระบบทุกเครื่อง':'Sign out all devices'} ${ico('arrow',17)}</button>
           </div>
@@ -926,31 +1070,13 @@ function profile(){
             <label>${html(t('password'))} ${state.authMode==='register'?`<span style="font-weight:normal;color:#718096;font-size:11px;">(${state.lang==='th'?'ขั้นต่ำ 8 ตัวอักษร':'min 8 chars'})</span>`:''}<input name="password" type="password" minlength="${state.authMode==='register'?'8':''}" required/></label>
             <button class="action-lime" type="submit">${html(t(state.authMode==='register'?'createAccount':'signIn'))}</button>
           </form>
-          <div style="display:flex;align-items:center;gap:10px;margin:18px 0 12px 0;">
-            <div style="flex:1;height:1px;background:#e2e8f0;"></div>
-            <span style="font-size:11px;color:#718096;">${state.lang==='th'?'หรือเข้าสู่ระบบด้วย':'or continue with'}</span>
-            <div style="flex:1;height:1px;background:#e2e8f0;"></div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button type="button" data-action="quick-social" data-provider="google" style="flex:1;min-width:90px;background:#fff;border:1px solid #cbd5e0;border-radius:12px;padding:9px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">
-              <span style="color:#4285F4;font-weight:800;">G</span> Google
-            </button>
-            <button type="button" data-action="quick-social" data-provider="facebook" style="flex:1;min-width:90px;background:#fff;border:1px solid #cbd5e0;border-radius:12px;padding:9px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">
-              <span style="color:#1877F2;font-weight:800;">f</span> Facebook
-            </button>
-            <button type="button" data-action="quick-phone" style="flex:1;min-width:90px;background:#fff;border:1px solid #cbd5e0;border-radius:12px;padding:9px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;">
-              <span>📱</span> ${state.lang==='th'?'เบอร์โทร':'Phone'}
-            </button>
+          <div style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--color-subtle-border);text-align:center;">
+            <a href="/login.html" style="font-size:12px;font-weight:700;color:var(--color-forest);text-decoration:underline;text-underline-offset:3px;">
+              ${state.lang==='th'?'ไปที่หน้าเข้าสู่ระบบ / สมัครสมาชิกเต็มรูปแบบ (Nine) ↗':'Go to Full Auth Portal (Nine) ↗'}
+            </a>
           </div>
         `}
       </section>
-      ${state.account?`
-        <section class="profile-card" style="border:1px solid #FED7D7;background:#FFF5F5;border-radius:18px;padding:20px;margin-top:20px;">
-          <h2 style="color:#C53030;font-size:16px;margin:0 0 8px 0;">ความเป็นส่วนตัวและสิทธิ์ PDPA</h2>
-          <p style="font-size:12px;color:#742A2A;line-height:1.5;margin:0 0 14px 0;">คุณมีสิทธิ์ขอลบข้อมูลส่วนบุคคล รหัสผ่าน และบัญชีของคุณออกจากระบบอย่างถาวร (Right to Erasure) ตามกฎหมายคุ้มครองข้อมูลส่วนบุคคล</p>
-          <button type="button" data-action="delete-account" style="background:#E53E3E;color:#FFF;border:none;border-radius:99px;padding:10px 20px;font-size:12px;font-weight:700;cursor:pointer;">ขอลบข้อมูลบัญชีถาวร (Delete Account) ↗</button>
-        </section>
-      `:''}
       <section class="profile-card">
         <h2>${html(t('language'))}</h2>
         <div class="language-switch">
@@ -1002,8 +1128,8 @@ function searchOverlay(){
  </div>`;
 }
 
-function aiModal(){
-  const f = state.aiForm;
+function aiModal(){ return ''; }
+function _unusedAiModal(){
   return `<div class="search-overlay" role="dialog" aria-modal="true" aria-label="AI Travel Advisor" style="display:flex;align-items:center;justify-content:center;padding:20px;">
     <div class="search-backdrop" data-action="close-ai"></div>
     <div style="position:relative;z-index:100;background:#FFF;border-radius:24px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,0.3);border:1px solid #E6E8E2;">
@@ -1028,39 +1154,47 @@ function aiModal(){
         <div>
           <div style="background:#F4F8F1;border:1px solid #D1E7C4;border-radius:16px;padding:16px 20px;margin-bottom:20px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-              <strong style="color:#183E2D;font-size:16px;">${html(state.aiResult.destination||'Thailand')} (${state.aiResult.days||1} วัน)</strong>
-              <span style="background:#8DE026;color:#0D2C1C;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;">งบประมาณรวม ฿${(state.aiResult.budgetEstimate?.totalEstimatedCost||0).toLocaleString()}</span>
+              <strong style="color:#183E2D;font-size:16px;">${html(state.aiResult.title||state.aiResult.destination||'ทริปเที่ยว')} (${state.aiResult.days||1} วัน)</strong>
+              <span style="background:#8DE026;color:#0D2C1C;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;">งบประมาณรวม ฿${(state.aiResult.budgetBreakdown?.totalEstimated||state.aiResult.budgetEstimate?.totalEstimatedCost||0).toLocaleString()}</span>
             </div>
-            <p style="margin:0;font-size:12px;color:#455248;line-height:1.5;">${html(state.aiResult.summary||'')}</p>
+            <p style="margin:0;font-size:12px;color:#455248;line-height:1.5;">${html(state.aiResult.aiSummary||state.aiResult.summary||'')}</p>
           </div>
 
-          ${state.aiResult.budgetEstimate ? `
+          ${(state.aiResult.budgetBreakdown || state.aiResult.budgetEstimate) ? `
             <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));gap:8px;margin-bottom:20px;">
-              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">ที่พัก (Stays)</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetEstimate.breakdown?.accommodations||0).toLocaleString()}</strong></div>
-              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">อาหาร & SME</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetEstimate.breakdown?.foodAndDining||0).toLocaleString()}</strong></div>
-              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">เดินทาง (Transport)</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetEstimate.breakdown?.transportation||0).toLocaleString()}</strong></div>
-              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">สำรองฉุกเฉิน</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetEstimate.breakdown?.emergencyCushion||0).toLocaleString()}</strong></div>
+              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">ที่พัก (Stays)</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetBreakdown?.accommodation||state.aiResult.budgetEstimate?.breakdown?.accommodations||0).toLocaleString()}</strong></div>
+              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">อาหาร & SME</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetBreakdown?.food||state.aiResult.budgetEstimate?.breakdown?.foodAndDining||0).toLocaleString()}</strong></div>
+              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">เดินทาง (Transport)</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetBreakdown?.transport||state.aiResult.budgetEstimate?.breakdown?.transportation||0).toLocaleString()}</strong></div>
+              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">กิจกรรม & อื่น ๆ</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetBreakdown?.activities||state.aiResult.budgetEstimate?.breakdown?.emergencyCushion||0).toLocaleString()}</strong></div>
             </div>
           ` : ''}
 
           <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px;">
-            ${(state.aiResult.itinerary||[]).map(day=>`
+            ${((state.aiResult.dailyItinerary||state.aiResult.itinerary||[])).map(day=>`
               <div style="border:1px solid #E6E8E2;border-radius:14px;padding:16px;">
                 <h4 style="margin:0 0 10px;color:#0D2C1C;font-size:14px;display:flex;justify-content:space-between;">
-                  <span>Day ${day.day} · ${html(day.theme||'')}</span>
-                  <small style="color:#78857B;font-weight:normal;">${day.schedule?.length||0} จุดแวะ</small>
+                  <span>Day ${day.day} · ${html(day.theme||(day.distanceKm?`ระยะทาง ${day.distanceKm} กม.`:'เส้นทางท่องเที่ยว'))}</span>
+                  <small style="color:#78857B;font-weight:normal;">${(day.places||day.schedule||[]).length} จุดแวะ</small>
                 </h4>
                 <div style="display:flex;flex-direction:column;gap:8px;">
-                  ${(day.schedule||[]).map(s=>`
+                  ${((day.places||day.schedule||[])).map(s=>{
+                    const p = s.place || s;
+                    return `
                     <div style="display:flex;align-items:center;gap:12px;background:#FAFAF8;padding:8px 12px;border-radius:8px;">
-                      <span style="font-size:11px;font-weight:700;color:#2563EB;min-width:70px;">${html(s.time||'')}</span>
+                      <span style="font-size:11px;font-weight:700;color:#2563EB;min-width:65px;">${html(s.time||'จุดแวะ')}</span>
                       <div style="flex:1;min-width:0;">
-                        <strong style="font-size:12px;color:#0D2C1C;">${html(s.place?.nameEn||s.title||'')}</strong>
-                        ${s.place?.isSme ? `<span style="background:#FEF8EC;color:#925C08;border:1px solid #F59E0B;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;margin-left:6px;">★ Local SME</span>` : ''}
-                        <small style="display:block;color:#78857B;font-size:10px;">${html(s.activity||s.place?.locationEn||'')}</small>
+                        <strong style="font-size:12px;color:#0D2C1C;">${html(p.th||p.en||p.nameEn||p.title||'')}</strong>
+                        ${p.isSme ? `<span style="background:#FEF8EC;color:#925C08;border:1px solid #F59E0B;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;margin-left:6px;">★ Local SME</span>` : ''}
+                        <small style="display:block;color:#78857B;font-size:10px;">${html(p.locTh||p.locEn||s.activity||'')}</small>
                       </div>
                     </div>
-                  `).join('')}
+                  `;}).join('')}
+                  ${day.smeRecommendations && day.smeRecommendations.length ? `
+                    <div style="background:#FFF9EF;border-left:3px solid #E5A836;padding:8px 10px;border-radius:6px;font-size:11px;color:#78350F;margin-top:6px;">
+                      <strong>✨ แนะนำแวะร้านชุมชนระหว่างทาง:</strong>
+                      ${day.smeRecommendations.map(r=>`${html(r.place?.th||r.place?.en)} (+${r.detourKm} กม.)`).join(', ')}
+                    </div>
+                  ` : ''}
                 </div>
               </div>
             `).join('')}
@@ -1131,8 +1265,8 @@ function aiModal(){
   </div>`;
 }
 
-function safetyModal(){
-  const reports = state.safetyReports || [];
+function safetyModal(){ return ''; }
+function _unusedSafetyModal(){
   return `<div class="search-overlay" role="dialog" aria-modal="true" aria-label="Travel Safety" style="display:flex;align-items:center;justify-content:center;padding:20px;">
     <div class="search-backdrop" data-action="close-safety"></div>
     <div style="position:relative;z-index:100;background:#FFF;border-radius:24px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,0.3);border:1px solid #E6E8E2;">
@@ -1228,7 +1362,7 @@ function appHtml(){
           state.page==='map'?mapPage():
           state.page==='saved'||state.page==='trip'?collection():
           profile();
- return body+(state.menuOpen?overlayMenu():'')+(state.searchOpen?searchOverlay():'')+(state.aiModalOpen?aiModal():'')+(state.safetyModalOpen?safetyModal():'');
+ return body+(state.menuOpen?overlayMenu():'')+(state.searchOpen?searchOverlay():'');
 }
 
 function render({keepScroll=false}={}){
@@ -1236,13 +1370,17 @@ function render({keepScroll=false}={}){
  document.documentElement.lang=state.lang;
  document.title=`Traval — ${state.page==='welcome'?'Travel & Local Discovery':t(state.page==='detail'?'titlePlace':state.page)}`;
  $('#app').innerHTML=appHtml();
- document.body.classList.toggle('has-modal',state.menuOpen||state.searchOpen||state.aiModalOpen||state.safetyModalOpen);
+ document.body.classList.toggle('has-modal',state.menuOpen||state.searchOpen);
  if(state.page==='map') requestAnimationFrame(drawMap);
  if(keepScroll) requestAnimationFrame(()=>window.scrollTo({top:sy,behavior:'instant'}));
  else window.scrollTo({top:0,behavior:'instant'});
 }
 
 function navigate(page,updateHash=true){
+ if(page==='profile'){
+   window.location.href=state.account?'/profile.html':'/login.html';
+   return;
+ }
  state.page=page;state.menuOpen=false;state.searchOpen=false;state.showAll=false;state.query='';
  if(page!=='detail')state.detail=null;
  if(page==='map'){
@@ -1375,17 +1513,8 @@ function drawMap(){
  tileLayer.append(fragment);
 
  // Places and Marker Clustering
- const region=state.region==='all'?'north':state.region;
- const rawList=(state.nearbyActive?filteredPlaces():PLACES.filter(p=>state.region==='all'||p.region===region));
+ const rawList=(state.nearbyActive?filteredPlaces():PLACES.filter(p=>state.region==='all'||p.region===state.region));
  const clustered = clusterMapPlaces(rawList, z);
- const safetyPins = (state.safetyReports || []).filter(r => r.lat && r.lon).map(r => {
-   const xy = merc(r.lat, r.lon, z);
-   const px = xy.x - origin.x + w/2, py = xy.y - origin.y + h/2;
-   if (px < -50 || px > w+50 || py < -50 || py > h+50) return '';
-   return `<button class="map-pin pin-safety" style="left:${px}px;top:${py}px;position:absolute;transform:translate(-50%,-100%);pointer-events:auto;background:#DC2626;border:2px solid #FFF;border-radius:50% 50% 50% 0;rotate:-45deg;width:34px;height:34px;display:grid;place-items:center;color:#FFF;box-shadow:0 6px 16px rgba(220,38,38,0.4);z-index:20;" data-action="safety-pin-click" data-id="${r.id}" title="⚠️ ${html(r.title)}">
-     <span style="rotate:45deg;font-size:12px;">🛡️</span>
-   </button>`;
- }).join('');
 
  pinLayer.innerHTML = clustered.map(item=>{
    const xy=merc(item.lat,item.lon,z);
@@ -1393,16 +1522,16 @@ function drawMap(){
    if(px<-50||px>w+50||py<-50||py>h+50) return '';
 
    if(item.isCluster){
-     return `<button class="map-cluster-btn" data-action="cluster-zoom" data-lat="${item.lat}" data-lon="${item.lon}" style="position:absolute;left:${px}px;top:${py}px;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;background:${item.hasSme?'#E5A836':'#0D2C1C'};color:#FFF;border:3px solid #FFF;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-size:13px;font-weight:700;cursor:pointer;pointer-events:auto;z-index:18;">
+     return `<button class="map-cluster-btn" data-action="cluster-zoom" data-lat="${item.lat}" data-lon="${item.lon}" style="position:absolute;left:${px}px;top:${py}px;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;background:${item.hasSme?'#E5A836':'#0D2C1C'};color:${item.hasSme?'#0D2C1C':'#8DE026'};border:3px solid #FFF;box-shadow:0 4px 12px rgba(0,0,0,0.3);font-size:13px;font-weight:800;cursor:pointer;pointer-events:auto;z-index:18;">
        ${item.count}
      </button>`;
    }
 
    const isSelected = state.mapSelected===item.id;
-   return `<button class="map-pin ${isSelected?'active':''} ${item.isSme?'pin-sme':''}" style="left:${px}px;top:${py}px;position:absolute;transform:translate(-50%,-100%);pointer-events:auto;background:${item.isSme?'#E5A836':'#0D2C1C'};border:2px solid #FFF;border-radius:50% 50% 50% 0;rotate:-45deg;width:38px;height:38px;display:grid;place-items:center;color:#FFF;box-shadow:0 6px 16px rgba(0,0,0,0.25);" data-action="map-select" data-id="${item.id}" aria-label="${html(name(item))}">
-     <span style="rotate:45deg;font-size:13px;">${item.isSme?'★':ico(item.category==='food'?'coffee':item.category==='stay'?'bed':'pin',16)}</span>
+   return `<button class="map-pin ${isSelected?'active':''} ${item.isSme?'pin-sme':''}" style="left:${px}px;top:${py}px;position:absolute;transform:translate(-50%,-100%);pointer-events:auto;background:${item.isSme?'#E5A836':'#0D2C1C'};border:2px solid #FFF;border-radius:50% 50% 50% 0;rotate:-45deg;width:38px;height:38px;display:grid;place-items:center;color:${item.isSme?'#0D2C1C':'#FFF'};box-shadow:0 6px 16px rgba(0,0,0,0.25);" data-action="map-select" data-id="${item.id}" aria-label="${html(name(item))}">
+     <span style="rotate:45deg;font-size:13px;font-weight:${item.isSme?'800':'600'};">${item.isSme?'★':ico(item.category==='food'?'coffee':item.category==='stay'?'bed':'pin',16)}</span>
    </button>`;
- }).join('') + safetyPins + (state.nearbyPoint?`
+ }).join('') + (state.nearbyPoint?`
    <div class="map-me-pin" style="left:${merc(state.nearbyPoint.lat,state.nearbyPoint.lon,z).x-origin.x+w/2}px;top:${merc(state.nearbyPoint.lat,state.nearbyPoint.lon,z).y-origin.y+h/2}px;" title="ตำแหน่งของคุณ (You Are Here)">
      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;background:rgba(37,99,235,0.25);border:1px solid #2563EB;animation:pulseAccuracy 2s infinite ease-out;pointer-events:none;"></div>
      <span style="position:relative;z-index:2;display:block;width:16px;height:16px;border-radius:50%;background:#2563EB;border:3px solid #FFF;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></span>
@@ -1413,40 +1542,67 @@ function drawMap(){
 // Map pan dragging
 let mapDragging=false, dragStartX=0, dragStartY=0, centerStart={lat:0,lon:0};
 function initMapDragEvents(){
- document.addEventListener('mousedown',e=>{
-   const frame=e.target.closest('#map-frame-box');
-   if(!frame||e.target.closest('button'))return;
-   mapDragging=true;
-   dragStartX=e.clientX;dragStartY=e.clientY;
-   centerStart={...state.mapCenter};
-   frame.style.cursor='grabbing';
-   if(state.followMe){
-     state.followMe=false;
-     toast(t('followPaused'));
-   }
- });
- window.addEventListener('mousemove',e=>{
-   if(!mapDragging)return;
-   const dx=e.clientX-dragStartX, dy=e.clientY-dragStartY;
-   const scale=256*(2**state.mapCenter.z);
-   const dLon= - (dx/scale)*360;
-   const currentY = merc(centerStart.lat, 0, state.mapCenter.z).y;
-   const n = Math.PI - 2*Math.PI*(currentY - dy)/scale;
-   const newLat = 180/Math.PI * Math.atan(0.5*(Math.exp(n)-Math.exp(-n)));
-   state.mapCenter.lon = centerStart.lon + dLon;
-   state.mapCenter.lat = isNaN(newLat)?centerStart.lat:Math.max(-85,Math.min(85,newLat));
-   if(!state.mapPannedAway && (Math.abs(dx)>50 || Math.abs(dy)>50)){
-     state.mapPannedAway=true;
-   }
-   drawMap();
- });
- window.addEventListener('mouseup',()=>{
-   if(!mapDragging)return;
-   mapDragging=false;
-   const frame=$('#map-frame-box');
-   if(frame)frame.style.cursor='grab';
-   if(state.mapPannedAway) render({keepScroll:true});
- });
+  const startDrag = (clientX, clientY, target) => {
+    const frame=target.closest('#map-frame-box');
+    if(!frame||target.closest('button'))return false;
+    mapDragging=true;
+    dragStartX=clientX;dragStartY=clientY;
+    centerStart={...state.mapCenter};
+    frame.style.cursor='grabbing';
+    if(state.followMe){
+      state.followMe=false;
+      toast(t('followPaused'));
+    }
+    return true;
+  };
+
+  const moveDrag = (clientX, clientY) => {
+    if(!mapDragging)return;
+    const dx=clientX-dragStartX, dy=clientY-dragStartY;
+    const scale=256*(2**state.mapCenter.z);
+    const dLon= - (dx/scale)*360;
+    const currentY = merc(centerStart.lat, 0, state.mapCenter.z).y;
+    const n = Math.PI - 2*Math.PI*(currentY - dy)/scale;
+    const newLat = 180/Math.PI * Math.atan(0.5*(Math.exp(n)-Math.exp(-n)));
+    state.mapCenter.lon = centerStart.lon + dLon;
+    state.mapCenter.lat = isNaN(newLat)?centerStart.lat:Math.max(-85,Math.min(85,newLat));
+    if(!state.mapPannedAway && (Math.abs(dx)>50 || Math.abs(dy)>50)){
+      state.mapPannedAway=true;
+    }
+    drawMap();
+  };
+
+  const endDrag = () => {
+    if(!mapDragging)return;
+    mapDragging=false;
+    const frame=$('#map-frame-box');
+    if(frame)frame.style.cursor='grab';
+    if(state.mapPannedAway) render({keepScroll:true});
+  };
+
+  document.addEventListener('mousedown',e=>{
+    startDrag(e.clientX, e.clientY, e.target);
+  });
+  window.addEventListener('mousemove',e=>{
+    moveDrag(e.clientX, e.clientY);
+  });
+  window.addEventListener('mouseup', endDrag);
+
+  // Touch support for mobile / touch devices
+  document.addEventListener('touchstart',e=>{
+    if(e.touches && e.touches.length===1){
+      if(startDrag(e.touches[0].clientX, e.touches[0].clientY, e.target)){
+        e.preventDefault();
+      }
+    }
+  }, {passive:false});
+  window.addEventListener('touchmove',e=>{
+    if(mapDragging && e.touches && e.touches.length===1){
+      moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+      e.preventDefault();
+    }
+  }, {passive:false});
+  window.addEventListener('touchend', endDrag);
 }
 initMapDragEvents();
 
@@ -1548,83 +1704,90 @@ async function dispatch(event){
    case'auth-mode':state.authMode=target.dataset.mode;render({keepScroll:true});break;
    case'auth-logout':signOut();break;
    case'auth-logout-all':signOutAll();break;
-   case'quick-social':{
-     const prov=target.dataset.provider||'google';
-     const name=prompt(state.lang==='th'?`กรอกชื่อผู้ใช้สำหรับ ${prov}:`:`Enter your name for ${prov}:`,prov==='google'?'Somchai Google':'Somchai Facebook');
-     if(name){
-       const email=prompt(state.lang==='th'?`กรอกอีเมลสำหรับ ${prov}:`:`Enter email for ${prov}:`,prov==='google'?'somchai.google@gmail.com':'somchai.fb@facebook.com');
-       if(email){
-         try{
-           const res=await userApi('/api/auth/social','POST',{provider:prov,name,email,providerId:prov+'_'+Date.now()});
-           state.account=res.user;await loadAccountCollections();
-           toast(state.lang==='th'?`เข้าสู่ระบบด้วย ${prov} สำเร็จ!`:`Signed in with ${prov}!`);
-           render({keepScroll:true});
-         }catch(e){toast(e.message)}
-       }
+   case'explore-nearby-place':{
+     const p=getPlace(id);
+     if(p&&p.lat&&p.lon){
+       state.nearbyPoint={lat:p.lat,lon:p.lon};
+       state.mapCenter={lat:p.lat,lon:p.lon,z:14};
+       state.nearbyActive=true;
+       fetchNearby();
+       navigate('map');
+       toast(state.lang==='th'?`สำรวจรอบ ๆ ${name(p)}`:`Exploring around ${name(p)}`);
      }
      break;
    }
-   case'quick-phone':{
-     const phone=prompt(state.lang==='th'?'กรอกเบอร์โทรศัพท์ (เช่น 0812345678):':'Enter phone number (e.g. 0812345678):','0812345678');
-     if(phone){
-       try{
-         const reqRes=await userApi('/api/auth/phone/otp-request','POST',{phone});
-         const hint=reqRes.devOtp?` (รหัสทดสอบ: ${reqRes.devOtp})`:'';
-         const otp=prompt((state.lang==='th'?'กรอกรหัส OTP 6 หลักที่ได้รับ':'Enter 6-digit OTP code')+hint,reqRes.devOtp||'');
-         if(otp){
-           const verRes=await userApi('/api/auth/phone/otp-verify','POST',{phone,otp});
-           state.account=verRes.user;await loadAccountCollections();
-           toast(state.lang==='th'?'เข้าสู่ระบบด้วยเบอร์โทรสำเร็จ!':'Signed in with phone successfully!');
-           render({keepScroll:true});
-         }
-       }catch(e){toast(e.message)}
-     }
+   case'set-manual-point':{
+     const mlat=Number(target.dataset.lat), mlon=Number(target.dataset.lon);
+     state.nearbyPoint={lat:mlat,lon:mlon};
+     state.mapCenter={lat:mlat,lon:mlon,z:13};
+     state.geoStatus='manual';
+     state.nearbyActive=true;
+     fetchNearby();
+     toast(state.lang==='th'?`กำหนดตำแหน่ง: ${target.dataset.name}`:`Location set: ${target.dataset.name}`);
      break;
    }
-   case'open-ai':state.aiModalOpen=true;render({keepScroll:true});break;
-   case'close-ai':state.aiModalOpen=false;render({keepScroll:true});break;
-   case'reset-ai':state.aiResult=null;state.aiLoading=false;render({keepScroll:true});break;
-   case'save-ai-plan':
-     if(state.aiResult&&Array.isArray(state.aiResult.itinerary)){
-       const ids=[];
-       state.aiResult.itinerary.forEach(d=>{(d.schedule||[]).forEach(s=>{if(s.place?.id&&!state.trip.includes(s.place.id))ids.push(s.place.id)})});
-       if(ids.length){state.trip=[...state.trip,...ids];persistCollections();}
-       state.aiModalOpen=false;navigate('trip');
-       toast(`บันทึก ${ids.length} จุดแวะเข้าทริปเรียบร้อยแล้ว!`);
-     }
+   case'quick-filter-local':
+     state.localOnly=!state.localOnly;
+     render({keepScroll:true});
      break;
-   case'open-safety':state.safetyModalOpen=true;render({keepScroll:true});break;
-   case'close-safety':state.safetyModalOpen=false;render({keepScroll:true});break;
-   case'open-safety-form':state.safetyFormOpen=true;render({keepScroll:true});break;
-   case'cancel-safety-form':state.safetyFormOpen=false;render({keepScroll:true});break;
-   case'safety-pin-click':{
-     const rep=(state.safetyReports||[]).find(r=>r.id===id);
-     if(rep){
-       toast(`⚠️ [เตือนภัย] ${rep.title}: ${rep.description}`);
-       state.safetyModalOpen=true;
-       render({keepScroll:true});
-     }
+   case'quick-filter-rating':
+     state.minRating=state.minRating===Number(target.dataset.rating)?0:Number(target.dataset.rating);
+     render({keepScroll:true});
      break;
-   }
-   case'use-safety-gps':
-     if(navigator.geolocation){
-       navigator.geolocation.getCurrentPosition(pos=>{
-         const latInput=document.getElementById('safety-lat');
-         const lonInput=document.getElementById('safety-lon');
-         if(latInput)latInput.value=pos.coords.latitude.toFixed(4);
-         if(lonInput)lonInput.value=pos.coords.longitude.toFixed(4);
-         toast(state.lang==='th'?'ดึงพิกัด GPS ปัจจุบันสำเร็จ':'Current GPS acquired');
-       },()=>{toast(t('locationDenied'));},{enableHighAccuracy:true,timeout:8000});
-     }
+   case'quick-filter-budget':
+     state.nearbyMaxPrice=state.nearbyMaxPrice===target.dataset.budget?'':target.dataset.budget;
+     render({keepScroll:true});
      break;
-   case'delete-account':
-     if(confirm(state.lang==='th'?'คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีและข้อมูลทั้งหมดของคุณอย่างถาวร? การกระทำนี้ไม่สามารถย้อนกลับได้ตามข้อกำหนด PDPA':'Are you sure you want to permanently erase your account and all associated data under PDPA? This action cannot be undone.')){
-       userApi('/api/me/account','DELETE').then(()=>{
-         state.account=null;state.saved=[...guestSaved];state.trip=[...guestTrip];state.myReviews=[];
-         toast(state.lang==='th'?'ลบบัญชีและข้อมูลส่วนบุคคลตามสิทธิ์ PDPA สำเร็จแล้ว':'Account and personal data erased successfully.');
-         navigate('profile');
-       }).catch(e=>toast(e.message));
+   case'reset-filters':
+     state.category='all';
+     state.query='';
+     state.region='all';
+     state.localOnly=false;
+     state.nearbyMaxPrice='';
+     state.minRating=0;
+     render({keepScroll:true});
+     break;
+   case'toggle-select-mode':
+     state.selectMode=!state.selectMode;
+     if(!state.selectMode) state.selectedIds=[];
+     render({keepScroll:true});
+     break;
+   case'toggle-select-item':
+     if(state.selectedIds.includes(id)){
+       state.selectedIds=state.selectedIds.filter(x=>x!==id);
+     }else{
+       state.selectedIds=[...state.selectedIds,id];
      }
+     render({keepScroll:true});
+     break;
+   case'send-to-planner':
+     if(state.selectedIds.length===0){
+       toast(state.lang==='th'?'กรุณาเลือกสถานที่อย่างน้อย 1 แห่ง':'Please select at least 1 place');
+       return;
+     }
+     try{
+       const planStops=state.selectedIds.map(getPlace).filter(Boolean);
+       localStorage.setItem('traval-selected-plan-stops',JSON.stringify(planStops));
+     }catch{}
+     window.location.href=`/planner.html?places=${encodeURIComponent(state.selectedIds.join(','))}`;
+     break;
+   case'delete-selected-saved':
+     if(state.selectedIds.length===0) return;
+     if(state.page==='trip'){
+       state.trip=state.trip.filter(x=>!state.selectedIds.includes(x));
+     }else{
+       state.saved=state.saved.filter(x=>!state.selectedIds.includes(x));
+     }
+     persistCollections();
+     toast(state.lang==='th'?`ลบ ${state.selectedIds.length} รายการแล้ว`:`Removed ${state.selectedIds.length} items`);
+     state.selectedIds=[];
+     state.selectMode=false;
+     render({keepScroll:true});
+     break;
+   case'dismiss-onboard':
+     state.onboarding=false;
+     try{localStorage.setItem(ONBOARD_KEY,'1')}catch{}
+     render({keepScroll:true});
      break;
    default:break;
  }
@@ -1642,6 +1805,14 @@ function onInput(event){
      </button>
    `).join('')||`<div class="search-empty">${html(t('nothing'))}</div>`;
  }
+ if(event.target.id==='collection-search-input'){
+   state.collectionQuery=event.target.value;
+   render({keepScroll:true});
+ }
+ if(event.target.id==='map-search-input'||event.target.id==='home-query'){
+   state.query=event.target.value;
+   render({keepScroll:true});
+ }
 }
 
 function onChange(event){
@@ -1649,6 +1820,10 @@ function onChange(event){
    state.region=event.target.value;
    const mapRegions={all:{lat:13.736,lon:100.523,z:6},north:{lat:18.868,lon:99.35,z:10},central:{lat:13.75,lon:100.5,z:11},south:{lat:8.5,lon:98.6,z:9},northeast:{lat:16.4,lon:103.5,z:8},east:{lat:12.8,lon:101.5,z:9},west:{lat:14.2,lon:99.2,z:9}};
    state.mapCenter={...(mapRegions[state.region]||mapRegions.all)};
+   render({keepScroll:true});
+ }
+ if(event.target.id==='check-local-only'){
+   state.localOnly=event.target.checked;
    render({keepScroll:true});
  }
 }
@@ -1679,64 +1854,6 @@ document.addEventListener('submit', async event => {
     return;
   }
 
-  if(form.id === 'ai-advisor-form'){
-    const fd = new FormData(form);
-    const payload = {
-      destination: fd.get('province') || 'chiang-mai',
-      days: Number(fd.get('days')) || 2,
-      budget: Number(fd.get('budget')) || 3500,
-      style: fd.get('style') || 'all',
-      pace: fd.get('pace') || 'normal',
-      quickWalk: fd.get('quickWalk') === 'true'
-    };
-    state.aiLoading = true;
-    render({keepScroll:true});
-    try {
-      const res = await userApi('/api/ai/advisor', 'POST', payload);
-      state.aiResult = res.plan;
-      state.aiLoading = false;
-      render({keepScroll:true});
-    } catch(err) {
-      state.aiLoading = false;
-      toast(err.message);
-      render({keepScroll:true});
-    }
-    return;
-  }
-
-  if(form.id === 'safety-report-form'){
-    const fd = new FormData(form);
-    const photoInput = form.querySelector('#safety-photo-input');
-    let photoUrl = '';
-    try {
-      if(photoInput && photoInput.files && photoInput.files[0]){
-        const fileFd = new FormData();
-        fileFd.append('photo', photoInput.files[0]);
-        const uploadRes = await fetch('/api/safety/upload', { method: 'POST', credentials: 'same-origin', body: fileFd });
-        const uploadJson = await uploadRes.json();
-        if(uploadRes.ok && uploadJson.photoUrl) {
-          photoUrl = uploadJson.photoUrl;
-        }
-      }
-      const latVal = fd.get('lat') ? parseFloat(fd.get('lat')) : undefined;
-      const lonVal = fd.get('lon') ? parseFloat(fd.get('lon')) : undefined;
-      await userApi('/api/safety/reports', 'POST', {
-        category: fd.get('category'),
-        title: fd.get('title'),
-        description: fd.get('description'),
-        locationName: fd.get('locationName'),
-        lat: Number.isFinite(latVal) ? latVal : undefined,
-        lon: Number.isFinite(lonVal) ? lonVal : undefined,
-        photo: photoUrl
-      });
-      state.safetyFormOpen = false;
-      toast('ส่งรายงานความปลอดภัยสำเร็จ ข้อมูลจะได้รับการตรวจสอบจากผู้ดูแลระบบ');
-      render({keepScroll:true});
-    } catch(err) {
-      toast(err.message);
-    }
-    return;
-  }
 });
 
 document.addEventListener('click',dispatch);
@@ -1746,8 +1863,6 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     if(state.menuOpen){state.menuOpen=false;render({keepScroll:true})}
     else if(state.searchOpen){state.searchOpen=false;render({keepScroll:true})}
-    else if(state.aiModalOpen){state.aiModalOpen=false;render({keepScroll:true})}
-    else if(state.safetyModalOpen){state.safetyModalOpen=false;render({keepScroll:true})}
     else if(state.bottomSheetState!=='closed'){state.bottomSheetState='closed';render({keepScroll:true})}
     else if(state.page==='detail')navigate(state.previous||'discover');
   }
@@ -1762,7 +1877,10 @@ window.addEventListener('hashchange',()=>{
 
 // Initialize
 if(location.hash.startsWith('#place=')) state.detail=location.hash.slice(7);
-else if(['welcome','discover','map','saved','trip','profile'].includes(location.hash.slice(1))) state.page=location.hash.slice(1);
+else if(location.hash==='#profile') {
+  window.location.replace(state.account?'/profile.html':'/login.html');
+}
+else if(['welcome','discover','map','saved','trip'].includes(location.hash.slice(1))) state.page=location.hash.slice(1);
 
 render();
 refreshSession();
