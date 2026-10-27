@@ -55,6 +55,12 @@ const PAGE_FILES = {
   'planner.html': 'frontend/planner/planner.html',
   'planner.js': 'frontend/planner/planner.js',
   'planner.css': 'frontend/planner/planner.css',
+  'planner-showcase.html': 'frontend/planner/planner.html',
+  'admin-showcase.html': 'frontend/admin/admin.html',
+  'business-showcase.html': 'frontend/business/business.html',
+  'planner-legacy.html': 'frontend/planner/planner-legacy.html',
+  'admin-legacy.html': 'frontend/admin/admin-legacy.html',
+  'business-legacy.html': 'frontend/business/business-legacy.html',
   'trip-engine.js': 'frontend/planner/trip-engine.js'
 };
 

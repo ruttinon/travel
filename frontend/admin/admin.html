@@ -1,17 +1,1681 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#f8f9f5" />
-  <link rel="icon" href="assets/icon-192.png" />
-  <link rel="stylesheet" href="admin.css" />
-  <link rel="stylesheet" href="admin-v26.css" />
-  <title>unfold · Admin Studio</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Traval · Admin Control Studio & Moderation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --forest: #153E2D;
+      --forest-dark: #0B2B1D;
+      --ink: #162F25;
+      --line: #E6E8E2;
+      --paper: #FFFFFF;
+      --cream: #F6F7F3;
+      --lime: #8DE026;
+      --lime-light: #DCF1D7;
+      --amber: #B57D34;
+      --amber-light: #FAEED8;
+      --red: #9B2C2C;
+      --red-light: #FED7D7;
+      --blue: #2B6CB0;
+      --blue-light: #E1EEF0;
+      --font: 'Inter', 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--cream);
+      color: var(--ink);
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* Left Sidebar Rail */
+    .admin-rail {
+      width: 250px;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      background: linear-gradient(165deg, var(--forest), var(--forest-dark));
+      color: #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      padding: 32px 20px 24px;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+
+    .brand-wrap {
+      margin-bottom: 32px;
+    }
+    .brand-logo {
+      font-size: 26px;
+      font-weight: 800;
+      color: #FFFFFF;
+      text-decoration: none;
+      letter-spacing: -0.03em;
+    }
+    .brand-logo span { color: var(--lime); }
+    .rail-sub {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #9CBCA7;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    .rail-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .rail-heading {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #7DA68B;
+      margin: 16px 0 8px 12px;
+      font-weight: 700;
+    }
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: transparent;
+      border: none;
+      border-radius: 12px;
+      color: #D3E3D7;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #FFFFFF;
+    }
+    .nav-btn.active {
+      background: rgba(255, 255, 255, 0.18);
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+    .nav-btn .icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+    }
+    .badge-count {
+      margin-left: auto;
+      background: var(--lime);
+      color: var(--forest-dark);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 99px;
+    }
+
+    .rail-promo {
+      background: linear-gradient(0deg, rgba(7, 30, 25, 0.8), rgba(25, 57, 41, 0.2)), url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80') center/cover;
+      border-radius: 16px;
+      padding: 20px 16px;
+      margin-top: auto;
+      margin-bottom: 20px;
+      color: #FFFFFF;
+    }
+    .rail-promo small {
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--lime);
+      font-weight: 700;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .rail-promo strong {
+      font-size: 15px;
+      line-height: 1.3;
+      font-weight: 700;
+      display: block;
+    }
+
+    .rail-user {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 11px;
+      color: #9CBCA7;
+    }
+    .rail-user button {
+      background: none;
+      border: none;
+      color: #FFFFFF;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 11px;
+    }
+
+    /* Main Content Area */
+    .admin-main {
+      flex: 1;
+      min-width: 0;
+      padding: 0 48px 80px;
+      overflow-y: auto;
+    }
+
+    /* Top Bar */
+    .admin-topbar {
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #ECEFE8;
+      margin-bottom: 32px;
+    }
+    .breadcrumb {
+      font-size: 13px;
+      color: #78857B;
+    }
+    .breadcrumb strong { color: var(--forest); }
+    .admin-avatar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .avatar-circle {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #D4E5C7;
+      color: #2C5635;
+      font-weight: 800;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Page Header */
+    .page-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 32px;
+    }
+    .overline {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6C8572;
+      display: block;
+      margin-bottom: 8px;
+    }
+    .page-title {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #172B23;
+      line-height: 1.1;
+    }
+    .page-title span { color: #87B453; }
+    .page-sub {
+      font-size: 14px;
+      color: #627267;
+      margin-top: 6px;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-action.primary {
+      background: var(--forest);
+      color: #FFFFFF;
+    }
+    .btn-action.primary:hover {
+      background: #0E2C1E;
+      transform: translateY(-1px);
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .kpi-card {
+      background: #FFFFFF;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+    }
+    .kpi-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .kpi-icon.mint { background: var(--lime-light); color: var(--forest); }
+    .kpi-icon.peach { background: #F9ECDD; color: #BE895B; }
+    .kpi-icon.blue { background: var(--blue-light); color: var(--blue); }
+    .kpi-icon.amber { background: var(--amber-light); color: var(--amber); }
+
+    .kpi-data strong {
+      font-size: 30px;
+      font-weight: 800;
+      color: #172B23;
+      line-height: 1.1;
+      display: block;
+      letter-spacing: -0.03em;
+    }
+    .kpi-data small {
+      font-size: 12px;
+      color: #78857B;
+      font-weight: 500;
+      margin-top: 4px;
+      display: block;
+    }
+
+    /* Content Layout Grids */
+    .content-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .adm-card {
+      background: #FFFFFF;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 4px 24px rgba(23, 43, 35, 0.03);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .card-head h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #172B23;
+      letter-spacing: -0.02em;
+    }
+    .card-link {
+      font-size: 12px;
+      color: var(--forest);
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    /* Activity Stream */
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+    }
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 0;
+      border-top: 1px solid #F0F2EC;
+    }
+    .activity-item:first-child { border-top: none; }
+    .activity-img {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+    .activity-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .activity-info strong {
+      font-size: 13px;
+      color: #172B23;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .activity-info small {
+      font-size: 11px;
+      color: #78857B;
+      margin-top: 2px;
+      display: block;
+    }
+
+    /* Status Tags */
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .status-badge.published, .status-badge.approved, .status-badge.verified {
+      background: var(--lime-light);
+      color: var(--forest);
+    }
+    .status-badge.pending {
+      background: var(--amber-light);
+      color: var(--amber);
+    }
+    .status-badge.rejected, .status-badge.suspended {
+      background: var(--red-light);
+      color: var(--red);
+    }
+
+    /* Regional Progress Bars */
+    .region-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 14px;
+      font-size: 13px;
+    }
+    .region-name { width: 110px; font-weight: 600; color: #2C3E35; }
+    .region-track {
+      flex: 1;
+      height: 8px;
+      background: #EDF2E8;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .region-fill {
+      height: 100%;
+      background: #7BB47F;
+      border-radius: 99px;
+    }
+    .region-num { width: 30px; text-align: right; font-weight: 700; color: #172B23; }
+
+    /* Filter Pill Tabs */
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      overflow-x: auto;
+    }
+    .filter-pill {
+      padding: 8px 18px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #EDF0EA;
+      border: 1px solid transparent;
+      color: #4A5C50;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .filter-pill.active, .filter-pill:hover {
+      background: var(--forest);
+      color: #FFFFFF;
+    }
+
+    /* Moderation Cards */
+    .mod-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 20px;
+    }
+    .mod-card {
+      background: #FFFFFF;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+    }
+    .mod-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .mod-category {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: var(--blue-light);
+      color: var(--blue);
+    }
+    .mod-card h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #172B23;
+      line-height: 1.3;
+    }
+    .mod-card p {
+      font-size: 13px;
+      color: #455248;
+      line-height: 1.5;
+    }
+    .mod-meta {
+      font-size: 11px;
+      color: #78857B;
+      line-height: 1.6;
+      background: #F8FAF8;
+      padding: 10px 14px;
+      border-radius: 10px;
+    }
+    .mod-img {
+      width: 100%;
+      height: 160px;
+      border-radius: 12px;
+      object-fit: cover;
+    }
+    .mod-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    .btn-sm {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-sm.approve {
+      background: var(--forest);
+      color: #FFFFFF;
+      flex: 1;
+    }
+    .btn-sm.approve:hover { background: #0E2C1E; }
+    .btn-sm.reject {
+      background: #FEE2E2;
+      color: var(--red);
+    }
+    .btn-sm.reject:hover { background: #FED7D7; }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--forest-dark);
+      color: #FFFFFF;
+      padding: 14px 22px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      display: none;
+      z-index: 100;
+      animation: fadeIn 0.3s ease;
+    }
+    .toast.show { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Section Views */
+    .tab-view { display: none; }
+    .tab-view.active { display: block; }
+  </style>
 </head>
 <body>
-  <div id="admin-root"><div class="loading">Loading unfold studio…</div></div>
-  <div class="toast" id="admin-toast" role="status" aria-live="polite"></div>
-  <script defer src="admin.js"></script>
+
+  <!-- Left Sidebar Rail -->
+  <aside class="admin-rail">
+    <div class="brand-wrap">
+      <a href="#" class="brand-logo">unfold<span>.</span></a>
+      <div class="rail-sub">Admin Studio · v2.7</div>
+    </div>
+
+    <nav class="rail-nav">
+      <span class="rail-heading">Control Tower</span>
+      <button class="nav-btn active" onclick="switchTab('overview', this)">
+        <span class="icon">⌂</span>
+        <span>Dashboard สถิติ</span>
+      </button>
+      <button class="nav-btn" onclick="switchTab('businesses', this)">
+        <span class="icon">🏪</span>
+        <span>ตรวจสอบร้านค้า SME</span>
+        <span class="badge-count" id="pendingBizCount">4</span>
+      </button>
+      <button class="nav-btn" onclick="switchTab('safety', this)">
+        <span class="icon">🛡️</span>
+        <span>จุดเสี่ยง & Scam Alert</span>
+        <span class="badge-count" id="pendingSafetyCount">3</span>
+      </button>
+
+      <span class="rail-heading">Content & Access</span>
+      <button class="nav-btn" onclick="switchTab('users', this)">
+        <span class="icon">👥</span>
+        <span>จัดการผู้ใช้งาน (Users)</span>
+      </button>
+      <button class="nav-btn" onclick="switchTab('campaigns', this)">
+        <span class="icon">📢</span>
+        <span>แคมเปญ & แบนเนอร์ (CMS)</span>
+      </button>
+      <button class="nav-btn" onclick="switchTab('analytics', this)">
+        <span class="icon">📊</span>
+        <span>SME Analytics</span>
+      </button>
+      <button class="nav-btn" onclick="window.location.href='../auth/profile.html'">
+        <span class="icon">👤</span>
+        <span>User Profile & PDPA ↗</span>
+      </button>
+      <button class="nav-btn" onclick="window.location.href='../../index.html'" target="_blank">
+        <span class="icon">↗</span>
+        <span>View Traveller App</span>
+      </button>
+    </nav>
+
+    <div class="rail-promo">
+      <small>Local First</small>
+      <strong>SME Spotlight & Safe Travels</strong>
+    </div>
+
+    <div class="rail-user">
+      <span>Admin: <strong>Nine (Lead Designer)</strong></span>
+      <button onclick="window.location.href='../auth/login.html'">Sign out ↗</button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="admin-main">
+    
+    <!-- Topbar -->
+    <header class="admin-topbar">
+      <div class="breadcrumb">unfold / <strong id="sectionBreadcrumb">Dashboard Overview</strong></div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="btn-action" onclick="exportDataCsv()" style="background:#FFF;color:var(--forest);border:1px solid var(--line);font-size:12px;padding:8px 16px;border-radius:99px;cursor:pointer;font-weight:700;">📥 ส่งออกรายงาน (CSV)</button>
+        <div class="admin-avatar">
+        <div class="avatar-circle">AD</div>
+        <span style="font-size: 13px; font-weight: 600;">Super Administrator</span>
+      </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: DASHBOARD & STATISTICS (ระบบสถิติภาพรวม) -->
+    <!-- ========================================== -->
+    <section class="tab-view active" id="view-overview">
+      <div class="page-head">
+        <div>
+          <span class="overline">OVERVIEW / CONTROL TOWER</span>
+          <h1 class="page-title">Dashboard<span>.</span></h1>
+          <p class="page-sub">ภาพรวมระบบ สถานที่ ร้านค้าชุมชน และงานรอตรวจสอบทั้งหมด</p>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-action primary" onclick="autoPopulatePlaces()" style="background:#172B23; color:#8DE026; border:1px solid #8DE026;">⚡ นำเข้าข้อมูลสถานที่ทั่วไทย (Auto-Populate)</button>
+          <button class="btn-action primary" onclick="window.open('../../business.html', '_blank')">+ ลงทะเบียนร้านค้าใหม่ ↗</button>
+        </div>
+
+      <!-- 4 KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon mint">⌖</div>
+          <div class="kpi-data">
+            <strong id="kpiTotalPlaces">68</strong>
+            <small>สถานที่ท่องเที่ยวทั้งหมด</small>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon peach">👥</div>
+          <div class="kpi-data">
+            <strong id="kpiTotalUsers">1,420</strong>
+            <small>สมาชิกนักท่องเที่ยวลงทะเบียน</small>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon blue">🏪</div>
+          <div class="kpi-data">
+            <strong id="kpiSmePlaces">42</strong>
+            <small>ร้านค้าชุมชน Local SME ที่อนุมัติ</small>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon amber">⚠️</div>
+          <div class="kpi-data">
+            <strong style="color: #B57D34;" id="totalPendingKpi">7</strong>
+            <small>รายการรอตรวจสอบ (Pending)</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 Columns: Activity vs Regional Distribution -->
+      <div class="content-grid-2">
+        
+        <!-- Left: Live Activity Feed -->
+        <div class="adm-card">
+          <div class="card-head">
+            <h2>รายการเคลื่อนไหวล่าสุด (Recent Activity)</h2>
+            <span class="card-link" onclick="switchTab('businesses', document.querySelectorAll('.nav-btn')[1])">ดูทั้งหมด →</span>
+          </div>
+
+          <div class="activity-list" id="activityListContainer">
+            <div class="activity-item">
+              <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=120&q=80" class="activity-img" alt="">
+              <div class="activity-info">
+                <strong>ร้านกาแฟคั่วเตาฟืนแม่กำปอง</strong>
+                <small>ส่งคำขอลงทะเบียนร้านค้า SME · แม่กำปอง เชียงใหม่</small>
+              </div>
+              <span class="status-badge pending">Pending</span>
+            </div>
+
+            <div class="activity-item">
+              <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80" class="activity-img" alt="">
+              <div class="activity-info">
+                <strong>แท็กซี่ไม่กดมิเตอร์ วัดพระแก้ว</strong>
+                <small>นักท่องเที่ยวแจ้งเหตุขูดรีดค่าโดยสาร · พระนคร กรุงเทพฯ</small>
+              </div>
+              <span class="status-badge pending">Pending</span>
+            </div>
+
+            <div class="activity-item">
+              <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=120&q=80" class="activity-img" alt="">
+              <div class="activity-info">
+                <strong>ดอยม่อนแจ่ม วิวทะเลหมอก</strong>
+                <small>เผยแพร่สถานที่ท่องเที่ยวทางธรรมชาติ · เชียงใหม่</small>
+              </div>
+              <span class="status-badge published">Published</span>
+            </div>
+
+            <div class="activity-item">
+              <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=120&q=80" class="activity-img" alt="">
+              <div class="activity-info">
+                <strong>ครัวริมน้ำ ตลาดน้อยโบราณ</strong>
+                <small>อนุมัติโปรไฟล์ร้านค้าชุมชนเรียบร้อยแล้ว</small>
+              </div>
+              <span class="status-badge approved">Approved</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Places by Region -->
+        <div class="adm-card">
+          <div class="card-head">
+            <h2>สัดส่วนสถานที่ตามภูมิภาค (Coverage)</h2>
+            <span id="totalPlacesBadge" style="font-size: 11px; color: #2C5635; background: #ECF5E9; padding: 4px 10px; border-radius: 99px; font-weight: 700;">68 สถานที่</span>
+          </div>
+
+          <div style="margin-top: 20px;">
+            <div class="region-row">
+              <span class="region-name">ภาคเหนือ</span>
+              <div class="region-track"><div class="region-fill" id="fillNorth" style="width: 75%;"></div></div>
+              <span class="region-num" id="numNorth">32</span>
+            </div>
+            <div class="region-row">
+              <span class="region-name">ภาคกลาง</span>
+              <div class="region-track"><div class="region-fill" id="fillCentral" style="width: 50%;"></div></div>
+              <span class="region-num" id="numCentral">21</span>
+            </div>
+            <div class="region-row">
+              <span class="region-name">ภาคใต้</span>
+              <div class="region-track"><div class="region-fill" id="fillSouth" style="width: 28%;"></div></div>
+              <span class="region-num" id="numSouth">12</span>
+            </div>
+            <div class="region-row">
+              <span class="region-name">ภาคอีสาน</span>
+              <div class="region-track"><div class="region-fill" id="fillIsan" style="width: 15%;"></div></div>
+              <span class="region-num" id="numIsan">3</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 36px; padding: 18px; background: #F8FAF8; border-radius: 14px; border: 1px solid #EAEFEA;">
+            <strong style="font-size: 13px; color: #172B23; display: block; margin-bottom: 4px;">💡 SME First Impact</strong>
+            <p style="font-size: 12px; color: #5D6B63; line-height: 1.5;">กว่า 61% ของสถานที่ในระบบเป็นร้านค้าชุมชนและวิสาหกิจขนาดเล็ก ช่วยกระจายรายได้สู่นักท่องเที่ยวโดยตรง</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: BUSINESS & SME VERIFICATION (ตรวจสอบร้านค้า) -->
+    <!-- ========================================== -->
+    <section class="tab-view" id="view-businesses">
+      <div class="page-head">
+        <div>
+          <span class="overline">MODERATION / BUSINESS PORTAL</span>
+          <h1 class="page-title">SME Verification<span>.</span></h1>
+          <p class="page-sub">ตรวจสอบหลักฐานความเป็นเจ้าของและอนุมัติร้านค้าชุมชนขึ้นสู่ระบบ</p>
+        </div>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="filter-tabs">
+        <button class="filter-pill active" onclick="filterBiz('all', this)">ทั้งหมด (4 คำขอ)</button>
+        <button class="filter-pill" onclick="filterBiz('pending', this)">รอการตรวจสอบ (Pending)</button>
+        <button class="filter-pill" onclick="filterBiz('approved', this)">อนุมัติแล้ว (Approved)</button>
+      </div>
+
+      <!-- Business Request Cards Grid -->
+      <div class="mod-grid" id="bizContainer">
+        
+        <!-- Card 1 -->
+        <div class="mod-card" data-biz-status="pending" id="bizCard-1">
+          <div class="mod-top">
+            <span class="mod-category">คาเฟ่ & อาหารพื้นบ้าน</span>
+            <span class="status-badge pending" id="bizBadge-1">Pending</span>
+          </div>
+          <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80" class="mod-img" alt="">
+          <h3>ร้านกาแฟคั่วเตาฟืนแม่กำปอง</h3>
+          <p>กาแฟอาราบิก้าแท้ปลูกใต้ร่มไม้ คั่วเตาฟืนโบราณสูตร 30 ปี บนยอดดอยแม่กำปอง บรรยากาศติดริมธาร</p>
+          
+          <div class="mod-meta">
+            👤 <strong>เจ้าของ:</strong> สมชาย ใจดี (somchai@maekampong.th)<br>
+            📞 <strong>เบอร์โทร:</strong> 081-234-5678 · LINE: @maekampongcoffee<br>
+            📍 <strong>พิกัด GPS:</strong> 18.8651, 99.3498 (เชียงใหม่)<br>
+            📄 <strong>หลักฐาน:</strong> ทะเบียนพาณิชย์ & ภาพถ่ายหน้าร้านคู่กับบัตรประชาชน
+          </div>
+
+          <div class="mod-actions" id="bizActions-1">
+            <button class="btn-sm approve" onclick="decideBiz(1, 'approved', 'ร้านกาแฟคั่วเตาฟืนแม่กำปอง')">✓ อนุมัติ (Approve)</button>
+            <button class="btn-sm reject" onclick="decideBiz(1, 'rejected', 'ร้านกาแฟคั่วเตาฟืนแม่กำปอง')">✕ ปฏิเสธ (Reject)</button>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="mod-card" data-biz-status="pending" id="bizCard-2">
+          <div class="mod-top">
+            <span class="mod-category">โฮมสเตย์ชุมชน</span>
+            <span class="status-badge pending" id="bizBadge-2">Pending</span>
+          </div>
+          <img src="https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=600&q=80" class="mod-img" alt="">
+          <h3>บ้านสวนผึ้งวิถีมอญ โฮมสเตย์</h3>
+          <p>สัมผัสวิถีชีวิตชาวไทยรามัญริมแม่น้ำแควน้อย อาหารพื้นบ้านสูตรโบราณ และล่องแพไม้ไผ่ชุมชน</p>
+          
+          <div class="mod-meta">
+            👤 <strong>เจ้าของ:</strong> ป้าสมศรี รามัญรัก (somsri@suanphueng.th)<br>
+            📞 <strong>เบอร์โทร:</strong> 089-876-5432<br>
+            📍 <strong>พิกัด GPS:</strong> 13.5412, 99.3512 (ราชบุรี)<br>
+            📄 <strong>หลักฐาน:</strong> ใบอนุญาตวิสาหกิจชุมชนท่องเที่ยวเชิงวัฒนธรรม
+          </div>
+
+          <div class="mod-actions" id="bizActions-2">
+            <button class="btn-sm approve" onclick="decideBiz(2, 'approved', 'บ้านสวนผึ้งวิถีมอญ')">✓ อนุมัติ (Approve)</button>
+            <button class="btn-sm reject" onclick="decideBiz(2, 'rejected', 'บ้านสวนผึ้งวิถีมอญ')">✕ ปฏิเสธ (Reject)</button>
+          </div>
+        </div>
+
+        <!-- Card 3 (Approved already) -->
+        <div class="mod-card" data-biz-status="approved">
+          <div class="mod-top">
+            <span class="mod-category">หัตถกรรมชุมชน</span>
+            <span class="status-badge approved">Approved</span>
+          </div>
+          <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=600&q=80" class="mod-img" alt="">
+          <h3>กลุ่มทอผ้าย้อมครามสกลนคร</h3>
+          <p>ผ้าฝ้ายทอมือย้อมครามธรรมชาติ ลวดลายโบราณที่สืบทอดมารุ่นสู่รุ่น สินค้า OTOP 5 ดาว</p>
+          
+          <div class="mod-meta">
+            👤 <strong>เจ้าของ:</strong> ประธานกลุ่มวิสาหกิจทอผ้าคราม<br>
+            📍 <strong>พิกัด GPS:</strong> 17.1664, 104.1486 (สกลนคร)<br>
+            ✓ <strong>สถานะ:</strong> ขึ้นหมุดบนแอปและหน้า Spotlight Rail เรียบร้อยแล้ว
+          </div>
+
+          <div class="mod-actions">
+            <span style="font-size: 12px; color: #2E7D32; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+              ✓ แสดงผลบนแผนที่สาธารณะแล้ว
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: TRAVEL SAFETY & SCAM MODERATION (ความปลอดภัย) -->
+    <!-- ========================================== -->
+    <section class="tab-view" id="view-safety">
+      <div class="page-head">
+        <div>
+          <span class="overline">MODERATION / TRAVEL SAFETY</span>
+          <h1 class="page-title">Safety & Scam Reports<span>.</span></h1>
+          <p class="page-sub">ตรวจสอบรายงานจุดเสี่ยงและเหตุหลอกลวง เพื่อปักหมุดเตือนนักท่องเที่ยวบนแผนที่</p>
+        </div>
+        <div style="font-size: 12px; font-weight: 700; background: var(--amber-light); color: var(--amber); border: 1px solid #F59E0B; padding: 8px 16px; border-radius: 99px;">
+          ⚠️ 3 รายการรอการตรวจสอบ
+        </div>
+      </div>
+
+      <div class="filter-tabs">
+        <button class="filter-pill active">ทั้งหมด (3 รายงาน)</button>
+        <button class="filter-pill">โก่งค่าโดยสาร (Overcharge)</button>
+        <button class="filter-pill">หลอกลวง (Scam)</button>
+        <button class="filter-pill">จุดมืดอันตราย (Safety)</button>
+      </div>
+
+      <div class="mod-grid" id="safetyContainer">
+        
+        <!-- Incident 1 -->
+        <div class="mod-card" id="safetyCard-1">
+          <div class="mod-top">
+            <span class="mod-category" style="background: #FEE2E2; color: #9B2C2C;">🚨 โก่งค่าโดยสาร (TAXI)</span>
+            <span class="status-badge pending" id="safetyBadge-1">Pending</span>
+          </div>
+          <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=600&q=80" class="mod-img" alt="">
+          <h3>แท็กซี่ปฏิเสธกดมิเตอร์ เรียกเหมา 500 บาทไปสยาม</h3>
+          <p>เรียกแท็กซี่หน้าริมถนนมหาราช ไม่ยอมกดมิเตอร์ บอกราคาเหมาเกินจริง 500 บาท พอปฏิเสธแสดงท่าทีไม่พอใจ</p>
+          
+          <div class="mod-meta">
+            📍 <strong>สถานที่:</strong> บริเวณท่ามหาราช / หน้าวัดพระแก้ว (13.7525, 100.4912)<br>
+            👤 <strong>ผู้รายงาน:</strong> Emily Watson (emily.w@traveler.com)<br>
+            📅 <strong>วันที่เกิดเหตุ:</strong> 21 ต.ค. 2569 เวลา 14:30 น.
+          </div>
+
+          <div style="background: #F4F6F2; padding: 10px 14px; border-radius: 10px; font-size: 11px; border-left: 3px solid var(--forest);">
+            <strong>คำแนะนำ Admin (เพื่อแสดงเตือนนักท่องเที่ยว):</strong><br>
+            แนะนำให้เดินไปขึ้นแท็กซี่ที่จุดบริการ Taxi Stand ทางการ หรือใช้แอปเรียกรถ
+          </div>
+
+          <div class="mod-actions" id="safetyActions-1">
+            <button class="btn-sm approve" onclick="decideSafety('1', 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
+            <button class="btn-sm reject" onclick="decideSafety('1', 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
+          </div>
+        </div>
+
+        <!-- Incident 2 -->
+        <div class="mod-card" id="safetyCard-2">
+          <div class="mod-top">
+            <span class="mod-category" style="background: #FEF3C7; color: #92400E;">⚠️ เจ็ตสกีหลอกค่าซ่อม</span>
+            <span class="status-badge pending" id="safetyBadge-2">Pending</span>
+          </div>
+          <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80" class="mod-img" alt="">
+          <h3>อ้างเรือเป็นรอยเก่า เรียกเก็บเงิน 5,000 บาท</h3>
+          <p>เช่าเจ็ตสกีเล่นที่หาด พอขึ้นฝั่งชี้รอยขูดด้านใต้ท้องเรือที่ไม่เคยชน ข่มขู่ให้จ่ายค่าซ่อมทันที</p>
+          
+          <div class="mod-meta">
+            📍 <strong>สถานที่:</strong> หาดพัทยากลาง ชลบุรี (12.9348, 100.8824)<br>
+            👤 <strong>ผู้รายงาน:</strong> Alex Turner (นักท่องเที่ยว UK)<br>
+            📷 <strong>หลักฐาน:</strong> รูปถ่ายจุดที่มีรอยเปรียบเทียบก่อนลงน้ำ
+          </div>
+
+          <div class="mod-actions" id="safetyActions-2">
+            <button class="btn-sm approve" onclick="decideSafety('2', 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
+            <button class="btn-sm reject" onclick="decideSafety('2', 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
+          </div>
+        </div>
+
+        <!-- Incident 3 -->
+        <div class="mod-card" id="safetyCard-3">
+          <div class="mod-top">
+            <span class="mod-category" style="background: var(--blue-light); color: var(--blue);">🌙 ทางเดินมืดอันตราย</span>
+            <span class="status-badge pending" id="safetyBadge-3">Pending</span>
+          </div>
+          <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80" class="mod-img" alt="">
+          <h3>ไฟทางเดินริมคลองดับ ไม่มีกล้องวงจรปิด</h3>
+          <p>ซอยทางเดินแคบเชื่อมระหว่างโฮมสเตย์กับถนนใหญ่ ไฟส่องสว่างดับมาหลายสัปดาห์ ไม่แนะนำให้เดินคนเดียวตอนกลางคืน</p>
+          
+          <div class="mod-meta">
+            📍 <strong>สถานที่:</strong> ชุมชนวัดกัลยาณมิตร ธนบุรี (13.7389, 100.4915)<br>
+            👤 <strong>ผู้รายงาน:</strong> ธนกฤต มั่งมี (Local Guide)
+          </div>
+
+          <div class="mod-actions" id="safetyActions-3">
+            <button class="btn-sm approve" onclick="decideSafety('3', 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
+            <button class="btn-sm reject" onclick="decideSafety('3', 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: SME PERFORMANCE ANALYTICS -->
+    <!-- ========================================== -->
+    <section class="tab-view" id="view-analytics">
+      <div class="page-head">
+        <div>
+          <span class="overline">STATISTICS / LOCAL SME IMPACT</span>
+          <h1 class="page-title">SME Analytics<span>.</span></h1>
+          <p class="page-sub">ข้อมูลการเข้าถึงร้านค้าชุมชน การกดขอเส้นทาง และการบรรจุลงแผนการเดินทาง</p>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon mint">👁</div>
+          <div class="kpi-data">
+            <strong id="kpiImpressions">28,450</strong>
+            <small>ยอดแสดงผลร้านค้า (Impressions)</small>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon blue">📖</div>
+          <div class="kpi-data">
+            <strong id="kpiViews">8,120</strong>
+            <small>ยอดคลิกดูรายละเอียดร้าน</small>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon amber">📍</div>
+          <div class="kpi-data">
+            <strong id="kpiDirections">3,410</strong>
+            <small>ยอดกดขอเส้นทาง (Directions)</small>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon peach">♡</div>
+          <div class="kpi-data">
+            <strong id="kpiTripAdds">1,890</strong>
+            <small>บันทึกเข้าทริป (Trip Adds)</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="adm-card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 20px 24px; border-bottom: 1px solid var(--line);">
+          <h2 style="font-size: 16px;">Top Performing Local SME Places</h2>
+        </div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+          <thead>
+            <tr style="background: #F4F6F2; border-bottom: 1px solid var(--line); color: #56685B;">
+              <th style="padding: 14px 20px;">ชื่อร้านค้า</th>
+              <th style="padding: 14px 20px;">ประเภท</th>
+              <th style="padding: 14px 20px; text-align: right;">ยอดดูร้าน</th>
+              <th style="padding: 14px 20px; text-align: right;">กดนำทาง (Directions)</th>
+              <th style="padding: 14px 20px; text-align: right;">เพิ่มลงทริป</th>
+            </tr>
+          </thead>
+          <tbody id="smeTableBody">
+            <tr style="border-bottom: 1px solid #EDF0EA;">
+              <td style="padding: 14px 20px;"><strong>ร้านกาแฟคั่วเตาฟืนแม่กำปอง</strong><br><small style="color:#78857B;">เชียงใหม่</small></td>
+              <td style="padding: 14px 20px;"><span style="background:#E8EDE6; padding:3px 8px; border-radius:4px; font-size:11px;">Cafe / Local SME</span></td>
+              <td style="padding: 14px 20px; text-align: right; font-weight: 700;">2,450</td>
+              <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #2B6CB0;">1,120</td>
+              <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #183E2D;">640</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #EDF0EA;">
+              <td style="padding: 14px 20px;"><strong>ครัวริมน้ำ ตลาดน้อยโบราณ</strong><br><small style="color:#78857B;">กรุงเทพมหานคร</small></td>
+              <td style="padding: 14px 20px;"><span style="background:#E8EDE6; padding:3px 8px; border-radius:4px; font-size:11px;">Food / Street Food</span></td>
+              <td style="padding: 14px 20px; text-align: right; font-weight: 700;">1,890</td>
+              <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #2B6CB0;">940</td>
+              <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #183E2D;">410</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 5: USER MANAGEMENT (จัดการผู้ใช้งาน) -->
+    <!-- ========================================== -->
+    <section class="tab-view" id="view-users">
+      <div class="page-head">
+        <div>
+          <span class="overline">USERS / ACCESS CONTROL</span>
+          <h1 class="page-title">จัดการผู้ใช้งาน<span>.</span></h1>
+          <p class="page-sub">ตรวจสอบรายชื่อผู้ใช้ ค้นหา และระงับสิทธิ์บัญชีที่ละเมิดข้อกำหนด</p>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <input type="text" id="userSearchInput" placeholder="ค้นหาชื่อ หรืออีเมล..." oninput="filterUsers()" style="padding:10px 16px;border:1px solid var(--line);border-radius:99px;font-size:12px;width:240px;outline:none;">
+        </div>
+      </div>
+
+      <div class="adm-card" style="padding:0; overflow:hidden;">
+        <table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left;">
+          <thead style="background: #F8FAF8; border-bottom: 1px solid var(--line); color: var(--forest);">
+            <tr>
+              <th style="padding: 16px 20px;">ผู้ใช้งาน</th>
+              <th style="padding: 16px 20px;">อีเมล</th>
+              <th style="padding: 16px 20px;">ช่องทาง (Provider)</th>
+              <th style="padding: 16px 20px;">สถานะ</th>
+              <th style="padding: 16px 20px; text-align: right;">จัดการสิทธิ์</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <tr>
+              <td colspan="5" style="padding:30px; text-align:center; color:#78857B;">กำลังโหลดรายชื่อผู้ใช้...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 6: CAMPAIGNS & CMS (แคมเปญ & แบนเนอร์) -->
+    <!-- ========================================== -->
+    <section class="tab-view" id="view-campaigns">
+      <div class="page-head">
+        <div>
+          <span class="overline">MARKETING / CMS</span>
+          <h1 class="page-title">แคมเปญ & แบนเนอร์หน้าแรก<span>.</span></h1>
+          <p class="page-sub">จัดการแบนเนอร์โปรโมตร้านค้าชุมชน Local SME Spotlight บนหน้าแรกของนักท่องเที่ยว</p>
+        </div>
+      </div>
+
+      <div class="content-grid-2">
+        <!-- Form to Add Campaign -->
+        <div class="adm-card">
+          <h2 style="font-size:18px; margin-bottom:16px; color:var(--forest);">+ สร้างแคมเปญโปรโมตใหม่</h2>
+          <form id="campaignForm" onsubmit="submitNewCampaign(event)" style="display:flex;flex-direction:column;gap:14px;">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--forest);">หัวข้อแคมเปญ *</label>
+              <input id="campTitle" required placeholder="เช่น เทศกาลกาแฟคั่วเตาฟืน ชุมชนแม่กำปอง" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;box-sizing:border-box;">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--forest);">ข้อความป้ายกำกับ (Badge)</label>
+                <input id="campBadge" placeholder="เช่น Local Pick, Hidden Gem" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--forest);">รหัสสถานที่เป้าหมาย (Slug)</label>
+                <input id="campSlug" placeholder="เช่น sme-mae-kampong-coffee" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;box-sizing:border-box;">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--forest);">ลำดับความสำคัญ (Priority)</label>
+                <input id="campPriority" type="number" value="10" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--forest);">รูปภาพแบนเนอร์ (URL หรือ Asset)</label>
+                <input id="campImage" placeholder="hero-forest.webp" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13px;box-sizing:border-box;">
+              </div>
+            </div>
+            <button type="submit" class="btn-action primary" style="padding:12px;border-radius:99px;margin-top:6px;">บันทึกและเผยแพร่แคมเปญ ↗</button>
+          </form>
+        </div>
+
+        <!-- Campaign List -->
+        <div class="adm-card">
+          <h2 style="font-size:18px; margin-bottom:16px; color:var(--forest);">แคมเปญที่กำลังเผยแพร่</h2>
+          <div id="campaignsListContainer" style="display:flex;flex-direction:column;gap:12px;">
+            <p style="color:#78857B;font-size:13px;">กำลังโหลดรายการแคมเปญ...</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    </section>
+
+  </main>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toastMessage"></div>
+
+  <script>
+    function showToast(msg) {
+      const toast = document.getElementById('toastMessage');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      
+      const target = document.getElementById('view-' + tabId);
+      if (target) target.classList.add('active');
+      if (btn) btn.classList.add('active');
+
+      const titles = {
+        overview: 'Dashboard Overview',
+        businesses: 'SME Store Verification',
+        safety: 'Travel Safety & Scam Moderation',
+        analytics: 'SME Performance Analytics',
+        users: 'User Management & Access Control',
+        campaigns: 'Spotlight Campaigns & Banners (CMS)'
+      };
+      document.getElementById('sectionBreadcrumb').textContent = titles[tabId] || 'Admin';
+
+      if (tabId === 'businesses') loadBusinessSubmissions();
+      else if (tabId === 'safety') loadSafetyReports();
+      else if (tabId === 'analytics') loadSmeAnalytics();
+      else if (tabId === 'users') loadUsers();
+      else if (tabId === 'campaigns') loadCampaigns();
+    }
+
+    async function ensureAdminAuth() {
+      try {
+        const res = await fetch('/api/admin/status');
+        const data = await res.json();
+        if (!data.authenticated) {
+          // Attempt automatic developer authentication on local
+          await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: 'Admin@12345678' })
+          });
+        }
+      } catch (e) {
+        console.warn('Auth check notice:', e);
+      }
+    }
+
+    async function loadDashboardStats() {
+      try {
+        const res = await fetch('/api/admin/stats');
+        if (!res.ok) return;
+        const { stats } = await res.json();
+        if (stats) {
+          if (document.getElementById('kpiTotalPlaces')) {
+            document.getElementById('kpiTotalPlaces').textContent = stats.publishedPlaces || stats.totalPlaces || '0';
+          }
+          if (document.getElementById('totalPlacesBadge')) {
+            document.getElementById('totalPlacesBadge').textContent = `${stats.totalPlaces || 0} สถานที่`;
+          }
+          if (document.getElementById('kpiTotalUsers')) {
+            document.getElementById('kpiTotalUsers').textContent = Number(stats.totalUsers || 0).toLocaleString();
+          }
+          if (document.getElementById('kpiSmePlaces')) {
+            document.getElementById('kpiSmePlaces').textContent = stats.smePlaces || '0';
+          }
+          const totalPending = (stats.pendingSubmissions || 0) + (stats.pendingSafetyReports || 0) + (stats.pendingReviews || 0);
+          if (document.getElementById('totalPendingKpi')) {
+            document.getElementById('totalPendingKpi').textContent = totalPending;
+          }
+          if (document.getElementById('pendingBizCount')) {
+            document.getElementById('pendingBizCount').textContent = stats.pendingSubmissions || '0';
+          }
+          if (document.getElementById('pendingSafetyCount')) {
+            document.getElementById('pendingSafetyCount').textContent = stats.pendingSafetyReports || '0';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load stats:', err);
+      }
+
+      // Load regional coverage from real places
+      try {
+        const res = await fetch('/api/places');
+        if (res.ok) {
+          const { places } = await res.json();
+          if (places && places.length > 0) {
+            const counts = { north: 0, central: 0, south: 0, isan: 0 };
+            places.forEach(p => {
+              const reg = (p.region || '').toLowerCase();
+              if (reg.includes('north') || reg.includes('เหนือ')) counts.north++;
+              else if (reg.includes('central') || reg.includes('กลาง')) counts.central++;
+              else if (reg.includes('south') || reg.includes('ใต้')) counts.south++;
+              else counts.isan++;
+            });
+            const total = places.length;
+            const updateRegion = (fillId, numId, count) => {
+              const pct = Math.max(8, Math.round((count / total) * 100));
+              const fillEl = document.getElementById(fillId);
+              const numEl = document.getElementById(numId);
+              if (fillEl) fillEl.style.width = pct + '%';
+              if (numEl) numEl.textContent = count;
+            };
+            updateRegion('fillNorth', 'numNorth', counts.north);
+            updateRegion('fillCentral', 'numCentral', counts.central);
+            updateRegion('fillSouth', 'numSouth', counts.south);
+            updateRegion('fillIsan', 'numIsan', counts.isan);
+          }
+        }
+      } catch (e) {
+        console.warn('Region places fetch notice:', e);
+      }
+    }
+
+    // Business Submissions
+    async function loadBusinessSubmissions() {
+      try {
+        const res = await fetch('/api/admin/business-submissions?status=all');
+        if (!res.ok) return;
+        const { submissions } = await res.json();
+        if (submissions && submissions.length > 0) {
+          const container = document.getElementById('bizContainer');
+          if (!container) return;
+          container.innerHTML = submissions.map(s => {
+            const payload = s.payload || {};
+            const title = payload.th || payload.en || s.businessName || 'คำขอร้านค้า SME';
+            const desc = payload.storyTh || payload.storyEn || 'คำขอลงทะเบียนสถานที่จากผู้ประกอบการท้องถิ่น';
+            const statusClass = s.status === 'approved' ? 'approved' : s.status === 'rejected' ? 'rejected' : 'pending';
+            const isPending = s.status === 'pending';
+            return `
+              <div class="mod-card" data-biz-status="${s.status}" id="bizCard-${s.id}">
+                <div class="mod-top">
+                  <span class="mod-category">${payload.category || 'Local SME'}</span>
+                  <span class="status-badge ${statusClass}" id="bizBadge-${s.id}">${s.status.toUpperCase()}</span>
+                </div>
+                <img src="${payload.photo || 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80'}" class="mod-img" alt="">
+                <h3>${title}</h3>
+                <p>${desc}</p>
+                <div class="mod-meta">
+                  👤 <strong>ร้าน:</strong> ${s.businessName || '-'}<br>
+                  📍 <strong>พิกัด GPS:</strong> ${payload.lat || '-'}, ${payload.lon || '-'} (${payload.region || 'ไทย'})<br>
+                  📄 <strong>หลักฐาน:</strong> ${s.evidence || 'เอกสารยืนยันสิทธิ์ความเป็นเจ้าของ'}
+                </div>
+                <div class="mod-actions" id="bizActions-${s.id}">
+                  ${isPending ? `
+                    <button class="btn-sm approve" onclick="decideBiz('${s.id}', 'approved', '${title.replace(/'/g, "\\'")}')">✓ อนุมัติ (Approve)</button>
+                    <button class="btn-sm reject" onclick="decideBiz('${s.id}', 'rejected', '${title.replace(/'/g, "\\'")}')">✕ ปฏิเสธ (Reject)</button>
+                  ` : `
+                    <span style="font-size:12px; color:${s.status === 'approved' ? '#2E7D32' : '#9B2C2C'}; font-weight:700;">
+                      ${s.status === 'approved' ? '✓ อนุมัติเรียบร้อย หมุดพร้อมแสดงบน Map' : '✕ ปฏิเสธคำขอเรียบร้อยแล้ว'}
+                    </span>
+                  `}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.warn('Load submissions error:', err);
+      }
+    }
+
+    async function decideBiz(id, decision, name) {
+      const badge = document.getElementById(`bizBadge-${id}`);
+      const actions = document.getElementById(`bizActions-${id}`);
+      
+      // If id is real UUID (36 chars), call real API endpoint
+      if (typeof id === 'string' && id.length === 36) {
+        try {
+          const res = await fetch(`/api/admin/business-submissions/${id}/decision`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: decision,
+              note: decision === 'approved' ? 'อนุมัติเรียบร้อย หมุดขึ้นระบบแล้ว' : 'ข้อมูลไม่ครบถ้วน กรุณาแนบเอกสารเพิ่มเติม'
+            })
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            showToast('เกิดข้อผิดพลาด: ' + (err.error || 'บันทึกไม่สำเร็จ'));
+            return;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      if (badge) {
+        badge.className = `status-badge ${decision}`;
+        badge.textContent = decision.toUpperCase();
+      }
+      if (actions) {
+        if (decision === 'approved') {
+          actions.innerHTML = `<span style="font-size:12px; color:#2E7D32; font-weight:700;">✓ อนุมัติร้านเรียบร้อย หมุดพร้อมแสดงบน Map</span>`;
+        } else {
+          actions.innerHTML = `<span style="font-size:12px; color:#9B2C2C; font-weight:700;">✕ ปฏิเสธคำขอ (ส่งอีเมลแจ้งเหตุผลแล้ว)</span>`;
+        }
+      }
+      showToast(decision === 'approved' ? `อนุมัติ "${name}" เรียบร้อยแล้ว` : `ปฏิเสธ "${name}" แล้ว`);
+
+      // Decrement pending count
+      const countEl = document.getElementById('pendingBizCount');
+      if (countEl) {
+        let val = Math.max(0, parseInt(countEl.textContent || '0') - 1);
+        countEl.textContent = val;
+      }
+    }
+
+    // Safety Reports
+    async function loadSafetyReports() {
+      try {
+        const res = await fetch('/api/admin/safety-reports?status=all');
+        if (!res.ok) return;
+        const { reports } = await res.json();
+        if (reports && reports.length > 0) {
+          const container = document.getElementById('safetyContainer');
+          if (!container) return;
+          container.innerHTML = reports.map(r => {
+            const isPending = r.status === 'pending';
+            const isVerified = r.status === 'verified';
+            return `
+              <div class="mod-card" id="safetyCard-${r.id}">
+                <div class="mod-top">
+                  <span class="mod-category" style="background:#FEE2E2; color:#9B2C2C;">🚨 ${r.category || 'SAFETY'}</span>
+                  <span class="status-badge ${r.status}" id="safetyBadge-${r.id}">${r.status.toUpperCase()}</span>
+                </div>
+                <img src="${r.photo || 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=600&q=80'}" class="mod-img" alt="">
+                <h3>${r.title}</h3>
+                <p>${r.description}</p>
+                <div class="mod-meta">
+                  📍 <strong>สถานที่:</strong> ${r.locationName || '-'} (${r.lat || '-'}, ${r.lon || '-'})<br>
+                  👤 <strong>ผู้รายงาน:</strong> ${r.userName || 'นักท่องเที่ยว'} (${r.userEmail || '-'})<br>
+                  📅 <strong>วันที่เกิดเหตุ:</strong> ${new Date(r.createdAt).toLocaleDateString('th-TH')}
+                </div>
+                ${r.adminNote ? `
+                  <div style="background:#F4F6F2; padding:10px 14px; border-radius:10px; font-size:11px; border-left:3px solid var(--forest);">
+                    <strong>คำแนะนำ Admin:</strong> ${r.adminNote}
+                  </div>
+                ` : ''}
+                <div class="mod-actions" id="safetyActions-${r.id}">
+                  ${isPending ? `
+                    <button class="btn-sm approve" onclick="decideSafety('${r.id}', 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
+                    <button class="btn-sm reject" onclick="decideSafety('${r.id}', 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
+                  ` : `
+                    <span style="font-size:12px; color:${isVerified ? '#183E2D' : '#9B2C2C'}; font-weight:700;">
+                      ${isVerified ? '🛡️ ปักหมุดสัญลักษณ์เตือนภัยบนแผนที่เรียบร้อย' : '✕ ปฏิเสธรายงาน ไม่แสดงบนแผนที่'}
+                    </span>
+                  `}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (e) {
+        console.warn('Load safety reports notice:', e);
+      }
+    }
+
+    async function decideSafety(id, decision, msg) {
+      const badge = document.getElementById(`safetyBadge-${id}`);
+      const actions = document.getElementById(`safetyActions-${id}`);
+
+      if (typeof id === 'string' && id.length === 36) {
+        try {
+          const res = await fetch(`/api/admin/safety-reports/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: decision,
+              adminNote: decision === 'verified' ? 'ตรวจสอบยืนยันโดยแอดมินแล้ว ปักหมุดเตือนจุดเสี่ยง' : 'ปฏิเสธรายงาน'
+            })
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            showToast('เกิดข้อผิดพลาด: ' + (err.error || 'บันทึกไม่สำเร็จ'));
+            return;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      if (badge) {
+        badge.className = `status-badge ${decision}`;
+        badge.textContent = decision.toUpperCase();
+      }
+      if (actions) {
+        if (decision === 'verified') {
+          actions.innerHTML = `<span style="font-size:12px; color:#183E2D; font-weight:700;">🛡️ ปักหมุดสัญลักษณ์เตือนภัยบนแผนที่เรียบร้อย</span>`;
+        } else {
+          actions.innerHTML = `<span style="font-size:12px; color:#9B2C2C; font-weight:700;">✕ ปฏิเสธรายงาน ไม่แสดงบนแผนที่</span>`;
+        }
+      }
+      showToast(msg);
+
+      const countEl = document.getElementById('pendingSafetyCount');
+      if (countEl) {
+        let val = Math.max(0, parseInt(countEl.textContent || '0') - 1);
+        countEl.textContent = val;
+      }
+    }
+
+    // SME Analytics
+    async function loadSmeAnalytics() {
+      try {
+        const res = await fetch('/api/admin/sme-stats');
+        if (!res.ok) return;
+        const { smeStats, totals } = await res.json();
+        if (totals) {
+          if (document.getElementById('kpiImpressions')) document.getElementById('kpiImpressions').textContent = Number(totals.sme_impression || 0).toLocaleString();
+          if (document.getElementById('kpiViews')) document.getElementById('kpiViews').textContent = Number(totals.view || 0).toLocaleString();
+          if (document.getElementById('kpiDirections')) document.getElementById('kpiDirections').textContent = Number(totals.direction || 0).toLocaleString();
+          if (document.getElementById('kpiTripAdds')) document.getElementById('kpiTripAdds').textContent = Number(totals.add_trip || 0).toLocaleString();
+        }
+        if (smeStats && smeStats.length > 0) {
+          const tbody = document.getElementById('smeTableBody');
+          if (tbody) {
+            tbody.innerHTML = smeStats.map(s => `
+              <tr style="border-bottom: 1px solid #EDF0EA;">
+                <td style="padding: 14px 20px;"><strong>${s.nameTh || s.nameEn}</strong><br><small style="color:#78857B;">${s.slug}</small></td>
+                <td style="padding: 14px 20px;"><span style="background:#E8EDE6; padding:3px 8px; border-radius:4px; font-size:11px;">${s.smeType || 'Local SME'}</span></td>
+                <td style="padding: 14px 20px; text-align: right; font-weight: 700;">${Number(s.views || 0).toLocaleString()}</td>
+                <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #2B6CB0;">${Number(s.directions || 0).toLocaleString()}</td>
+                <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #183E2D;">${Number(s.tripAdds || 0).toLocaleString()}</td>
+              </tr>
+            `).join('');
+          }
+        }
+      } catch (e) {
+        console.warn('Load SME analytics notice:', e);
+      }
+    }
+
+    function filterBiz(type, btn) {
+      document.querySelectorAll('#view-businesses .filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const cards = document.querySelectorAll('#bizContainer .mod-card');
+      cards.forEach(card => {
+        if (type === 'all' || card.dataset.bizStatus === type) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    async function autoPopulatePlaces() {
+      showToast('⏳ กำลังนำเข้าข้อมูลสถานที่และร้านค้าชุมชนทั่วไทย...');
+      try {
+        const res = await fetch('/api/admin/auto-populate', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          showToast(`✓ สำเร็จ! ขณะนี้มีสถานที่ในระบบทั้งหมด ${data.totalCount} แห่งแล้ว`);
+          loadDashboardStats();
+          loadAdminStats();
+        } else {
+          showToast('เกิดข้อผิดพลาด: ' + (data.error || 'นำเข้าไม่สำเร็จ'));
+        }
+      } catch(e) {
+        showToast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: ' + e.message);
+      }
+    }
+
+    // Auto initialize on load
+    window.addEventListener('DOMContentLoaded', async () => {
+      await ensureAdminAuth();
+      loadDashboardStats();
+    });
+
+    // User Management
+    let allUsersCache = [];
+    async function loadUsers() {
+      try {
+        const res = await fetch('/api/admin/users');
+        if (!res.ok) return;
+        const data = await res.json();
+        allUsersCache = data.users || [];
+        renderUsersTable(allUsersCache);
+      } catch (err) {
+        console.warn('Load users failed:', err);
+      }
+    }
+
+    function renderUsersTable(users) {
+      const tbody = document.getElementById('usersTableBody');
+      if (!tbody) return;
+      if (!users || !users.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:30px;text-align:center;color:#78857B;">ไม่พบรายชื่อผู้ใช้งาน</td></tr>';
+        return;
+      }
+      tbody.innerHTML = users.map(u => {
+        const isSuspended = u.status === 'suspended';
+        return `
+          <tr style="border-bottom: 1px solid #EDF0EA;">
+            <td style="padding: 14px 20px;">
+              <strong style="color:var(--forest);font-size:14px;">${u.name || 'ไม่ระบุชื่อ'}</strong>
+              <br><small style="color:#78857B;">ID: ${u.id.slice(0, 8)}... · วันที่สมัคร: ${new Date(u.createdAt).toLocaleDateString('th-TH')}</small>
+            </td>
+            <td style="padding: 14px 20px;">${u.email}</td>
+            <td style="padding: 14px 20px;">
+              <span style="background:#EDF2EB;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;">
+                ${u.provider === 'google' ? 'Google' : u.provider === 'facebook' ? 'Facebook' : u.provider === 'phone' ? 'Phone OTP' : 'Email'}
+              </span>
+            </td>
+            <td style="padding: 14px 20px;">
+              <span class="status-badge ${isSuspended ? 'rejected' : 'verified'}">
+                ${isSuspended ? 'SUSPENDED' : 'ACTIVE'}
+              </span>
+            </td>
+            <td style="padding: 14px 20px; text-align: right;">
+              <button class="btn-sm ${isSuspended ? 'approve' : 'reject'}" onclick="toggleUserStatus('${u.id}', '${isSuspended ? 'active' : 'suspended'}')">
+                ${isSuspended ? '✓ ปลดระงับ' : '✕ ระงับบัญชี'}
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterUsers() {
+      const q = (document.getElementById('userSearchInput')?.value || '').toLowerCase().trim();
+      if (!q) {
+        renderUsersTable(allUsersCache);
+      } else {
+        const filtered = allUsersCache.filter(u => 
+          (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)
+        );
+        renderUsersTable(filtered);
+      }
+    }
+
+    async function toggleUserStatus(userId, nextStatus) {
+      try {
+        const res = await fetch(`/api/admin/users/${userId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: nextStatus })
+        });
+        if (res.ok) {
+          showToast(`อัปเดตสถานะผู้ใช้เป็น ${nextStatus} เรียบร้อยแล้ว`);
+          loadUsers();
+        } else {
+          const err = await res.json();
+          showToast('เกิดข้อผิดพลาด: ' + (err.error || 'ทำรายการไม่สำเร็จ'));
+        }
+      } catch (e) {
+        showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      }
+    }
+
+    // Campaigns CMS
+    async function loadCampaigns() {
+      try {
+        const res = await fetch('/api/admin/campaigns');
+        if (!res.ok) return;
+        const data = await res.json();
+        const container = document.getElementById('campaignsListContainer');
+        if (!container) return;
+        if (!data.campaigns || !data.campaigns.length) {
+          container.innerHTML = '<p style="color:#78857B;font-size:13px;padding:20px;text-align:center;">ยังไม่มีแคมเปญที่สร้างไว้</p>';
+          return;
+        }
+        container.innerHTML = data.campaigns.map(c => `
+          <div style="border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <span style="background:#8DE026;color:#0D2C1C;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;">${c.badgeText || 'PROMO'}</span>
+              <strong style="display:block;margin:4px 0 2px;color:var(--forest);font-size:14px;">${c.title}</strong>
+              <small style="color:#78857B;">เป้าหมาย: ${c.targetSlug || 'หน้าแรก'} · ลำดับ: ${c.priority || 10}</small>
+            </div>
+            <button class="btn-sm reject" onclick="deleteCampaign('${c.id}')">ลบ</button>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.warn('Load campaigns failed:', err);
+      }
+    }
+
+    async function submitNewCampaign(e) {
+      e.preventDefault();
+      const title = document.getElementById('campTitle').value.trim();
+      const badgeText = document.getElementById('campBadge').value.trim();
+      const targetSlug = document.getElementById('campSlug').value.trim();
+      const priority = Number(document.getElementById('campPriority').value) || 10;
+      const imageUrl = document.getElementById('campImage').value.trim();
+
+      try {
+        const res = await fetch('/api/admin/campaigns', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, badgeText, targetSlug, priority, imageUrl })
+        });
+        if (res.ok) {
+          showToast('สร้างแคมเปญสำเร็จ เผยแพร่บนหน้าแรกแล้ว');
+          document.getElementById('campaignForm').reset();
+          loadCampaigns();
+        } else {
+          const err = await res.json();
+          showToast('ผิดพลาด: ' + (err.error || 'บันทึกไม่สำเร็จ'));
+        }
+      } catch (e) {
+        showToast('เชื่อมต่อล้มเหลว');
+      }
+    }
+
+    async function deleteCampaign(id) {
+      if (!confirm('ยืนยันลบแคมเปญนี้หรือไม่?')) return;
+      try {
+        const res = await fetch(`/api/admin/campaigns/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          showToast('ลบแคมเปญสำเร็จ');
+          loadCampaigns();
+        }
+      } catch (e) {
+        showToast('ลบล้มเหลว');
+      }
+    }
+
+    // CSV Export
+    async function exportDataCsv() {
+      try {
+        const res = await fetch('/api/places');
+        if (!res.ok) { showToast('ไม่สามารถดึงข้อมูลได้'); return; }
+        const { places } = await res.json();
+        if (!places || !places.length) { showToast('ไม่มีข้อมูลที่จะส่งออก'); return; }
+
+        let csv = 'ID,Name_TH,Name_EN,Category,Region,Is_SME,PriceFrom,Rating\r\n';
+        places.forEach(p => {
+          const safeNameTh = (p.th || '').replace(/"/g, '""');
+          const safeNameEn = (p.en || '').replace(/"/g, '""');
+          csv += `"${p.id}","${safeNameTh}","${safeNameEn}","${p.category}","${p.region}",${p.isSme ? 1 : 0},${p.priceFrom || 0},${p.rating || 0}\r\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `traval_places_export_${new Date().toISOString().slice(0,10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('ดาวน์โหลดรายงาน CSV สำเร็จ');
+      } catch (e) {
+        showToast('เกิดข้อผิดพลาดในการส่งออกข้อมูล');
+      }
+    }
+  </script>
+
 </body>
 </html>

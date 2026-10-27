@@ -38,9 +38,12 @@ const PAGE_FILES={
   'planner.html':'frontend/planner/planner.html',
   'planner.js':'frontend/planner/planner.js',
   'planner.css':'frontend/planner/planner.css',
-  'planner-showcase.html':'frontend/planner/planner-showcase.html',
-  'admin-showcase.html':'frontend/admin/admin-showcase.html',
-  'business-showcase.html':'frontend/business/business-showcase.html',
+  'planner-showcase.html':'frontend/planner/planner.html',
+  'admin-showcase.html':'frontend/admin/admin.html',
+  'business-showcase.html':'frontend/business/business.html',
+  'planner-legacy.html':'frontend/planner/planner-legacy.html',
+  'admin-legacy.html':'frontend/admin/admin-legacy.html',
+  'business-legacy.html':'frontend/business/business-legacy.html',
   'google-maps-poc.html':'frontend/poc/google-maps-poc.html',
   'poc/google-maps-poc.html':'frontend/poc/google-maps-poc.html',
   'trip-engine.js':'frontend/planner/trip-engine.js',
@@ -51,6 +54,7 @@ const PAGE_FILES={
   'auth/register-style.css':'frontend/auth/register-style.css',
   'login.html':'frontend/auth/login.html',
   'register.html':'frontend/auth/register.html',
+  'register-style.css':'frontend/auth/register-style.css',
   'profile.html':'frontend/auth/profile.html',
   'forgot-password.html':'frontend/auth/forgot-password.html'
 };
