@@ -1,5 +1,7 @@
 const CACHE='unfold-v2.7-readiness';
-const ASSETS=['./','./index.html','./app.js','./styles.css','./manifest.webmanifest','./assets/icon-192.png','./assets/hero-forest.webp','./assets/terraced-fields.webp','./assets/misty-cabin.webp'];
+const ASSETS=['./','./index.html','./app.js','./styles.css','./manifest.webmanifest','./assets/icon-192.png','./assets/hero-forest.webp','./assets/terraced-fields.webp','./assets/misty-cabin.webp',
+  // Tommy: shared travel tools, so the app still opens offline
+  './trip-engine.js','./map-gestures.js','./road-route.js','./travel-cost.js','./maps-links.js'];
 self.addEventListener('install', event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));self.skipWaiting()});
 self.addEventListener('activate', event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim()});
 self.addEventListener('fetch', event=>{
