@@ -7,6 +7,8 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { URL } = require('node:url');
+const routing = require('./routing.js'); // Tommy: road routing (POST /api/routes)
+const osmPlaces = require('./osm-places.js'); // Tommy: OpenStreetMap places for the map (GET /api/map/*)
 
 const ROOT = path.resolve(__dirname, '..');
 // Public URLs stay flat (/admin.html, /app.js). Files live under frontend/ by role.
@@ -47,6 +49,11 @@ const PAGE_FILES={
   'google-maps-poc.html':'frontend/poc/google-maps-poc.html',
   'poc/google-maps-poc.html':'frontend/poc/google-maps-poc.html',
   'trip-engine.js':'frontend/planner/trip-engine.js',
+  // Tommy: shared travel tools used by several pages
+  'map-gestures.js':'frontend/shared/map-gestures.js',
+  'road-route.js':'frontend/shared/road-route.js',
+  'travel-cost.js':'frontend/shared/travel-cost.js',
+  'maps-links.js':'frontend/shared/maps-links.js',
   'auth/login.html':'frontend/auth/login.html',
   'auth/register.html':'frontend/auth/register.html',
   'auth/profile.html':'frontend/auth/profile.html',
@@ -899,6 +906,14 @@ async function api(req,res,u){
     recs.sort((a,b)=>a.detourKm-b.detourKm);
     const sliced=recs.slice(0,limit);
     return reply(res,200,{recommendations:sliced,stopovers:sliced,count:sliced.length});
+  }
+  { // Tommy: OpenStreetMap places by map area and name search (backend/osm-places.js)
+    const out=osmPlaces.handle(DATA,route,method,u.searchParams);if(out)return reply(res,out.status,out.body);
+  }
+  if(route==='/api/routes'&&method==='POST'){ // Tommy: road distance, time and route line via OSRM (backend/routing.js)
+    checkOrigin(req);const b=await jsonBody(req);
+    const out=await routing.handleRouteRequest(b,req.socket.remoteAddress);
+    return reply(res,out.status,out.body);
   }
   if(route==='/api/trips/estimate-cost'&&method==='GET'){
     const dist=parsedCoord(u.searchParams.get('distanceKm'),'distanceKm',0,5000);
@@ -1819,4 +1834,4 @@ function listen(port,remaining=12){
  });
 }
 if(require.main===module){const arg=Number(process.env.PORT||5173);listen(Number.isInteger(arg)&&arg>=0&&arg<65536?arg:5173,process.env.PORT?0:12);}
-module.exports={server,db,listen};
+module.exports={server,db,listen,DATA}; // Tommy: DATA exported for scripts/osm/import_osm_places.js
