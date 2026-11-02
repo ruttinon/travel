@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
  <meta charset="utf-8"/>
@@ -29,6 +29,12 @@
  <a class="skip-link" href="#app">Skip to content</a>
  <div id="app"></div>
  <div id="toast" class="toast" aria-live="polite" role="status"></div>
- <script src="app.js" defer></script>
+  <!-- Tommy: shared travel tools — load before app.js -->
+  <script src="trip-engine.js" defer></script>
+  <script src="map-gestures.js" defer></script>
+  <script src="road-route.js" defer></script>
+  <script src="travel-cost.js" defer></script>
+  <script src="maps-links.js" defer></script>
+  <script src="app.js" defer></script>
 </body>
 </html>
