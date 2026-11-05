@@ -29,7 +29,32 @@
 
 ---
 
-## 2026-10-29 — เข้าสู่ระบบด้วย Google แบบจริง  (ผู้แก้: Tommy · commit: ยังไม่ commit)
+## 2026-11-05 — รวม branch `moo-frontend` (Moo) เข้ากับงานของ Tommy  (ผู้แก้: Tommy · commit: Merge branch 'moo-frontend')
+
+**ทำไม:** Moo ปรับหน้า Explore ใน branch `moo-frontend` และ **คัดลอก** ไฟล์ของ Tommy มาเอง (ไม่ได้ merge) ทำให้:
+1. งานของ Tommy ใน `app.js` หายเกือบหมด (เหลือแค่ซูม) — การ์ด Trip route, จุดสถานที่ OSM, ปุ่ม Google Maps/รีวิว, รายการ OSM ต่อบัญชี
+2. ตัวอักษรพิเศษเพี้ยนตอนคัดลอก (เช่น `—` → `ΓÇö`) และมี BOM ต้นไฟล์ — กระทบโค้ดจริงใน `build_thailand_places.py` (regex ตรวจอักษรไทยพัง) และข้อความเครดิตใน `osm-places.js`
+3. ไฟล์หาย: `thailand-places.ndjson.gz`, tests 13 ตัว, `IMPORT-OSM-PLACES-WINDOWS.cmd`, `docs/tommy-2026-10-25.md`, รายการแคชใน `sw.js`
+
+**ผลลัพธ์:** ได้ทั้งงานหน้า Explore ของ Moo และงานแผนที่/เส้นทาง/Google ของ Tommy ครบในที่เดียว
+
+| ไฟล์ | เจ้าของ | ใช้ของใคร / ทำอะไร |
+|---|---|---|
+| `frontend/traveler/app.js` | Moo | งานของ Moo ทั้งหมด (Nearby, SME Spotlight, ปุ่มล้างค้นหา, Region 2 ภาษา, ลบ modal ที่ไม่ใช้) **+** บล็อก `Tommy:` ทั้งหมดกลับมา · 2 จุดที่ชนกัน: ใช้ `MAP_TILE_URL` (ตั้ง URL ภาพแผนที่ที่เดียว) และคอมเมนต์ซูมฉบับเต็ม |
+| `frontend/traveler/styles.css`, `assets/1-3.png`, `frontend/traveler/assets/1-3.png`, `*-showcase.html`, `planner.html`, `Moo_update.md` | Moo | ใช้ของ Moo ทั้งหมด (ไม่ชนกัน) |
+| `frontend/shared/*.js`, `backend/routing.js`, `backend/osm-places.js`, `scripts/osm/*` | Tommy | ใช้ฉบับต้นฉบับของ Tommy (ฉบับคัดลอกตัวอักษรเพี้ยน) |
+| `backend/server.js`, `frontend/traveler/index.html` | Prom / Moo | ใช้ฉบับ Tommy-Map (เนื้อหาเหมือนกัน ต่างแค่ BOM/คอมเมนต์) + Google Login |
+| `backend/config.js` | — | เก็บรายการที่ Moo เพิ่ม, ลบ BOM ต้นไฟล์ (หมายเหตุ: ไฟล์นี้ server.js ไม่ได้ใช้) |
+
+**กระทบใคร / ต้องระวัง:**
+- **Moo:** ก่อนทำงานต่อ ให้ pull `main` แล้วทำงานบนนั้น · ครั้งหน้าใช้ **Branch → Merge into current branch** แทนการคัดลอกไฟล์ และบันทึกไฟล์เป็น **UTF-8 (ไม่มี BOM)**
+- `moo-frontend` ไม่ต้องใช้แล้วหลังรวมเสร็จ (ลบได้)
+
+**ทดสอบ:** `npm test` 35/35 ผ่าน · เบราว์เซอร์มือถือ: หน้าแรก (สไลด์ 1–3), การ์ด Trip route (ระยะทาง/เวลา/ค่าแท็กซี่/ลิงก์ Google), เรียงลำดับ ↑↓, เส้นทางบนแผนที่, ลาก/ถ่างนิ้ว/ล้อเมาส์, จุด OSM — ไม่มี error
+
+---
+
+## 2026-10-29 — เข้าสู่ระบบด้วย Google แบบจริง  (ผู้แก้: Tommy · commit: feat(auth): real Sign in with Google)
 
 **ทำไม:** ปุ่ม Google เดิมเปิดกล่องให้พิมพ์อีเมลเอง แล้วเซิร์ฟเวอร์เชื่อตามนั้น → ใครก็เข้าบัญชีคนอื่นได้ถ้ารู้อีเมล
 **ผลลัพธ์:** หน้า login ใช้ปุ่ม "Continue with Google" ของ Google จริง; เซิร์ฟเวอร์ตรวจลายเซ็นของ Google ก่อนเข้าระบบ และใช้อีเมล/ชื่อ/รูปจาก Google เท่านั้น (ฟรี ไม่มีค่าใช้จ่าย)

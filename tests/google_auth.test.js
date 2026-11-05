@@ -10,7 +10,7 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const g = require('../backend/google-auth.js');
 
-const CLIENT = 'test-client.apps.googleusercontent.com';
+const CLIENT = '123456789012-testclient.apps.googleusercontent.com';
 const NOW = Date.UTC(2026, 9, 28, 6, 0, 0);
 const googleKey = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
 const otherKey = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
@@ -68,6 +68,18 @@ test('Google key rotation: unknown key → fetch again, but at most once a minut
   assert.equal(calls, 1, 'no refetch within a minute');
   assert.equal((await check(token({ __now: NOW + 120_000 }, { key: otherKey, kid: 'k2' }), { fetchKeys: rotating, now: NOW + 120_000 })).sub, '1234567890');
   assert.equal(calls, 2);
+});
+
+test('a wrong Client ID setting (like the example text) turns Google sign-in off instead of half-working', () => {
+  const saved = process.env.TRAVAL_GOOGLE_CLIENT_ID;
+  try {
+    process.env.TRAVAL_GOOGLE_CLIENT_ID = 'paste-your-client-id-here';
+    assert.deepEqual(g.publicConfig(), { clientId: '', demo: true });
+    process.env.TRAVAL_GOOGLE_CLIENT_ID = ' "' + CLIENT + '" ';
+    assert.deepEqual(g.publicConfig(), { clientId: CLIENT, demo: false }, 'quotes and spaces are forgiven');
+  } finally {
+    if (saved === undefined) delete process.env.TRAVAL_GOOGLE_CLIENT_ID; else process.env.TRAVAL_GOOGLE_CLIENT_ID = saved;
+  }
 });
 
 test('without a Client ID only this computer may use the old demo box', async () => {

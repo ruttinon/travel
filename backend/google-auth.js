@@ -22,9 +22,21 @@ const CLOCK_SKEW_SEC = 60;
 const MIN_REFETCH_MS = 60 * 1000;
 const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 
+const CLIENT_ID_SHAPE = /^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$/;
+let warnedBadId = '';
+
 function clientId() {
   // Forgive copy-paste slips: spaces and quotes around the ID (Windows `set X="..."` keeps the quotes).
-  return String(process.env.TRAVAL_GOOGLE_CLIENT_ID || '').trim().replace(/^["']+|["']+$/g, '').trim();
+  const id = String(process.env.TRAVAL_GOOGLE_CLIENT_ID || '').trim().replace(/^["']+|["']+$/g, '').trim();
+  if (id && !CLIENT_ID_SHAPE.test(id)) {
+    // Not a real Google Client ID (e.g. the example text was pasted): stay in demo mode and say why, once.
+    if (warnedBadId !== id) {
+      warnedBadId = id;
+      console.warn(`[GOOGLE LOGIN] TRAVAL_GOOGLE_CLIENT_ID "${id}" is not a Google Client ID (it should end in .apps.googleusercontent.com). Google sign-in is OFF until it is fixed.`);
+    }
+    return '';
+  }
+  return id;
 }
 
 /** What the login page needs to know: GET /api/auth/google/config */
