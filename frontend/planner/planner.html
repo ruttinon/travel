@@ -1265,7 +1265,29 @@
       showToast(`ปรับจำนวนวันเดินทางเป็น ${val} วัน`);
     }
 
-    document.addEventListener('DOMContentLoaded', checkAuthSession);
+    
+    function checkImportedPlaces() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const placesParam = urlParams.get('places');
+        const storedStops = localStorage.getItem('traval-selected-plan-stops');
+        if (placesParam || storedStops) {
+          console.log('[Traval Sync] Detected incoming places from Moo Collection:', placesParam);
+          const stopCount = placesParam ? placesParam.split(',').filter(Boolean).length : 0;
+          if (stopCount > 0) {
+            const stopsEl = document.getElementById('statStops');
+            if (stopsEl) stopsEl.textContent = stopCount;
+            showToast('นำเข้า ' + stopCount + ' สถานที่จากคอลเลกชันสำเร็จ!');
+          }
+        }
+      } catch(e) {}
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      checkAuthSession();
+      checkImportedPlaces();
+    });
+
   </script>
 
 </body>
