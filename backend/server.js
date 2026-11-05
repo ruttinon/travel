@@ -9,6 +9,7 @@ const path = require('node:path');
 const { URL } = require('node:url');
 const routing = require('./routing.js'); // Tommy: road routing (POST /api/routes)
 const osmPlaces = require('./osm-places.js'); // Tommy: OpenStreetMap places for the map (GET /api/map/*)
+const googleAuth = require('./google-auth.js'); // Tommy: real Sign in with Google (token checked with Google)
 
 const ROOT = path.resolve(__dirname, '..');
 // Public URLs stay flat (/admin.html, /app.js). Files live under frontend/ by role.
@@ -54,6 +55,7 @@ const PAGE_FILES={
   'road-route.js':'frontend/shared/road-route.js',
   'travel-cost.js':'frontend/shared/travel-cost.js',
   'maps-links.js':'frontend/shared/maps-links.js',
+  'google-login.js':'frontend/shared/google-login.js',
   'auth/login.html':'frontend/auth/login.html',
   'auth/register.html':'frontend/auth/register.html',
   'auth/profile.html':'frontend/auth/profile.html',
@@ -1075,10 +1077,14 @@ async function api(req,res,u){
     db.prepare('DELETE FROM account_tokens WHERE user_id=?').run(userId);
     return reply(res,200,{ok:true});
   }
+  // Tommy: tells the login page whether real Google sign-in is set up (TRAVAL_GOOGLE_CLIENT_ID)
+  if(route==='/api/auth/google/config'&&method==='GET')return reply(res,200,googleAuth.publicConfig());
   if(route==='/api/auth/social'&&method==='POST'){
     checkOrigin(req);allowUserAttempt(req,'social-login');const b=await jsonBody(req);
     const provider=validString(b?.provider,20,'Provider',{required:true}).toLowerCase();
     if(!['google','facebook'].includes(provider))fail(400,'Supported providers: google, facebook');
+    // Tommy: Google must send a real Google-signed token; email/name/picture come from the token, not the browser.
+    if(provider==='google'){const g=await googleAuth.googleLoginFields(b,req);if(g)Object.assign(b,g);}
     const email=validateEmail(b?.email);
     const name=validString(b?.name||(email.split('@')[0]),60,'Name');
     const providerId=validString(b?.providerId||b?.sub||b?.id||('id_'+crypto.randomUUID().slice(0,8)),100,'Provider ID');
