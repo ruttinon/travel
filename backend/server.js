@@ -7,6 +7,9 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { URL } = require('node:url');
+const routing = require('./routing.js'); // Tommy: road routing (POST /api/routes)
+const osmPlaces = require('./osm-places.js'); // Tommy: OpenStreetMap places for the map (GET /api/map/*)
+const googleAuth = require('./google-auth.js'); // Tommy: real Sign in with Google (token checked with Google)
 
 const ROOT = path.resolve(__dirname, '..');
 // Public URLs stay flat (/admin.html, /app.js). Files live under frontend/ by role.
@@ -47,6 +50,12 @@ const PAGE_FILES={
   'google-maps-poc.html':'frontend/poc/google-maps-poc.html',
   'poc/google-maps-poc.html':'frontend/poc/google-maps-poc.html',
   'trip-engine.js':'frontend/planner/trip-engine.js',
+  // Tommy: shared travel tools used by several pages
+  'map-gestures.js':'frontend/shared/map-gestures.js',
+  'road-route.js':'frontend/shared/road-route.js',
+  'travel-cost.js':'frontend/shared/travel-cost.js',
+  'maps-links.js':'frontend/shared/maps-links.js',
+  'google-login.js':'frontend/shared/google-login.js',
   'auth/login.html':'frontend/auth/login.html',
   'auth/register.html':'frontend/auth/register.html',
   'auth/profile.html':'frontend/auth/profile.html',
@@ -900,6 +909,14 @@ async function api(req,res,u){
     const sliced=recs.slice(0,limit);
     return reply(res,200,{recommendations:sliced,stopovers:sliced,count:sliced.length});
   }
+  { // Tommy: OpenStreetMap places by map area and name search (backend/osm-places.js)
+    const out=osmPlaces.handle(DATA,route,method,u.searchParams);if(out)return reply(res,out.status,out.body);
+  }
+  if(route==='/api/routes'&&method==='POST'){ // Tommy: road distance, time and route line via OSRM (backend/routing.js)
+    checkOrigin(req);const b=await jsonBody(req);
+    const out=await routing.handleRouteRequest(b,req.socket.remoteAddress);
+    return reply(res,out.status,out.body);
+  }
   if(route==='/api/trips/estimate-cost'&&method==='GET'){
     const dist=parsedCoord(u.searchParams.get('distanceKm'),'distanceKm',0,5000);
     let taxiBase=35;
@@ -1060,10 +1077,14 @@ async function api(req,res,u){
     db.prepare('DELETE FROM account_tokens WHERE user_id=?').run(userId);
     return reply(res,200,{ok:true});
   }
+  // Tommy: tells the login page whether real Google sign-in is set up (TRAVAL_GOOGLE_CLIENT_ID)
+  if(route==='/api/auth/google/config'&&method==='GET')return reply(res,200,googleAuth.publicConfig());
   if(route==='/api/auth/social'&&method==='POST'){
     checkOrigin(req);allowUserAttempt(req,'social-login');const b=await jsonBody(req);
     const provider=validString(b?.provider,20,'Provider',{required:true}).toLowerCase();
     if(!['google','facebook'].includes(provider))fail(400,'Supported providers: google, facebook');
+    // Tommy: Google must send a real Google-signed token; email/name/picture come from the token, not the browser.
+    if(provider==='google'){const g=await googleAuth.googleLoginFields(b,req);if(g)Object.assign(b,g);}
     const email=validateEmail(b?.email);
     const name=validString(b?.name||(email.split('@')[0]),60,'Name');
     const providerId=validString(b?.providerId||b?.sub||b?.id||('id_'+crypto.randomUUID().slice(0,8)),100,'Provider ID');
@@ -1819,4 +1840,4 @@ function listen(port,remaining=12){
  });
 }
 if(require.main===module){const arg=Number(process.env.PORT||5173);listen(Number.isInteger(arg)&&arg>=0&&arg<65536?arg:5173,process.env.PORT?0:12);}
-module.exports={server,db,listen};
+module.exports={server,db,listen,DATA}; // Tommy: DATA exported for scripts/osm/import_osm_places.js

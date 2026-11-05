@@ -61,7 +61,11 @@ const PAGE_FILES = {
   'planner-legacy.html': 'frontend/planner/planner-legacy.html',
   'admin-legacy.html': 'frontend/admin/admin-legacy.html',
   'business-legacy.html': 'frontend/business/business-legacy.html',
-  'trip-engine.js': 'frontend/planner/trip-engine.js'
+  'trip-engine.js': 'frontend/planner/trip-engine.js',
+  'map-gestures.js': 'frontend/shared/map-gestures.js',
+  'road-route.js': 'frontend/shared/road-route.js',
+  'travel-cost.js': 'frontend/shared/travel-cost.js',
+  'maps-links.js': 'frontend/shared/maps-links.js'
 };
 
 const CATEGORIES = new Set(['nature', 'food', 'stay', 'culture']);

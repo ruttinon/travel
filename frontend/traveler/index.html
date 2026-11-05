@@ -29,6 +29,12 @@
  <a class="skip-link" href="#app">Skip to content</a>
  <div id="app"></div>
  <div id="toast" class="toast" aria-live="polite" role="status"></div>
+ <!-- Tommy: shared travel tools (frontend/shared/) — load before app.js -->
+ <script src="trip-engine.js" defer></script>
+ <script src="map-gestures.js" defer></script>
+ <script src="road-route.js" defer></script>
+ <script src="travel-cost.js" defer></script>
+ <script src="maps-links.js" defer></script>
  <script src="app.js" defer></script>
 </body>
 </html>

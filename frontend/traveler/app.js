@@ -76,7 +76,7 @@ const I18N={
    draftNotice:'Saved as a private draft on this device.',drafts:'Your suggestions',export:'Export my data',reset:'Reset local data',done:'Saved on this device',removed:'Removed',removedTrip:'Removed from trip',
    searchResults:'Search results',mapCaption:'Live map preview · coordinates verified',mapUnavailable:'Tiles unavailable. Place pins still work.',mapArea:'Region',menuSub:'Discover Thailand from another angle.',
    close:'Close',hint:'Design illustrations and authentic coordinates.',more:'See more',copy:'Copy trip',copied:'Copied',homeLink:'Home',titlePlace:'Place details',verified:'Verified',
-   mapZoomIn:'Zoom in',mapZoomOut:'Zoom out',clear:'Clear',allRegions:'All locations',list:'List',
+   mapZoomIn:'Zoom in',mapZoomOut:'Zoom out',clear:'Clear',allRegions:'All locations',regionNorth:'North Thailand',regionCentral:'Bangkok & Central',regionSouth:'South Thailand',regionNortheast:'Northeast Thailand',regionEast:'East Thailand',regionWest:'West Thailand',list:'List',
    spotlightTitle:'Local SME Spotlight',spotlightSub:'Community enterprises and artisan heritage',
    localOnly:'Local Only',followMe:'Follow Me',following:'Following',myLocation:'My Location',searchThisArea:'Search This Area',
    followPaused:'Follow Me paused (dragged map)',localStory:'Local Story',openNow:'Open',closedNow:'Closed',call:'Call'
@@ -94,7 +94,7 @@ const I18N={
    draftNotice:'เก็บเป็นร่างส่วนตัวบนเครื่องนี้',drafts:'ร่างสถานที่',export:'ส่งออกข้อมูล',reset:'ล้างข้อมูลในเครื่อง',done:'บันทึกไว้ในเครื่องแล้ว',removed:'นำออกแล้ว',removedTrip:'นำออกจากทริปแล้ว',
    searchResults:'ผลการค้นหา',mapCaption:'แผนที่พิกัดจริง · พิกัด GPS ได้รับการตรวจสอบ',mapUnavailable:'โหลดแผนที่ไม่ได้ แต่ยังเลือกหมุดได้',mapArea:'พื้นที่',menuSub:'ออกไปเจอโลกจากมุมคนท้องถิ่น',
    close:'ปิด',hint:'ภาพประกอบดีไซน์และพิกัดจริง',more:'เพิ่มเติม',copy:'คัดลอกทริป',copied:'คัดลอกแล้ว',homeLink:'หน้าแรก',titlePlace:'รายละเอียดสถานที่',verified:'ตรวจสอบแล้ว',
-   mapZoomIn:'ซูมเข้า',mapZoomOut:'ซูมออก',clear:'ล้าง',allRegions:'ทุกพื้นที่',list:'รายการ',
+   mapZoomIn:'ซูมเข้า',mapZoomOut:'ซูมออก',clear:'ล้าง',allRegions:'ทุกพื้นที่',regionNorth:'ภาคเหนือ',regionCentral:'กรุงเทพฯ และภาคกลาง',regionSouth:'ภาคใต้',regionNortheast:'ภาคอีสาน',regionEast:'ภาคตะวันออก',regionWest:'ภาคตะวันตก',list:'รายการ',
    spotlightTitle:'ร้านค้าท้องถิ่นแนะนำ (Local SME Spotlight)',spotlightSub:'เรื่องราววิถีชุมชนและคุณค่าสินค้าท้องถิ่น',
    localOnly:'เฉพาะร้านชุมชน',followMe:'ติดตามฉัน',following:'กำลังติดตาม',myLocation:'ตำแหน่งของฉัน',searchThisArea:'ค้นหาบริเวณนี้',
    followPaused:'หยุดโหมดติดตามชั่วคราวเนื่องจากเลื่อนแผนที่',localStory:'เรื่องเล่าวิถีชุมชน',openNow:'เปิดอยู่',closedNow:'ปิดแล้ว',call:'โทร'
@@ -117,7 +117,13 @@ const SAMPLE_PLACES=[
 let PLACES=[...SAMPLE_PLACES];
 let LIVE_DATA=false,API_ONLINE=false;
 const REMOTE_CACHE={};
-const getPlace=id=>PLACES.find(p=>p.id===id);
+// Tommy: OpenStreetMap places the user opened or added to a trip. Kept out of PLACES so Discover/Home stay curated.
+const OSM_PICKED_KEY='traval-osm-places',OSM_PICKED=new Map();
+// Only ids made by scripts/osm (osm-n123 / osm-w123 / osm-r123). The older scripts/import_osm_places.js stores
+// published places as osm-<digits>; those live in the team's places table and must keep syncing to the server.
+const isDeviceOsmId=id=>/^osm-[nwr]\d+$/.test(String(id));
+try{for(const p of JSON.parse(localStorage.getItem(OSM_PICKED_KEY)||'[]'))if(p&&p.id)OSM_PICKED.set(p.id,p)}catch{}
+const getPlace=id=>PLACES.find(p=>p.id===id)||OSM_PICKED.get(id);
 
 const KEY='unfold-v2-user';
 function readStore(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return{}}}
@@ -202,7 +208,8 @@ async function userApi(route,method='GET',data){
 async function loadAccountCollections(){
  if(!state.account)return;
  const [collections,reviews]=await Promise.all([userApi('/api/me/collections'),userApi('/api/me/reviews')]);
- state.saved=collections.saved;state.trip=collections.trip;state.myReviews=reviews.reviews;
+ // Tommy: add back this account's OpenStreetMap places from this device, in their saved order
+ state.saved=mergeOsmLists(collections.saved,'saved');state.trip=mergeOsmLists(collections.trip,'trip');state.myReviews=reviews.reviews;
  render({keepScroll:true});
 }
 
@@ -232,7 +239,8 @@ async function initRealData(){
         hoursStatus:p.hoursStatus||(p.isOpen===true?'open':p.isOpen===false?'closed':'unknown'),
         isSponsored:Boolean(p.isSponsored),province:p.province,provinceTh:p.provinceTh,provinceEn:p.provinceEn,
         phone:p.contactPhone||'',specialtiesTh:p.localStoryTh?[p.localStoryTh.slice(0,30)]:undefined,
-        rating:p.rating,reviewsCount:p.reviewsCount
+        rating:p.rating,reviewsCount:p.reviewsCount,
+        googlePlaceId:p.googlePlaceId||'' // Tommy: keep for Google Maps links (allowed to store forever)
       }));
       const ids=new Set(realPlaces.map(x=>x.id));
       PLACES=[...realPlaces,...SAMPLE_PLACES.filter(s=>!ids.has(s.id))];
@@ -249,7 +257,8 @@ async function initRealData(){
 let persistOrder=Promise.resolve();
 function persistCollections(){
  if(!state.account||!LIVE_DATA){store();return}
- const payload={saved:[...state.saved],trip:[...state.trip]};
+ saveOsmLists(); // Tommy: remember this account's OpenStreetMap places (and their order) on this device
+ const payload={saved:state.saved.filter(id=>!isDeviceOsmId(id)),trip:state.trip.filter(id=>!isDeviceOsmId(id))}; // Tommy: the server stores team places only
  persistOrder=persistOrder.catch(()=>{}).then(async()=>{
   try{await userApi('/api/me/collections','PUT',payload)}catch(e){toast(e.message);try{await loadAccountCollections()}catch{}}
  });
@@ -294,7 +303,7 @@ function actionBtn(action,content,extra='',attributes=''){
 function brand(){
  return `<button class="brand" data-action="navigate" data-page="welcome" aria-label="Traval - ${html(t('homeLink'))}">
   <span class="brand-mark">T<span class="brand-dot" style="color:#8DE026;">.</span></span>
-  <span class="brand-full" style="font-family:var(--font-base)">Traval</span>
+  <span class="brand-full" style="font-family:var(--font)">Traval</span>
  </button>`;
 }
 
@@ -322,9 +331,59 @@ function bottomNav(){
 }
 
 
+const LANDING_SLIDES = [
+  { img: 'assets/1.png', alt: 'Travel Experience 1' },
+  { img: 'assets/2.png', alt: 'Travel Experience 2' },
+  { img: 'assets/3.png', alt: 'Travel Experience 3' }
+];
+let landingSlideIndex = 0;
+let landingTimer = null;
+
+function setLandingSlide(nextIdx) {
+  landingSlideIndex = (nextIdx + LANDING_SLIDES.length) % LANDING_SLIDES.length;
+  const slides = $$('.landing-slide');
+  slides.forEach((el, idx) => {
+    el.classList.toggle('active', idx === landingSlideIndex);
+  });
+  const indicator = $('#landing-counter');
+  if (indicator) indicator.textContent = `0${landingSlideIndex + 1} / 0${LANDING_SLIDES.length}`;
+  const fill = $('#landing-progress-fill');
+  if (fill) fill.style.width = `${((landingSlideIndex + 1) / LANDING_SLIDES.length) * 100}%`;
+  const dots = $$('.landing-dot');
+  dots.forEach((dot, idx) => {
+    dot.classList.toggle('active', idx === landingSlideIndex);
+  });
+}
+
+function startLandingSlideshow() {
+  if (landingTimer) clearInterval(landingTimer);
+  landingTimer = setInterval(() => {
+    if (state.page !== 'welcome') {
+      clearInterval(landingTimer);
+      landingTimer = null;
+      return;
+    }
+    setLandingSlide(landingSlideIndex + 1);
+  }, 4000);
+}
+
 function landing(){
- return `<div class="landing" id="landing">
-  <div class="landing-image"><img src="${photo('hero-forest.webp')}" alt="Scenic mountain valley"/></div>
+  setTimeout(startLandingSlideshow, 50);
+  return `<div class="landing" id="landing">
+  <div class="landing-image">
+    <div class="landing-slideshow">
+      ${LANDING_SLIDES.map((slide, idx) => `
+        <div class="landing-slide ${idx === landingSlideIndex ? 'active' : ''}">
+          <img src="${slide.img}" alt="${html(slide.alt)}" onerror="this.onerror=null;this.src='hero-forest.webp'"/>
+        </div>
+      `).join('')}
+    </div>
+    <div class="landing-slide-controls">
+      ${LANDING_SLIDES.map((_, idx) => `
+        <button class="landing-dot ${idx === landingSlideIndex ? 'active' : ''}" data-action="landing-slide" data-index="${idx}" aria-label="Slide ${idx + 1}"></button>
+      `).join('')}
+    </div>
+  </div>
   <div class="landing-shade"></div>
   <div class="landing-header">
     ${brand()}
@@ -342,7 +401,8 @@ function landing(){
     </button>
   </div>
   <div class="landing-bottom">
-    <span>01 / 03</span><div class="landing-line"><i style="background:#8DE026"></i></div>
+    <span id="landing-counter">0${landingSlideIndex + 1} / 0${LANDING_SLIDES.length}</span>
+    <div class="landing-line"><i id="landing-progress-fill" style="background:#8DE026; width:${((landingSlideIndex + 1) / LANDING_SLIDES.length) * 100}%;"></i></div>
     <span>${html(t('homeHint'))}</span>
   </div>
   <button class="mobile-landing-go" data-action="navigate" data-page="discover">${html(t('enter'))}${ico('arrow',23)}</button>
@@ -455,7 +515,7 @@ function nearbyControls(){
       ${html(t(state.nearbyBusy?'locating':state.nearbyActive?'stopNear':'nearMe'))}
     </button>
     <button type="button" class="nearby-filter-toggle ${state.filtersOpen?'active':''}" data-action="filter-toggle" aria-expanded="${state.filtersOpen}">${ico('sliders',16)} ${html(t('filters'))}</button>
-    <label class="filter-chip sme" style="min-height:39px;">
+    <label class="filter-chip-checkbox sme-chip-checkbox">
       <input type="checkbox" id="check-local-only" ${state.localOnly?'checked':''} style="accent-color:#E5A836;"/>
       <span>${html(t('localOnly'))}</span>
     </label>
@@ -567,7 +627,7 @@ function discover(){
     <form class="hero-search" id="home-search" role="search">
       <span aria-hidden="true">${ico('search',18)}</span>
       <input id="home-query" type="search" placeholder="${html(t('search'))}" value="${html(state.query)}" aria-label="${html(t('search'))}" autocomplete="off"/>
-      <button class="search-go" type="submit">${html(t('searchShort'))}</button>
+      ${state.query?`<button type="button" class="clear-query" data-action="clear-search" style="border:0;background:none;color:#78857B;padding:4px 8px;font-size:14px;cursor:pointer;">✕</button>`:''}<button class="search-go" type="submit">${html(t('searchShort'))}</button>
     </form>
 
     ${categoryButtons()}
@@ -633,7 +693,7 @@ function discover(){
     ${!state.nearbyActive && provinces.length?`
       <section class="secondary-section">
         <div class="section-line"><h2>${html(t('byProvince'))}</h2>
-          <button class="quiet-link" data-action="navigate" data-page="local">${html(t('localDirectory'))}</button>
+          
         </div>
         <div class="filter-chip-row">
           ${provinces.map(([key,p])=>`
@@ -678,7 +738,7 @@ function bottomSheet(p){
       <div style="flex:1;min-width:0;">
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;">
           ${p.isSme?`<span style="background:#FEF8EC;color:#925C08;border:1px solid #F59E0B;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;">★ Local SME</span>`:''}
-          <span style="font-size:11px;font-weight:600;color:${p.isOpen?'#15803D':'#B91C1C'}">● ${p.isOpen?t('openNow'):t('closedNow')}</span>
+          ${p.isOpen==null?'' /* Tommy: unknown for OSM places */:`<span style="font-size:11px;font-weight:600;color:${p.isOpen?'#15803D':'#B91C1C'}">● ${p.isOpen?t('openNow'):t('closedNow')}</span>`}
         </div>
         <h3 style="margin:0 0 2px 0;font-size:18px;font-weight:700;color:#0D2C1C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</h3>
         <small style="color:#78857B;font-size:11px;">📍 ${location}</small>
@@ -726,7 +786,7 @@ function bottomSheet(p){
 
     <div style="display:flex;justify-content:space-between;padding:10px 12px;background:#F8F7F3;border-radius:12px;font-size:12px;">
       <span>เวลาเปิด-ปิด: <strong>${p.openHours||'ทุกวัน'}</strong></span>
-      <span>ราคา: <strong>${p.priceFrom?`฿${p.priceFrom.toLocaleString()}`:'ฟรี'}</strong></span>
+      <span>ราคา: <strong>${p.priceFrom?`฿${p.priceFrom.toLocaleString()}`:p.source==='osm'?'ไม่ระบุ':'ฟรี'}</strong></span><!-- Tommy: OSM places have no price data, so don't call them free -->
     </div>
   </div>
  </div>`;
@@ -790,6 +850,8 @@ function detail(p){
         <button class="action-lime" data-action="trip-toggle" data-id="${p.id}">${html(t(planned?'removeTrip':'addTrip'))} ${ico(planned?'check':'arrow',19)}</button>
         <button class="action-outline" data-action="explore-nearby-place" data-id="${p.id}" style="border-color:#2563EB;color:#2563EB;" title="${html(t('exploreNearby'))}">${ico('compass',17)} ${html(t('exploreNearby'))}</button>
         <button class="action-outline" data-action="share-place" data-id="${p.id}">${ico('share',17)} ${html(t('share'))}</button>
+        <a class="action-outline" href="${html(TravalLinks.placeUrl(p))}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">${ico('star',17)} ${state.lang==='th'?'รีวิวบน Google':'Google reviews'} ↗</a><!-- Tommy: link only; Google reviews are never copied -->
+
         ${p.phone?`<a href="tel:${p.phone}" class="action-outline" style="text-decoration:none;">${ico('phone',17)} ${html(t('call'))}</a>`:''}
       </div>
 
@@ -860,6 +922,7 @@ function mapPage(){
           ${ico('pin',16)}
           <span>${places.length} ${html(state.lang==='th'?'สถานที่':'places')}</span>
           ${state.localOnly?`<span style="background:#FEF8EC;color:#925C08;padding:1px 6px;border-radius:99px;font-size:10px;">Local SME</span>`:''}
+          ${osmCounterHtml() /* Tommy */}
         </div>
 
         <!-- Controls: My Location & Follow Me & Zoom -->
@@ -885,6 +948,7 @@ function mapPage(){
           <span>${html(t('list'))}</span>
           <span>${places.length} places</span>
         </div>
+        ${tripMapChip() /* Tommy: trip route summary on the map */}
         <div class="map-items">
           ${places.map(p=>`
             <button class="map-result ${p.id===pick?.id?'active':''}" data-action="map-select" data-id="${p.id}">
@@ -992,6 +1056,7 @@ function collection(){
       </div>
     `:''}
 
+    ${isTrip?tripRouteCard():'' /* Tommy: road distance, time, taxi estimate, Navigate trip */}
     ${items.length?`
       <div class="collection-grid">
         ${items.map((p,i)=>{
@@ -1129,232 +1194,6 @@ function searchOverlay(){
 }
 
 function aiModal(){ return ''; }
-function _unusedAiModal(){
-  return `<div class="search-overlay" role="dialog" aria-modal="true" aria-label="AI Travel Advisor" style="display:flex;align-items:center;justify-content:center;padding:20px;">
-    <div class="search-backdrop" data-action="close-ai"></div>
-    <div style="position:relative;z-index:100;background:#FFF;border-radius:24px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,0.3);border:1px solid #E6E8E2;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;border-bottom:1px solid #EEE;padding-bottom:14px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="background:#0D2C1C;color:#8DE026;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:18px;">✨</span>
-          <div>
-            <h2 style="margin:0;font-size:18px;color:#0D2C1C;">AI Travel Advisor</h2>
-            <small style="color:#78857B;">วางแผนเที่ยวและคัดเลือกร้านชุมชน SME อัตโนมัติ</small>
-          </div>
-        </div>
-        <button type="button" data-action="close-ai" style="background:#F4F5F1;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:grid;place-items:center;">${ico('x',18)}</button>
-      </div>
-
-      ${state.aiLoading ? `
-        <div style="padding:60px 20px;text-align:center;">
-          <div style="width:40px;height:40px;border:4px solid #E6E8E2;border-top-color:#8DE026;border-radius:50%;animation:pulseAccuracy 1.2s infinite ease-in-out;margin:0 auto 20px;"></div>
-          <h3 style="margin:0 0 8px;color:#0D2C1C;">AI กำลังประมวลผลเส้นทาง...</h3>
-          <p style="color:#78857B;font-size:13px;margin:0;">กำลังคัดเลือกร้านค้า SME ชุมชน คำนวณงบประมาณ และจัดตารางเวลา</p>
-        </div>
-      ` : state.aiResult ? `
-        <div>
-          <div style="background:#F4F8F1;border:1px solid #D1E7C4;border-radius:16px;padding:16px 20px;margin-bottom:20px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
-              <strong style="color:#183E2D;font-size:16px;">${html(state.aiResult.title||state.aiResult.destination||'ทริปเที่ยว')} (${state.aiResult.days||1} วัน)</strong>
-              <span style="background:#8DE026;color:#0D2C1C;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;">งบประมาณรวม ฿${(state.aiResult.budgetBreakdown?.totalEstimated||state.aiResult.budgetEstimate?.totalEstimatedCost||0).toLocaleString()}</span>
-            </div>
-            <p style="margin:0;font-size:12px;color:#455248;line-height:1.5;">${html(state.aiResult.aiSummary||state.aiResult.summary||'')}</p>
-          </div>
-
-          ${(state.aiResult.budgetBreakdown || state.aiResult.budgetEstimate) ? `
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));gap:8px;margin-bottom:20px;">
-              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">ที่พัก (Stays)</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetBreakdown?.accommodation||state.aiResult.budgetEstimate?.breakdown?.accommodations||0).toLocaleString()}</strong></div>
-              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">อาหาร & SME</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetBreakdown?.food||state.aiResult.budgetEstimate?.breakdown?.foodAndDining||0).toLocaleString()}</strong></div>
-              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">เดินทาง (Transport)</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetBreakdown?.transport||state.aiResult.budgetEstimate?.breakdown?.transportation||0).toLocaleString()}</strong></div>
-              <div style="background:#F8F7F3;padding:10px;border-radius:10px;text-align:center;"><small style="color:#78857B;display:block;font-size:10px;">กิจกรรม & อื่น ๆ</small><strong style="font-size:13px;color:#0D2C1C;">฿${(state.aiResult.budgetBreakdown?.activities||state.aiResult.budgetEstimate?.breakdown?.emergencyCushion||0).toLocaleString()}</strong></div>
-            </div>
-          ` : ''}
-
-          <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px;">
-            ${((state.aiResult.dailyItinerary||state.aiResult.itinerary||[])).map(day=>`
-              <div style="border:1px solid #E6E8E2;border-radius:14px;padding:16px;">
-                <h4 style="margin:0 0 10px;color:#0D2C1C;font-size:14px;display:flex;justify-content:space-between;">
-                  <span>Day ${day.day} · ${html(day.theme||(day.distanceKm?`ระยะทาง ${day.distanceKm} กม.`:'เส้นทางท่องเที่ยว'))}</span>
-                  <small style="color:#78857B;font-weight:normal;">${(day.places||day.schedule||[]).length} จุดแวะ</small>
-                </h4>
-                <div style="display:flex;flex-direction:column;gap:8px;">
-                  ${((day.places||day.schedule||[])).map(s=>{
-                    const p = s.place || s;
-                    return `
-                    <div style="display:flex;align-items:center;gap:12px;background:#FAFAF8;padding:8px 12px;border-radius:8px;">
-                      <span style="font-size:11px;font-weight:700;color:#2563EB;min-width:65px;">${html(s.time||'จุดแวะ')}</span>
-                      <div style="flex:1;min-width:0;">
-                        <strong style="font-size:12px;color:#0D2C1C;">${html(p.th||p.en||p.nameEn||p.title||'')}</strong>
-                        ${p.isSme ? `<span style="background:#FEF8EC;color:#925C08;border:1px solid #F59E0B;font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;margin-left:6px;">★ Local SME</span>` : ''}
-                        <small style="display:block;color:#78857B;font-size:10px;">${html(p.locTh||p.locEn||s.activity||'')}</small>
-                      </div>
-                    </div>
-                  `;}).join('')}
-                  ${day.smeRecommendations && day.smeRecommendations.length ? `
-                    <div style="background:#FFF9EF;border-left:3px solid #E5A836;padding:8px 10px;border-radius:6px;font-size:11px;color:#78350F;margin-top:6px;">
-                      <strong>✨ แนะนำแวะร้านชุมชนระหว่างทาง:</strong>
-                      ${day.smeRecommendations.map(r=>`${html(r.place?.th||r.place?.en)} (+${r.detourKm} กม.)`).join(', ')}
-                    </div>
-                  ` : ''}
-                </div>
-              </div>
-            `).join('')}
-          </div>
-
-          <div style="display:flex;gap:10px;justify-content:flex-end;">
-            <button type="button" data-action="reset-ai" style="background:#F4F5F1;border:none;border-radius:99px;padding:10px 20px;font-size:12px;font-weight:700;cursor:pointer;">ปรับเงื่อนไขใหม่</button>
-            <button type="button" data-action="save-ai-plan" style="background:#0D2C1C;color:#8DE026;border:none;border-radius:99px;padding:10px 24px;font-size:12px;font-weight:800;cursor:pointer;">+ บันทึกเข้า My Trips</button>
-          </div>
-        </div>
-      ` : `
-        <form id="ai-advisor-form" style="display:flex;flex-direction:column;gap:16px;">
-          <div>
-            <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:6px;">จังหวัด หรือ ย่านที่ต้องการไป *</label>
-            <select name="province" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;">
-              <option value="chiang-mai" ${f.province==='chiang-mai'?'selected':''}>เชียงใหม่ (Chiang Mai)</option>
-              <option value="bangkok" ${f.province==='bangkok'?'selected':''}>กรุงเทพฯ (Bangkok)</option>
-              <option value="nan" ${f.province==='nan'?'selected':''}>น่าน (Nan)</option>
-              <option value="surat-thani" ${f.province==='surat-thani'?'selected':''}>สุราษฎร์ธานี (Surat Thani)</option>
-              <option value="phang-nga" ${f.province==='phang-nga'?'selected':''}>พังงา (Phang Nga)</option>
-              <option value="mae-hong-son" ${f.province==='mae-hong-son'?'selected':''}>แม่ฮ่องสอน (Mae Hong Son)</option>
-            </select>
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-            <div>
-              <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:6px;">จำนวนวันเที่ยว (1-7 วัน)</label>
-              <input type="number" name="days" value="${f.days||2}" min="1" max="7" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"/>
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:6px;">งบประมาณรวม (บาท)</label>
-              <input type="number" name="budget" value="${f.budget||3500}" min="500" max="1000000" step="500" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"/>
-            </div>
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-            <div>
-              <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:6px;">สไตล์การท่องเที่ยว</label>
-              <select name="style" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;">
-                <option value="all">ผสมผสานทุกรูปแบบ</option>
-                <option value="food">สายกิน & ของอร่อย</option>
-                <option value="nature">ธรรมชาติ & พักผ่อน</option>
-                <option value="culture">วัฒนธรรม & ชุมชน</option>
-                <option value="cafe">คาเฟ่ & จุดถ่ายรูป</option>
-              </select>
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:6px;">จังหวะการเดินทาง</label>
-              <select name="pace" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;">
-                <option value="normal">ปกติ (3-4 จุดต่อวัน)</option>
-                <option value="relaxed">สบาย ๆ ชิลล์ๆ (1-2 จุดต่อวัน)</option>
-                <option value="packed">เที่ยวแน่นเต็มวัน (5+ จุด)</option>
-              </select>
-            </div>
-          </div>
-
-          <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#183E2D;background:#FEF8EC;padding:10px 14px;border-radius:10px;border:1px solid #F59E0B;cursor:pointer;">
-            <input type="checkbox" name="quickWalk" id="ai-quick-walk" style="accent-color:#E5A836;"/>
-            <span><strong>Quick Prompt:</strong> พาเดินเล่นรอบ ๆ ไม่เกิน 10 นาที (สำรวจรอบพิกัดปัจจุบัน)</span>
-          </label>
-
-          <button type="submit" style="background:#0D2C1C;color:#8DE026;border:none;border-radius:99px;padding:14px;font-size:14px;font-weight:800;cursor:pointer;margin-top:8px;">
-            สร้างแผนการเดินทางด้วย AI ↗
-          </button>
-        </form>
-      `}
-    </div>
-  </div>`;
-}
-
-function safetyModal(){ return ''; }
-function _unusedSafetyModal(){
-  return `<div class="search-overlay" role="dialog" aria-modal="true" aria-label="Travel Safety" style="display:flex;align-items:center;justify-content:center;padding:20px;">
-    <div class="search-backdrop" data-action="close-safety"></div>
-    <div style="position:relative;z-index:100;background:#FFF;border-radius:24px;max-width:680px;width:100%;max-height:90vh;overflow-y:auto;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,0.3);border:1px solid #E6E8E2;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;border-bottom:1px solid #EEE;padding-bottom:14px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="background:#FEF8EC;color:#C53030;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:18px;">🛡️</span>
-          <div>
-            <h2 style="margin:0;font-size:18px;color:#0D2C1C;">เตือนภัย & ความปลอดภัยนักท่องเที่ยว</h2>
-            <small style="color:#78857B;">รายงานจุดเสี่ยง การโกงราคา และการคมนาคมที่ผ่านการตรวจสอบ</small>
-          </div>
-        </div>
-        <button type="button" data-action="close-safety" style="background:#F4F5F1;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:grid;place-items:center;">${ico('x',18)}</button>
-      </div>
-
-      ${state.safetyFormOpen ? `
-        <form id="safety-report-form" style="display:flex;flex-direction:column;gap:14px;">
-          <h3 style="margin:0;font-size:16px;color:#0D2C1C;">+ รายงานเหตุการณ์ / แจ้งเตือนจุดเสี่ยง</h3>
-          <div>
-            <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">ประเภทเหตุการณ์ *</label>
-            <select name="category" required style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;">
-              <option value="overcharging">โกงราคา / เรียกค่าโดยสารแพงเกินจริง</option>
-              <option value="transport">ปัญหาบริการขนส่งสาธารณะ / Taxi / รถสองแถว</option>
-              <option value="scam">มิจฉาชีพ / หลอกลวงซื้อของหรือทัวร์</option>
-              <option value="danger">จุดอันตราย / ทางเปลี่ยว</option>
-              <option value="other">อื่น ๆ</option>
-            </select>
-          </div>
-          <div>
-            <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">หัวข้อรายงาน *</label>
-            <input name="title" required placeholder="เช่น Taxi ไม่กดมิเตอร์บริเวณหน้าตลาด..." style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"/>
-          </div>
-          <div>
-            <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">รายละเอียดเหตุการณ์ *</label>
-            <textarea name="description" required rows="3" placeholder="ระบุสิ่งที่พบเจอ ข้อควรระวัง หรือคำแนะนำแก่นักท่องเที่ยวท่านอื่น" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"></textarea>
-          </div>
-          <div>
-            <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">สถานที่เกิดเหตุ *</label>
-            <input name="locationName" required placeholder="เช่น ซอยสุขุมวิท 11, หน้าสถานีรถไฟเชียงใหม่" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"/>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-            <div>
-              <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">ละติจูด (Lat)</label>
-              <input id="safety-lat" name="lat" placeholder="13.7370" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"/>
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">ลองจิจูด (Lon)</label>
-              <input id="safety-lon" name="lon" placeholder="100.5600" style="width:100%;padding:10px 14px;border:1px solid #CCD2C8;border-radius:10px;font-size:13px;box-sizing:border-box;"/>
-            </div>
-          </div>
-          <button type="button" data-action="use-safety-gps" style="align-self:flex-start;background:#F8F7F3;color:#0D2C1C;border:1px solid #CCD2C8;padding:6px 14px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;">📍 ดึงพิกัดปัจจุบันของฉัน (GPS)</button>
-          <div>
-            <label style="display:block;font-size:12px;font-weight:700;color:#0D2C1C;margin-bottom:4px;">ภาพถ่ายหลักฐาน (ไม่เกิน 10 MB)</label>
-            <input type="file" id="safety-photo-input" accept="image/*" style="font-size:12px;"/>
-          </div>
-          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
-            <button type="button" data-action="cancel-safety-form" style="background:#F4F5F1;border:none;border-radius:99px;padding:10px 20px;font-size:12px;font-weight:700;cursor:pointer;">ยกเลิก</button>
-            <button type="submit" style="background:#C53030;color:#FFF;border:none;border-radius:99px;padding:10px 24px;font-size:12px;font-weight:800;cursor:pointer;">ส่งรายงาน ↗</button>
-          </div>
-        </form>
-      ` : `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <strong style="color:#0D2C1C;font-size:14px;">รายการจุดเสี่ยงที่ได้รับการยืนยัน (${reports.length})</strong>
-          <button type="button" data-action="open-safety-form" style="background:#0D2C1C;color:#8DE026;border:none;border-radius:99px;padding:8px 16px;font-size:11px;font-weight:700;cursor:pointer;">+ แจ้งเหตุใหม่</button>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          ${reports.length ? reports.map(r=>`
-            <div style="border:1px solid #E6E8E2;border-radius:14px;padding:14px;background:#FBFBF9;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                <span style="background:#FEE2E2;color:#991B1B;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;text-transform:uppercase;">⚠️ ${html(r.category)}</span>
-                <span style="color:#15803D;font-size:10px;font-weight:700;">✓ Verified</span>
-              </div>
-              <strong style="display:block;font-size:14px;color:#0D2C1C;margin-bottom:4px;">${html(r.title)}</strong>
-              <p style="margin:0 0 8px 0;font-size:12px;color:#4B5563;line-height:1.4;">${html(r.description)}</p>
-              <div style="font-size:11px;color:#9CA3AF;">📍 ${html(r.locationName)} · ${new Date(r.createdAt).toLocaleDateString()}</div>
-              ${r.photo ? `<div style="margin-top:8px;height:120px;border-radius:8px;overflow:hidden;"><img src="${html(r.photo)}" style="width:100%;height:100%;object-fit:cover;"/></div>` : ''}
-            </div>
-          `).join('') : `
-            <div style="padding:40px 20px;text-align:center;color:#78857B;">
-              <p>ยังไม่มีรายงานจุดเสี่ยงที่ได้รับการเผยแพร่</p>
-              <button type="button" data-action="open-safety-form" style="background:#0D2C1C;color:#FFF;border:none;border-radius:99px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;">+ แจ้งเตือนคนแรก</button>
-            </div>
-          `}
-        </div>
-      `}
-    </div>
-  </div>`;
-}
-
 function appHtml(){
  let body=state.page==='welcome'?landing():
           state.page==='discover'?discover():
@@ -1369,6 +1208,7 @@ function render({keepScroll=false}={}){
  const sy=keepScroll?window.scrollY:0;
  document.documentElement.lang=state.lang;
  document.title=`Traval — ${state.page==='welcome'?'Travel & Local Discovery':t(state.page==='detail'?'titlePlace':state.page)}`;
+ if(state.page==='trip'||state.page==='map')ensureTripRoute(); // Tommy: fetch the trip route when needed (once per trip/mode)
  $('#app').innerHTML=appHtml();
  document.body.classList.toggle('has-modal',state.menuOpen||state.searchOpen);
  if(state.page==='map') requestAnimationFrame(drawMap);
@@ -1424,10 +1264,161 @@ function toggleTrip(id){
 
 function externalDirections(id){
  const p=getPlace(id);if(!p)return;
- const dest=Number.isFinite(p.lat)&&Number.isFinite(p.lon)?`${p.lat},${p.lon}`:encodeURIComponent(p.en+', '+p.locEn);
- window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=${state.travelMode}`,'_blank','noopener,noreferrer');
- userApi('/api/analytics/event','POST',{eventType:'direction',placeId:id}).catch(()=>{});
+ // Tommy: one link builder for the whole app (Place ID first, our lat/lon as backup).
+ const url=TravalLinks.directionsUrl([p],state.travelMode);
+ if(url) window.open(url,'_blank','noopener,noreferrer');
+ // Tommy: placeSlug is the API's field name (the server also accepts placeId).
+ userApi('/api/analytics/event','POST',{eventType:'direction',placeSlug:id}).catch(()=>{});
 }
+
+/* ---- Tommy: trip route (road distance, time, cost) shared by the Trip page and the Map ---- */
+state.tripRoute=null; // {key, busy, result} — result comes from TravalRoute.route()
+function tripPlaces(){return state.trip.map(getPlace).filter(p=>p&&Number.isFinite(p.lat)&&Number.isFinite(p.lon));}
+function tripRouteKey(){return state.travelMode+'|'+tripPlaces().map(p=>p.id).join(',');}
+function ensureTripRoute(){
+ const places=tripPlaces();
+ if(places.length<2||!window.TravalRoute){state.tripRoute=null;return;}
+ const key=tripRouteKey();
+ if(state.tripRoute&&state.tripRoute.key===key)return;
+ state.tripRoute={key,busy:true,result:null};
+ TravalRoute.route(places,state.travelMode).then(result=>{
+   if(!state.tripRoute||state.tripRoute.key!==key)return; // trip changed meanwhile
+   state.tripRoute={key,busy:false,result};
+   if(state.page==='trip'||state.page==='map')render({keepScroll:true}); // map: also refreshes the trip chip
+ });
+}
+function tripRouteCard(){
+ const places=tripPlaces();
+ if(places.length<2||!window.TravalCost||!window.TravalLinks)return '';
+ const th=state.lang==='th',tr=state.tripRoute,r=tr&&tr.result;
+ const walk=state.travelMode==='walking';
+ const cost=r?TravalCost.tripCost(r.legs,state.travelMode):null;
+ const km=n=>n<1?`${Math.round(n*1000)} ${th?'ม.':'m'}`:`${n.toFixed(1)} ${th?'กม.':'km'}`;
+ const mins=n=>n<60?`${Math.round(n)} ${th?'นาที':'min'}`:`${Math.floor(n/60)} ${th?'ชม.':'h'} ${Math.round(n%60)} ${th?'นาที':'min'}`;
+ const money=c=>!c||!c.taxi?'–':walk?(th?'ฟรี':'Free'):`${c.taxi.min.toLocaleString()}–${c.taxi.max.toLocaleString()} ฿`;
+ return `<section class="trip-route-card" style="background:#FFF;color:#0D2C1C;border:1px solid #E6E8E2;border-radius:18px;padding:16px 18px;margin:0 0 18px;">
+   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+     <b>${ico('route',17)} ${th?'เส้นทางทริป':'Trip route'}</b>
+     <span role="group" aria-label="${th?'วิธีเดินทาง':'Travel mode'}" style="display:inline-flex;border:1px solid #E6E8E2;border-radius:99px;overflow:hidden;">
+       ${[['driving',t('modeDrive')],['walking',t('modeWalk')]].map(([m,lbl])=>`<button data-action="trip-mode" data-mode="${m}" aria-pressed="${state.travelMode===m}" style="border:0;padding:6px 14px;font-weight:700;font-size:12px;background:${state.travelMode===m?'#0D2C1C':'#FFF'};color:${state.travelMode===m?'#8DE026':'#0D2C1C'};">${html(lbl)}</button>`).join('')}
+     </span>
+   </div>
+   ${!r?`<p style="margin:12px 0 0;color:#5F6B62;">${th?'กำลังคำนวณเส้นทาง…':'Calculating road route…'}</p>`:`
+   <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px;">
+     <div><small style="color:#5F6B62;">${th?'ระยะทาง':'Distance'}</small><div style="font-weight:700;font-size:18px;">${km(r.distanceKm)}</div></div>
+     <div><small style="color:#5F6B62;">${th?'เวลาเดินทาง':'Travel time'}</small><div style="font-weight:700;font-size:18px;">${mins(r.travelMinutes)}</div></div>
+     <div><small style="color:#5F6B62;">${walk?(th?'ค่าใช้จ่าย':'Cost'):(th?'แท็กซี่ (ต่อจุด)':'Taxi (per stop)')}</small><div style="font-weight:700;font-size:18px;">${money(cost)}</div></div>
+   </div>
+   <p style="margin:10px 0 0;font-size:12px;color:#5F6B62;">${r.source==='road'
+     ?(th?'ระยะทางตามถนนจริงจาก OpenStreetMap · ราคาแท็กซี่เป็นค่าประมาณตามมิเตอร์ ไม่รวมทางด่วน':'Real road distance from OpenStreetMap · taxi price is a meter estimate, tolls not included')
+     :(th?'ประมาณจากระยะเส้นตรง (ระบบเส้นทางไม่ตอบสนอง)':'Straight-line estimate (road routing unavailable right now)')}${!walk&&cost&&cost.fuel?` · ${th?'ค่าน้ำมันรถส่วนตัว':'own car fuel'} ≈ ${cost.fuel.toLocaleString()} ฿`:''}</p>`}
+   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+     <a class="action-lime" href="${html(TravalLinks.directionsUrl(places,state.travelMode))}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">${th?'นำทางด้วย Google Maps':'Navigate in Google Maps'} ↗</a>
+     <button class="action-outline" data-action="trip-on-map">${ico('map',17)} ${th?'ดูบนแผนที่':'Show on map'}</button>
+   </div>
+ </section>`;
+}
+function tripRouteSvg(origin,w,h,z){
+ const r=state.tripRoute&&state.tripRoute.result;
+ if(!r||!Array.isArray(r.line)||r.line.length<2)return '';
+ const pts=r.line.map(([la,lo])=>{const xy=merc(la,lo,z);return `${(xy.x-origin.x+w/2).toFixed(1)},${(xy.y-origin.y+h/2).toFixed(1)}`}).join(' ');
+ const dash=r.source==='road'?'':'stroke-dasharray="8 7"';
+ return `<svg class="trip-route-line" width="${w}" height="${h}" style="position:absolute;left:0;top:0;pointer-events:none;overflow:visible;" aria-hidden="true">
+   <polyline points="${pts}" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+   <polyline points="${pts}" fill="none" stroke="#2563EB" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" ${dash}/>
+ </svg>`;
+}
+function tripMapChip(){
+ const r=state.tripRoute&&state.tripRoute.result;
+ if(!r||tripPlaces().length<2)return '';
+ const th=state.lang==='th';
+ return `<button data-action="trip-on-map" style="display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;margin:0 0 10px;padding:10px 12px;border:1px solid #E6E8E2;border-radius:12px;background:#F2F6FF;color:#0D2C1C;font-size:12px;text-align:left;">
+   <span>${ico('route',15)} <b>${th?'เส้นทางทริป':'Trip route'}</b> · ${r.distanceKm.toFixed(1)} ${th?'กม.':'km'} · ${Math.round(r.travelMinutes)} ${th?'นาที':'min'}${r.source==='road'?'':(th?' (ประมาณ)':' (estimate)')}</span>
+   <span style="color:#2563EB;font-weight:700;">${th?'ดูทั้งทริป':'Fit trip'}</span>
+ </button>`;
+}
+function fitMapToTrip(){
+ const places=tripPlaces();if(!places.length)return;
+ const lat=places.reduce((s,p)=>s+p.lat,0)/places.length,lon=places.reduce((s,p)=>s+p.lon,0)/places.length;
+ const spanKm=Math.max(...places.map(p=>UnfoldTripEngine.km({lat,lon},p)));
+ state.mapCenter={lat,lon,z:spanKm<1.5?15:spanKm<4?14:spanKm<10?13:spanKm<25?12:spanKm<60?10:8};
+}
+/* ---- end Tommy: trip route ---- */
+
+/* ---- Tommy: OpenStreetMap places for the visible map area (backend/osm-places.js) ---- */
+const OSM_MIN_ZOOM=10; // below this a view covers too much of the country to be useful
+const OSM_COLORS={culture:'#B45309',nature:'#15803D',food:'#DB2777',stay:'#4F46E5'};
+state.osm={key:'',places:[],total:0,truncated:false};
+let osmTimer=null,osmSeq=0;
+function unmerc(x,y,z){const scale=256*(2**z);return {lon:x/scale*360-180,lat:Math.atan(Math.sinh(Math.PI*(1-2*y/scale)))*180/Math.PI};}
+function mapViewBbox(){
+ const box=$('.map-paper');if(!box||!box.offsetWidth||!box.offsetHeight)return null;
+ const {lat,lon,z}=state.mapCenter,o=merc(lat,lon,z),w=box.offsetWidth,h=box.offsetHeight;
+ const sw=unmerc(o.x-w/2,o.y+h/2,z),ne=unmerc(o.x+w/2,o.y-h/2,z);
+ return [sw.lon,sw.lat,ne.lon,ne.lat];
+}
+const osmCategory=()=>['nature','food','stay','culture'].includes(state.category)?state.category:'all';
+const osmHidden=()=>state.mapCenter.z<OSM_MIN_ZOOM||state.localOnly||state.category==='sme'||state.nearbyActive;
+function scheduleOsmLoad(){clearTimeout(osmTimer);osmTimer=setTimeout(loadOsmArea,300);}
+async function loadOsmArea(){
+ if(state.page!=='map')return;
+ if(osmHidden()){if(state.osm.places.length){state.osm={key:'',places:[],total:0,truncated:false};drawMap();}const c=$('#osm-counter');if(c)c.outerHTML=osmCounterHtml();return;}
+ const bbox=mapViewBbox();if(!bbox)return;
+ const key=bbox.map(n=>n.toFixed(3)).join(',')+'|'+osmCategory();
+ if(key===state.osm.key)return;
+ const seq=++osmSeq;
+ try{
+   // About one dot per 70×70 px of map: readable on a phone and on a big screen.
+   const box=$('.map-paper'),limit=Math.max(30,Math.min(250,Math.round(box.offsetWidth*box.offsetHeight/5000)));
+   const res=await userApi('/api/map/places?bbox='+bbox.map(n=>n.toFixed(5)).join(',')+'&category='+osmCategory()+'&limit='+limit);
+   if(seq!==osmSeq||state.page!=='map')return;
+   state.osm={key,places:res.places||[],total:res.total||0,truncated:!!res.truncated};
+   drawMap();
+   const counter=$('#osm-counter');if(counter)counter.outerHTML=osmCounterHtml();
+ }catch{/* not imported or offline: the map still shows curated places */}
+}
+function osmPinsHtml(origin,w,h,z){
+ if(osmHidden()||!state.osm.places.length)return '';
+ // The server sends the most interesting places first; draw them last so they sit on top.
+ return [...state.osm.places].reverse().map(p=>{
+   const xy=merc(p.lat,p.lon,z),px=xy.x-origin.x+w/2,py=xy.y-origin.y+h/2;
+   if(px<-20||px>w+20||py<-20||py>h+20)return '';
+   const c=OSM_COLORS[p.category]||'#5F6B62',sel=state.mapSelected===p.id;
+   // 26px tap target, 12px visible dot with a white ring
+   return `<button class="osm-pin" data-action="osm-pick" data-id="${html(p.id)}" title="${html(name(p))}" aria-label="${html(name(p))}" style="position:absolute;left:${px}px;top:${py}px;transform:translate(-50%,-50%);width:26px;height:26px;padding:0;border:0;border-radius:50%;cursor:pointer;pointer-events:auto;background:radial-gradient(circle,${c} 0 ${sel?7:5}px,#FFF ${sel?7:5}px ${sel?9.5:7}px,transparent ${sel?10:7.5}px);filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));"></button>`;
+ }).join('');
+}
+function osmCounterHtml(){
+ const th=state.lang==='th';
+ if(state.mapCenter.z<OSM_MIN_ZOOM&&!state.localOnly&&state.category!=='sme'&&!state.nearbyActive)return `<span id="osm-counter" style="color:#5F6B62;font-size:11px;">· ${th?'ซูมเข้าเพื่อดูสถานที่ทั่วไทย':'zoom in for more places'}</span>`;
+ if(osmHidden()||!state.osm.places.length)return '<span id="osm-counter"></span>';
+ return `<span id="osm-counter" style="color:#5F6B62;font-size:11px;">+ ${state.osm.places.length.toLocaleString()}${state.osm.truncated?` / ${state.osm.total.toLocaleString()}`:''} OpenStreetMap</span>`;
+}
+function registerOsmPlace(p){
+ if(getPlace(p.id))return getPlace(p.id);
+ const place={id:p.id,source:'osm',kind:p.kind,en:p.en,th:p.th,locEn:p.locEn,locTh:p.locTh,category:p.category,region:p.region,lat:p.lat,lon:p.lon,
+   visit:'',priceFrom:null,currency:'THB',storyEn:'',storyTh:'',photo:'hero-forest.webp',gallery:[],isSme:false,smeType:'',smeBadge:'',featured:false,
+   // OSM is edited by the public: escape free text and keep only phone characters before Moo's templates print them.
+   openHours:html(p.openingHours||''),isOpen:null,phone:String(p.phone||'').replace(/[^0-9+()\-\s]/g,'').trim().slice(0,30),googlePlaceId:''};
+ OSM_PICKED.set(place.id,place);
+ // Remember picked places on this device; keep every place used in a list, plus the 100 most recent others.
+ const used=new Set([...state.saved,...state.trip]);
+ const keep=[...OSM_PICKED.values()].filter(x=>used.has(x.id)).concat([...OSM_PICKED.values()].filter(x=>!used.has(x.id)).slice(-100));
+ try{localStorage.setItem(OSM_PICKED_KEY,JSON.stringify(keep))}catch{}
+ return place;
+}
+// This device's lists per account (or guest), so OSM places survive a reload and never leak between accounts.
+const osmListsKey=()=>'traval-osm-lists:'+(state.account?.id||'guest');
+function saveOsmLists(){try{localStorage.setItem(osmListsKey(),JSON.stringify({saved:state.saved,trip:state.trip}))}catch{}}
+function mergeOsmLists(serverList,kind){
+ let local=[];try{local=JSON.parse(localStorage.getItem(osmListsKey())||'{}')[kind]||[]}catch{}
+ if(!local.some(isDeviceOsmId))return serverList;
+ const onServer=new Set(serverList);
+ const out=local.filter(id=>onServer.has(id)||(isDeviceOsmId(id)&&getPlace(id))); // local order first
+ for(const id of serverList)if(!out.includes(id))out.push(id);                       // anything new from other devices
+ return out;
+}
+/* ---- end Tommy: OpenStreetMap places ---- */
 
 function sharePlace(id){
  const p=getPlace(id);if(!p)return;
@@ -1479,10 +1470,15 @@ function clusterMapPlaces(list, z){
  return clusters;
 }
 
+// Map image source (one place to change it). Tommy: CARTO now returns "API KEY REQUIRED" images without a key,
+// so the map uses OpenStreetMap's own tiles: free, no key, fine for development and testing. Their usage policy does
+// not allow heavy app traffic, so before launch point this at our own tile server or a provider with a key.
+const MAP_TILE_URL='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 function drawMap(){
  if(state.page!=='map')return;
  const box=$('.map-paper'),tileLayer=$('#tile-layer'),pinLayer=$('#pin-layer');
  if(!box||!tileLayer||!pinLayer)return;
+ scheduleOsmLoad(); // Tommy: fetch OpenStreetMap places for the visible area (debounced)
  const w=box.offsetWidth,h=box.offsetHeight;
  if(!w||!h)return;
 
@@ -1504,9 +1500,7 @@ function drawMap(){
      tile.style.left=(x*256-origin.x+w/2)+'px';
      tile.style.top=(y*256-origin.y+h/2)+'px';
      tile.onerror=()=>{tile.remove()};
-     const sub=['a','b','c','d'][Math.abs(x+y)%4];
-     tile.src=`https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${((x%max)+max)%max}/${y}.png`;
-     tile.onerror=()=>{tile.src=`https://tile.openstreetmap.org/${z}/${((x%max)+max)%max}/${y}.png`;tile.onerror=()=>{tile.remove();};};
+     tile.src=MAP_TILE_URL.replace('{z}',z).replace('{x}',((x%max)+max)%max).replace('{y}',y);
      fragment.append(tile);
    }
  }
@@ -1516,7 +1510,7 @@ function drawMap(){
  const rawList=(state.nearbyActive?filteredPlaces():PLACES.filter(p=>state.region==='all'||p.region===state.region));
  const clustered = clusterMapPlaces(rawList, z);
 
- pinLayer.innerHTML = clustered.map(item=>{
+ pinLayer.innerHTML = tripRouteSvg(origin,w,h,z) /* Tommy: trip route line under the pins */ + osmPinsHtml(origin,w,h,z) /* Tommy: OSM places */ + clustered.map(item=>{
    const xy=merc(item.lat,item.lon,z);
    const px=xy.x-origin.x+w/2, py=xy.y-origin.y+h/2;
    if(px<-50||px>w+50||py<-50||py>h+50) return '';
@@ -1605,6 +1599,16 @@ function initMapDragEvents(){
   window.addEventListener('touchend', endDrag);
 }
 initMapDragEvents();
+// Tommy: zoom gestures on top of Moo's drag code above — two-finger pinch on phones, mouse wheel / trackpad on desktop
+// (frontend/shared/map-gestures.js, zoom only; dragging stays with Moo's code). Same 4–17 limits as the + / − buttons.
+if(window.TravalMapGestures){
+ TravalMapGestures.attach('#map-frame-box',{
+   onZoom(step){
+     state.mapCenter.z=Math.max(4,Math.min(17,state.mapCenter.z+step));
+     drawMap();
+   }
+ });
+}
 
 // Watch GPS live
 if('geolocation' in navigator){
@@ -1634,14 +1638,42 @@ async function dispatch(event){
    case'navigate':navigate(target.dataset.page);break;
    case'place':case'search-place':place(id);break;
    case'back':navigate(state.previous==='welcome'?'discover':state.previous||'discover');break;
+   case'landing-slide':{
+     const idx=Number(target.dataset.index);
+     if(!Number.isNaN(idx)){
+       setLandingSlide(idx);
+       startLandingSlideshow();
+     }
+     break;
+   }
    case'language':state.lang=state.lang==='en'?'th':'en';store();render({keepScroll:true});break;
    case'set-language':state.lang=target.dataset.lang;store();render({keepScroll:true});break;
+   case'clear-search':state.query='';render({keepScroll:true});break;
+   case'province-filter':state.region='all';state.query=target.dataset.province;render({keepScroll:true});break;
    case'category':state.category=target.dataset.category;state.showAll=false;render({keepScroll:true});break;
    case'set-radius':state.nearbyRadius=Number(target.dataset.radius);if(state.nearbyActive)fetchNearby();else render({keepScroll:true});break;
    case'nearby-start':startNearby();break;
    case'nearby-stop':nearbySeq++;state.nearbyBusy=false;state.nearbyActive=false;state.nearbyList=[];render({keepScroll:true});break;
    case'save':savePlace(id);break;
    case'trip-toggle':toggleTrip(id);break;
+   case'osm-pick':{ // Tommy: open an OpenStreetMap place in the normal bottom sheet
+     const p=state.osm.places.find(x=>x.id===id);
+     if(p){registerOsmPlace(p);state.mapSelected=id;state.bottomSheetPlaceId=id;state.bottomSheetState='half';render({keepScroll:true});}
+     break;
+   }
+   case'move-trip':{ // Tommy: the ↑ ↓ buttons on My trips had no handler; route order depends on them
+     const i=state.trip.indexOf(id),j=i+Number(target.dataset.dir);
+     if(i>=0&&j>=0&&j<state.trip.length){[state.trip[i],state.trip[j]]=[state.trip[j],state.trip[i]];persistCollections();render({keepScroll:true});}
+     break;
+   }
+   case'trip-mode': // Tommy: Drive / Walk on the trip route card
+     state.travelMode=target.dataset.mode==='walking'?'walking':'driving';
+     render({keepScroll:true});
+     break;
+   case'trip-on-map': // Tommy: show the trip route on Moo's map
+     fitMapToTrip();
+     navigate('map');
+     break;
    case'directions':externalDirections(id);break;
    case'share-place':sharePlace(id);break;
    case'show-all':state.showAll=!state.showAll;render({keepScroll:true});break;
