@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Unfold · Welcome</title>
+  <title>GoAround · Welcome</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -498,7 +498,7 @@
     <header class="header">
       <a href="login.html" class="brand">
         <span class="brand-mark">U</span>
-        <span class="wordmark">unfold</span>
+        <span class="wordmark">GoAround</span>
       </a>
 
       <nav class="navigation">
@@ -536,7 +536,7 @@
               </svg>
               <span>The Italian Riviera, Italy</span>
             </div>
-            <span class="editorial-label">A World to Unfold</span>
+            <span class="editorial-label">GoAround Thailand</span>
           </div>
         </div>
       </section>
@@ -583,7 +583,7 @@
           </form>
 
           <p class="route-link">
-            New to unfold? <a href="register.html">Create an account</a>
+            New to GoAround? <a href="register.html">Create an account</a>
           </p>
 
           <div class="alternative-separator">
@@ -627,7 +627,7 @@
 
     <!-- Footer -->
     <footer class="footer">
-      <span class="copyright">© 2026 unfold</span>
+      <span class="copyright">© 2026 GoAround</span>
       <div class="legal-links">
         <a href="#" class="legal-link">Privacy policy</a>
         <a href="#" class="legal-link">Terms of use</a>
@@ -637,7 +637,7 @@
     <!-- Interactive Onboarding Modal Component -->
     <div class="modal-overlay" id="onboardingModal">
       <div class="modal-card">
-        <h3 style="font-size: 22px; font-weight: 800; color: #172B23;">Welcome to unfold</h3>
+        <h3 style="font-size: 22px; font-weight: 800; color: #172B23;">Welcome to GoAround</h3>
         <p style="font-size: 14px; color: #5D6B63; margin-top: 6px;">Select your travel interests to personalize your AI suggestions.</p>
         
         <div class="chip-group">
@@ -705,7 +705,7 @@
           <h3 id="socialModalTitle" style="font-size: 20px; font-weight: 800; color: #172B23;">เข้าสู่ระบบด้วย Google</h3>
           <button type="button" onclick="closeSocialModal()" style="border:none;background:transparent;cursor:pointer;font-size:22px;color:#788079;">✕</button>
         </div>
-        <p id="socialModalDesc" style="font-size: 13px; color: #5D6B63; margin-bottom: 16px;">เชื่อมต่อบัญชีเข้ากับ Unfold Traval</p>
+        <p id="socialModalDesc" style="font-size: 13px; color: #5D6B63; margin-bottom: 16px;">เชื่อมต่อบัญชีเข้ากับ GoAround</p>
         <div id="social-error" style="display:none;background:#FFF5F5;border:1px solid #FEB2B2;color:#C53030;padding:10px 12px;border-radius:10px;font-size:12px;margin-bottom:12px;"></div>
 
         <div style="display:grid;gap:14px;">
@@ -730,6 +730,8 @@
 
   </div>
 
+  <!-- Tommy: real Sign in with Google (swaps the Google button when the server has a Client ID) -->
+  <script src="/google-login.js" defer></script>
   <script>
     function showOnboarding() {
       document.getElementById('onboardingModal').style.display = 'flex';

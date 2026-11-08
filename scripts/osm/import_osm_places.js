@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 'use strict';
 /* Import Traval's OpenStreetMap place list (owner: Tommy)
  *

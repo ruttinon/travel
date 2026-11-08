@@ -1,1 +1,76 @@
-{"name":"unfold — Discover differently","short_name":"unfold","description":"Find places worth discovering","start_url":"./index.html","scope":"./","display":"standalone","background_color":"#faf9f6","theme_color":"#061e13","icons":[{"src":"assets/icon-192.png","sizes":"192x192","type":"image/png"},{"src":"assets/icon-512.png","sizes":"512x512","type":"image/png"}]}
+{
+  "name": "GoAround — Travel & Local Discovery",
+  "short_name": "GoAround",
+  "description": "GoAround — แพลตฟอร์มแนะนำสถานที่ท่องเที่ยว วางแผนทริป และค้นหาร้าน Local SME รอบตัวทั่วไทย",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F8F7F3",
+  "theme_color": "#0D2C1C",
+  "categories": [
+    "travel",
+    "navigation",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "สำรวจสถานที่ (Explore)",
+      "short_name": "Explore",
+      "url": "./index.html#discover",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "แผนที่ & รอบตัวฉัน (Around Me)",
+      "short_name": "Map",
+      "url": "./index.html#map",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "ที่บันทึกไว้ (Collection)",
+      "short_name": "Saved",
+      "url": "./index.html#saved",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "ทริปของฉัน (My Trips)",
+      "short_name": "Trips",
+      "url": "./index.html#trip",
+      "icons": [
+        {
+          "src": "assets/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

@@ -1,7 +1,7 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Build Traval's OpenStreetMap place list for Thailand (owner: Tommy).
 
-Dev-only tool ΓÇö the app itself never needs Python. Run it once a month on a fresh
+Dev-only tool — the app itself never needs Python. Run it once a month on a fresh
 Geofabrik download, then import the result with `node scripts/osm/import_osm_places.js`.
 
     pip install osmium shapely
@@ -11,10 +11,10 @@ The raw .pbf (~330 MB) stays out of Git (keep it in _osm-data/); the output (~3 
 can import without Python or the big download.
 
 Keeps only NAMED places a traveller would look for (attractions, temples, museums,
-parks, waterfalls, beaches, viewpoints, markets, caf├⌐s, restaurants, places to stay),
+parks, waterfalls, beaches, viewpoints, markets, cafés, restaurants, places to stay),
 and gives each its province + Traval region from the province boundaries in the file.
 
-Data ┬⌐ OpenStreetMap contributors, ODbL 1.0 ΓÇö show the credit wherever these places appear.
+Data © OpenStreetMap contributors, ODbL 1.0 — show the credit wherever these places appear.
 """
 import gzip, json, re, sys, time
 import osmium
@@ -22,7 +22,7 @@ from shapely import wkb as shapely_wkb
 from shapely.strtree import STRtree
 from shapely.geometry import Point
 
-# ISO 3166-2:TH code ΓåÆ Traval region (Thailand's official six-region system, 77 provinces).
+# ISO 3166-2:TH code → Traval region (Thailand's official six-region system, 77 provinces).
 def region_for(code):
     n = int(code)
     if n in (63, 70, 71, 76, 77): return 'west'
@@ -30,7 +30,7 @@ def region_for(code):
     if 30 <= n <= 49: return 'northeast'
     if 50 <= n <= 58: return 'north'
     if 80 <= n <= 96: return 'south'
-    return 'central'  # 10ΓÇô19, 26, 60ΓÇô62, 64ΓÇô67, 72ΓÇô75
+    return 'central'  # 10–19, 26, 60–62, 64–67, 72–75
 
 # (kind, team category) for the first matching tag. Team categories: nature, food, stay, culture.
 RULES = [
@@ -51,7 +51,7 @@ RULES = [
                  'beach_resort': ('resort', 'stay')}),
     ('boundary', {'national_park': ('national_park', 'nature')}),
 ]
-THAI = re.compile(r'[α╕Ç-α╣┐]')
+THAI = re.compile(r'[฀-๿]')
 
 def classify(tags):
     for key, values in RULES:
@@ -100,7 +100,7 @@ class Collector(osmium.SimpleHandler):
         tags = dict(a.tags)
         is_province = tags.get('boundary') == 'administrative' and tags.get('admin_level') == '4'
         if not is_province and not (classify(tags) and names(tags)):
-            return  # skip buildings, roads, land useΓÇª before the costly geometry step
+            return  # skip buildings, roads, land use… before the costly geometry step
         try:
             geom = shapely_wkb.loads(bytes.fromhex(self.wkb.create_multipolygon(a)))
         except Exception:

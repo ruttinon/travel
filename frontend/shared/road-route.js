@@ -1,4 +1,4 @@
-﻿/* Traval shared tool ΓÇö road route client (owner: Tommy)
+/* Traval shared tool — road route client (owner: Tommy)
  * Gets real road distance, time and the route line from our server (POST /api/routes).
  * If the server or the routing service is unavailable, it falls back to a straight-line
  * estimate using UnfoldTripEngine.km (no second distance formula), marked source:'estimate'.

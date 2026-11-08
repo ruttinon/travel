@@ -1,4 +1,4 @@
-﻿/* Traval shared tool ΓÇö trip cost estimates (owner: Tommy)
+/* Traval shared tool — trip cost estimates (owner: Tommy)
  * One place for taxi-meter and fuel maths so the traveler app, the planner and
  * the server never keep their own copies. Estimates only: no tolls, no surcharges.
  * Loads in the browser as window.TravalCost and in Node via require().
@@ -45,7 +45,7 @@
     return fare + (finite(trafficMinutes) ? Number(trafficMinutes) : 0) * TAXI_METER.trafficPerMinute;
   }
 
-  /** LowΓÇôhigh THB range for one taxi ride: empty roads ΓåÆ rush-hour traffic. */
+  /** Low–high THB range for one taxi ride: empty roads → rush-hour traffic. */
   function taxiFareRange(distanceKm, travelMinutes, trafficFactor = DEFAULT_TRAFFIC_FACTOR) {
     const low = taxiFare(distanceKm, 0);
     if (low === null) return null;
@@ -64,7 +64,7 @@
   /**
    * Cost of a whole trip. Each leg is its own taxi ride (the meter restarts at every stop).
    * legs: [{distanceKm, travelMinutes}], travelMode: 'driving' | 'taxi' | 'walking' | 'transit'
-   * Returns {taxi:{min,max}, fuel, currency} ΓÇö walking costs 0, transit is not estimated (null).
+   * Returns {taxi:{min,max}, fuel, currency} — walking costs 0, transit is not estimated (null).
    */
   function tripCost(legs, travelMode = 'driving', options = {}) {
     const list = Array.isArray(legs) ? legs.filter(l => l && finite(l.distanceKm)) : [];

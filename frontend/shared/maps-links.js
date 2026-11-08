@@ -1,4 +1,4 @@
-﻿/* Traval shared tool ΓÇö Google Maps links (owner: Tommy)
+/* Traval shared tool — Google Maps links (owner: Tommy)
  * Builds "Navigate" and "See on Google Maps" links. These are plain Google Maps URLs:
  * free, no API key, and they do not fall under the Places API storage rules.
  * Rule: use the place's googlePlaceId when we have it, otherwise our own lat/lon.
@@ -13,7 +13,7 @@
 
   const MAX_WAYPOINTS = 9; // Google Maps URL limit for stops between origin and destination
 
-  /** Our travelMode values ΓåÆ Google's travelmode values. */
+  /** Our travelMode values → Google's travelmode values. */
   function googleTravelMode(travelMode) {
     return travelMode === 'walking' ? 'walking' : travelMode === 'transit' ? 'transit' : 'driving';
   }

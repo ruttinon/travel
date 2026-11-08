@@ -1,7 +1,7 @@
-﻿'use strict';
-/* Traval backend ΓÇö OpenStreetMap places for all of Thailand (owner: Tommy)
+'use strict';
+/* Traval backend — OpenStreetMap places for all of Thailand (owner: Tommy)
  *
- * A base layer of ~70,000 named places (temples, attractions, parks, beaches, caf├⌐s, hotelsΓÇª)
+ * A base layer of ~70,000 named places (temples, attractions, parks, beaches, cafés, hotels…)
  * so the map is never empty. Kept apart from the team's own `places` table on purpose:
  *  - its own file, DATA/osm-places.sqlite: backups and doctor.js are unchanged, and a monthly
  *    re-import simply replaces the file;
@@ -9,7 +9,7 @@
  *  - Discover / Home keep showing only curated places; OSM places appear on the map and in search.
  * The browser never downloads all of them: it asks for the visible map area (GET /api/map/places).
  *
- * Data ┬⌐ OpenStreetMap contributors (ODbL 1.0) ΓÇö the map shows this credit.
+ * Data © OpenStreetMap contributors (ODbL 1.0) — the map shows this credit.
  */
 const path = require('node:path');
 const fs = require('node:fs');
@@ -17,7 +17,7 @@ const { DatabaseSync } = require('node:sqlite');
 
 const FILE_NAME = 'osm-places.sqlite';
 const MAX_RESULTS = 400;          // pins per map request
-const GRID = 10;                  // spread results over a GRID├ùGRID grid so one busy street can't hide the rest
+const GRID = 10;                  // spread results over a GRID×GRID grid so one busy street can't hide the rest
 const MIN_SEARCH_CHARS = 2;
 const CATEGORIES = ['nature', 'food', 'stay', 'culture'];
 
@@ -191,7 +191,7 @@ function importFile(dataDir, sourceFile) {
   const meta = out.prepare('INSERT OR REPLACE INTO osm_meta(key,value) VALUES(?,?)');
   meta.run('importedAt', new Date().toISOString());
   meta.run('source', path.basename(sourceFile));
-  meta.run('licence', 'Data ┬⌐ OpenStreetMap contributors, ODbL 1.0');
+  meta.run('licence', 'Data © OpenStreetMap contributors, ODbL 1.0');
   out.exec('COMMIT');
   out.exec('PRAGMA journal_mode=DELETE; VACUUM;');
   out.close();

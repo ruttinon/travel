@@ -1,5 +1,5 @@
-﻿'use strict';
-/* Traval backend ΓÇö road routing (owner: Tommy)
+'use strict';
+/* Traval backend — road routing (owner: Tommy)
  * Asks an OSRM routing server (built on OpenStreetMap) for real road distance, time and
  * the route line. The browser never calls OSRM directly: it calls POST /api/routes, so the
  * routing server can be swapped for our own later by changing one setting.
@@ -18,7 +18,7 @@ const SERVERS = Object.freeze({
   car: list(process.env.TRAVAL_OSRM_CAR, 'https://routing.openstreetmap.de/routed-car,https://router.project-osrm.org'),
   foot: list(process.env.TRAVAL_OSRM_FOOT, 'https://routing.openstreetmap.de/routed-foot')
 });
-// Team travelMode values ΓåÆ OSRM profile. 'transit' has no road route (the browser estimates it).
+// Team travelMode values → OSRM profile. 'transit' has no road route (the browser estimates it).
 const PROFILE_FOR_MODE = Object.freeze({driving: 'car', taxi: 'car', walking: 'foot'});
 const TRAVEL_MODES = Object.freeze(['driving', 'taxi', 'walking', 'transit']);
 
@@ -32,7 +32,7 @@ class RouteError extends Error {
   constructor(status, code, message) { super(message); this.status = status; this.code = code; }
 }
 
-/** Validate [{lat, lon}, ΓÇª] from the request body. */
+/** Validate [{lat, lon}, …] from the request body. */
 function parsePoints(raw) {
   if (!Array.isArray(raw) || raw.length < 2) throw new RouteError(400, 'invalid_points', 'Send at least 2 points');
   if (raw.length > MAX_POINTS) throw new RouteError(400, 'invalid_points', `Send at most ${MAX_POINTS} points`);
@@ -112,7 +112,7 @@ async function roadRoute(points, travelMode, {fetchImpl = fetch, timeoutMs = TIM
 
 /**
  * Handle POST /api/routes. Returns {status, body} so server.js can stay a one-line hook.
- * body: {points: [{lat, lon}, ΓÇª], travelMode}
+ * body: {points: [{lat, lon}, …], travelMode}
  */
 async function handleRouteRequest(body, clientAddress, options) {
   try {

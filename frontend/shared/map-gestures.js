@@ -1,9 +1,9 @@
-﻿/* Traval shared tool ΓÇö map gestures for mouse AND touch (owner: Tommy)
+/* Traval shared tool — map gestures for mouse AND touch (owner: Tommy)
  * One handler for mouse, finger and pen (Pointer Events):
- *   drag with one pointer ΓåÆ pan, two fingers ΓåÆ pinch zoom, mouse wheel / trackpad ΓåÆ zoom.
+ *   drag with one pointer → pan, two fingers → pinch zoom, mouse wheel / trackpad → zoom.
  * It knows nothing about map projection: it only reports movement, the map decides.
  * Delegated on document, so it keeps working after the page re-renders the map element.
- * Browser only: window.TravalMapGestures.attach(selector, handlers) ΓåÆ detach()
+ * Browser only: window.TravalMapGestures.attach(selector, handlers) → detach()
  */
 (function(global) {
   'use strict';
@@ -28,7 +28,7 @@
     style.textContent = `${selector}{touch-action:none;-webkit-user-select:none;user-select:none}`;
     doc.head.appendChild(style);
 
-    const pointers = new Map(); // pointerId ΓåÆ {x, y}
+    const pointers = new Map(); // pointerId → {x, y}
     let frame = null, startX = 0, startY = 0, moved = false, panning = false;
     let pinchBase = 0, wheelAcc = 0, wheelAt = 0;
 
