@@ -1,65 +1,50 @@
-# 🧭 GoAround (เดิม Traval) — สรุปงานอัปเดตฝั่ง Moo (UX/UI, Traveler App, PWA & Rebranding)
+# 🧭 GoAround (เดิม Traval / Unfold) — สรุปงานอัปเดตและคู่มือส่งต่องานฝั่ง Moo
 
-**ผู้รับผิดชอบ:** Moo (Senior UX/UI Engineer & Frontend Developer)  
-**สาขา (Branch):** `moo-frontend`  
-**อัปเดตล่าสุด:** 8 พฤศจิกายน 2026 (v3.1.0 — Rebrand to **GoAround** + Full App/PWA Support + Complete `Traval_Requirements_Business_Updated.txt` Compliance)  
-**สถานะการทดสอบ:** ผ่านครบ **35 / 35 Tests (100% Pass, 0 Fail)**
-
----
-
-## 📢 1. การเปลี่ยนชื่อแบรนด์เป็น `GoAround` ทั้งเว็บไซต์และระบบ App (Platform Rebranding)
-
-ตามข้อตกลงของ **Moo** ได้ทำการเปลี่ยนชื่อแพลตฟอร์มจากเดิม `Traval` / `Unfold` เป็น **`GoAround`** ครบทุกหน้าจอในระบบ โดย**คงชื่อตัวแปร Global API ภายในโค้ด (`window.TravalRoute`, `window.TravalCost`, `window.TravalLinks`, `window.TravalMapGestures`, `UnfoldTripEngine`) และฐานข้อมูล/Cookie เดิมไว้ 100%** เพื่อให้โค้ดและ Automated Tests ของเพื่อนร่วมทีมทุกคนทำงานร่วมกันได้โดยไม่พัง:
-
-1. **หน้าหลักผู้เดินทาง (`frontend/traveler/index.html`, `frontend/traveler/app.js`, `frontend/traveler/manifest.webmanifest`):**
-   - เปลี่ยนโลโก้หลักเป็น **`G. GoAround`** พร้อมชื่อเรื่อง `<title>GoAround — Travel & Local Discovery</title>`
-   - เปลี่ยนข้อความต้อนรับ (`Welcome to GoAround` / `ยินดีต้อนรับสู่ GoAround`), ป้ายกำกับหมวด (`GOAROUND / EXPLORE MAP`, `GOAROUND / YOUR SPACE`, `GOAROUND / ACCOUNT`), ลิขสิทธิ์แผนที่ (`© OpenStreetMap contributors · GoAround`) และข้อความเวลากดแชร์สถานที่ (`| GoAround`)
-2. **หน้าจอของสมาชิกในทีมทั้งหมด (17 ไฟล์ HTML ทั่วทั้งระบบ):**
-   - **ฝั่ง Nine (`frontend/auth/*.html`, `frontend/planner/*.html`):** เปลี่ยนชื่อแบรนด์บนหน้า Login, Register, Profile, Forgot Password และ Smart Trip Planner เป็น **`GoAround`**
-   - **ฝั่ง Prom (`frontend/admin/*.html`, `frontend/business/*.html`):** เปลี่ยนชื่อแบรนด์บนหน้า Admin Control Studio, Moderation, Audit Log และ Business / SME Merchant Portal เป็น **`GoAround`**
-   - **ฝั่ง Tommy (`frontend/poc/google-maps-poc.html`):** อัปเดตหัวข้อหน้า POC เป็น **`GoAround`**
-3. **เอกสาร Requirement (`Traval_Requirements_Business_Updated.txt`):**
-   - อัปเดตชื่อแพลตฟอร์มทั่วทั้งเอกสารเป็น **`GoAround`** เรียบร้อยแล้ว
+> **ผู้รับผิดชอบ:** **Moo** (Senior UX/UI Engineer & Frontend Developer)  
+> **สาขา (Branch):** `moo-frontend`  
+> **วันที่อัปเดตล่าสุด:** **8 พฤศจิกายน 2026 (v3.1.0)**  
+> **ผลการทดสอบอัตโนมัติ (`npm test`):** ผ่านครบ **35 / 35 Tests (100% Pass, 0 Fail)**
 
 ---
 
-## 📲 2. การรองรับรูปแบบ App / PWA เต็มรูปแบบ ตาม `Traval_Requirements_Business_Updated.txt`
+## 📅 1. ไทม์ไลน์การอัปเดตของ Moo (Update History & Dates)
 
-1. **Progressive Web App (PWA Standalone Mode) (`frontend/traveler/manifest.webmanifest`, `frontend/traveler/sw.js`, `frontend/traveler/index.html`):**
-   - ตั้งค่า `name: "GoAround — Travel & Local Discovery"`, `short_name: "GoAround"`, `display: "standalone"`, `orientation: "portrait-primary"`, `theme_color: "#0D2C1C"`, `background_color: "#F8F7F3"`
-   - เพิ่ม **App Shortcuts** สำหรับกดค้างที่ไอคอนแอปบนมือถือเพื่อเข้าหน้า **Explore**, **Around Me Map**, **Saved Collection** และ **My Trips** ได้ทันที
-   - ลงทะเบียน Service Worker (`./sw.js` รุ่น `goaround-v3.0-app`) อัตโนมัติเมื่อเปิดผ่าน HTTP/HTTPS พร้อมดักจับ `beforeinstallprompt` เพื่อติดตั้งลงหน้าจอมือถือได้ในปุ่มเดียว (`📲 ติดตั้งแอป GoAround`)
-   - รองรับ `env(safe-area-inset-top)` และ `env(safe-area-inset-bottom)` สำหรับหน้าจอมือถือไร้ขอบ (Notch / Dynamic Island) และแถบเมนูด้านล่าง (`bottom-nav`) สำหรับใช้งานมือเดียว (One-handed Mobile Navigation)
-2. **🤖 ระบบที่ปรึกษาการท่องเที่ยวอัจฉริยะ (`GoAround AI Travel Advisor` — Requirement 1.9):**
-   - เพิ่มปุ่ม **🤖 AI แนะนำทริป (`AI Advisor`)** บนแถบ Header ด้านบน, แถบเครื่องมือด่วนหน้าสำรวจ (`.explore-quick-toolbar`), หน้าเมนูหลัก และหน้าโปรไฟล์
-   - รองรับการเลือกโจทย์ด่วน (ร้านชุมชน SME งบประหยัด ≤300฿, ของกินท้องถิ่น & คาเฟ่, ธรรมชาติ & จุดชมวิว 6 ภาค, Hidden Gems คะแนน 4.8+) และการพิมพ์ค้นหาจังหวัด/งบประมาณ/สไตล์เป็นภาษาไทยและอังกฤษ
-   - **แยกการแนะนำตามความตรงกับความต้องการจริง (Organic Matches) ออกจากพื้นที่โฆษณา (`Sponsored Placements`) อย่างชัดเจน** ตามข้อกำหนดใน `Traval_Requirements_Business_Updated.txt`
-   - มีปุ่ม **⚡ เพิ่มทั้งหมดเข้าทริปของฉัน (`Add All to My Trip`)** และปุ่มกดเพิ่มทีละสถานที่เข้าทริปได้ทันที
-3. **🚗🚶🚆 รองรับการคำนวณเส้นทางครบ 3 รูปแบบ (`Driving` / `Walking` / `Transit` — Requirement 1.8):**
-   - อัปเกรดการ์ดคำนวณเส้นทางในหน้า My Trips ให้สลับได้ครบทั้ง **รถยนต์ (`Drive`)**, **เดิน (`Walk`)**, และ **ขนส่งสาธารณะ (`Transit`)** พร้อมส่งโหมดการเดินทางไปยังลิงก์นำทาง Google Maps (`travelmode=driving|walking|transit`)
-4. **🏪 ศูนย์รวมบริการแอป & ปุ่มลงทะเบียนร้านค้าแยกชัดเจน (`GoAround App & Ecosystem Hub` — Requirement 3.1):**
-   - เพิ่มโซน **GoAround App & Ecosystem Hub** ในหน้าโปรไฟล์และเมนูหลัก โดยมีปุ่ม:
-     - **📲 ติดตั้งแอป GoAround (Install GoAround App)**
-     - **🤖 AI Travel Advisor**
-     - **🗺️ Smart Trip Planner (`/planner.html`)**
-     - **🏪 ลงทะเบียนร้านค้า / SME Portal (`Register as a Business` → `/business.html`)** แยกจากการใช้งานของผู้ใช้ทั่วไปอย่างชัดเจนตาม Requirement 3.1
+| วันที่อัปเดต | เวอร์ชัน | รายละเอียดงานที่ทำสำเร็จ |
+| :--- | :---: | :--- |
+| **1–2 พ.ย. 2026** | **v2.8 – v2.9** | ออกแบบระบบสองภาษา (TH/EN Typography: Prompt + Inter), ปรับปรุงดีไซน์การ์ดสถานที่, สร้างระบบรีวิวของสถานที่, โมดอลแจ้งเตือนภัยนักท่องเที่ยว (Safety Alerts), โมดอลแนะนำการใช้งาน (Onboarding), แถบเรื่องราวชุมชน (Local Stories Rail) และระบบเลือกหลายสถานที่ใน Collection เพื่อส่งเข้าทริป |
+| **7–8 พ.ย. 2026 (เช้า)** | **v2.9.2** | เชื่อมต่อระบบแผนที่และการซูม/ลาก (`TravalMapGestures`), เส้นทางถนนจริง (`TravalRoute`), คำนวณค่าแท็กซี่มิเตอร์และค่าน้ำมัน (`TravalCost`), ลิงก์นำทาง Google Maps (`TravalLinks`) ของ **Tommy** และระบบนำเข้าพิกัด OpenStreetMap (`osm_places`) เข้ากับหน้า Traveler App |
+| **8 พ.ย. 2026 (บ่าย)** | **v3.0.0** | เชื่อม API หลังบ้านของ **Prom** ครบทุกจุด (`GET/POST /api/safety/reports`, `PUT /api/places/:id/my-review`), เพิ่มชุดแอนิเมชัน **GSAP 3.15.0 Suite** (`ScrollSmoother`, `ScrollTrigger`, `ScrollToPlugin`, `SplitText`, `Flip` Grid-to-Detail) และขยายฐานข้อมูลสถานที่ท่องเที่ยวไทยครบ **6 ภูมิภาค (27 แห่ง / 24 จังหวัด)** |
+| **8 พ.ย. 2026 (ล่าสุด)** | **v3.1.0** | **Rebrand ทั้งเว็บไซต์เป็น `GoAround`** (ครบทั้ง 18 หน้า HTML), อัปเกรดระบบรองรับ **App Mode (PWA Standalone)** ตาม `Traval_Requirements_Business_Updated.txt`, สร้างโมดอล **🤖 GoAround AI Travel Advisor**, เพิ่มโหมดเดินทางครบ 3 รูปแบบ (`Drive` / `Walk` / `Transit`) และสร้างศูนย์รวมบริการ **GoAround App & Ecosystem Hub** |
 
 ---
 
-## 🗺️ 3. ฐานข้อมูลสถานที่ท่องเที่ยวและร้านค้าชุมชนครบทั้ง 6 ภูมิภาคของไทย (27 แห่ง / 24 จังหวัด)
+## 🛠️ 2. สรุปสิ่งที่ Moo ทำไปทั้งหมด (Complete Work Breakdown)
 
-อัปเกรด `SAMPLE_PLACES` ใน `frontend/traveler/app.js` ให้ครอบคลุมทั้ง 6 ภูมิภาคของประเทศไทย พร้อมพิกัด `lat`/`lon` จริงตามมาตรฐานของ Tommy (`googlePlaceId: ''`):
-- **ภาคเหนือ (`north` — 7 แห่ง):** เชียงใหม่, เชียงราย, น่าน, แม่ฮ่องสอน, ลำปาง, สุโขทัย
-- **กรุงเทพฯ และภาคกลาง (`central` — 4 แห่ง):** กรุงเทพฯ, พระนครศรีอยุธยา, สมุทรสงคราม
-- **ภาคใต้ (`south` — 4 แห่ง):** ภูเก็ต, สุราษฎร์ธานี, กระบี่, สงขลา
-- **ภาคอีสาน (`northeast` — 4 แห่ง):** ขอนแก่น, เลย, อุบลราชธานี, นครราชสีมา
-- **ภาคตะวันออก (`east` — 4 แห่ง):** ชลบุรี, จันทบุรี, ตราด, ระยอง
-- **ภาคตะวันตก (`west` — 4 แห่ง):** กาญจนบุรี, เพชรบุรี, ราชบุรี, ประจวบคีรีขันธ์
+1. **การเปลี่ยนชื่อแบรนด์เป็น `GoAround` ทั้งเว็บไซต์และระบบ App:**
+   - เปลี่ยนโลโก้หลักเป็น **`G. GoAround`** และอัปเดตชื่อแบรนด์บนทุกหน้าเว็บ (Traveler App, Auth, Trip Planner, Business SME Portal, Admin Studio, Maps POC รวม 18 ไฟล์ HTML) และใน `Traval_Requirements_Business_Updated.txt`
+   - คงชื่อตัวแปร Global API (`window.TravalRoute`, `window.TravalCost`, `window.TravalLinks`, `window.TravalMapGestures`, `UnfoldTripEngine`) และฐานข้อมูล/Cookie เดิมไว้ 100% เพื่อไม่ให้กระทบโค้ดและชุดทดสอบของเพื่อนในทีม
+2. **รองรับรูปแบบ App (PWA Standalone Mode):**
+   - อัปเกรด `manifest.webmanifest`, `sw.js` (`goaround-v3.0-app`), และ `index.html` ให้ติดตั้งเป็นแอปมือถือแบบเต็มจอ (`display: standalone`) พร้อม App Shortcuts 4 หน้าหลัก, รองรับ `safe-area-inset` และมีปุ่ม **`📲 ติดตั้งแอป GoAround`**
+3. **🤖 GoAround AI Travel Advisor (Requirement 1.9):**
+   - โมดอลผู้ช่วยแนะนำสถานที่ท่องเที่ยวและร้านค้าชุมชนตามงบประมาณ จังหวัด และสไตล์ ทั้งภาษาไทยและอังกฤษ
+   - แยกรายการแนะนำที่ตรงกับความต้องการจริง (**Organic Matches**) ออกจากพื้นที่โฆษณา (**Sponsored Placements**) อย่างชัดเจน พร้อมปุ่มกดเพิ่มเข้าทริปทันที
+4. **🚗🚶🚆 คำนวณเส้นทางครบ 3 โหมด (Requirement 1.8):**
+   - รองรับการสลับโหมดเดินทางครบทั้ง **รถยนต์ (`Drive`)**, **เดิน (`Walk`)**, และ **ขนส่งสาธารณะ (`Transit`)** พร้อมส่งค่า `travelmode` ไปยังลิงก์นำทาง Google Maps
+5. **🏪 ศูนย์รวมบริการแอป & ปุ่มลงทะเบียนร้านค้า SME (Requirement 3.1):**
+   - เพิ่มโซน **GoAround App & Ecosystem Hub** ในหน้าโปรไฟล์และเมนูหลัก มีปุ่ม **`🏪 ลงทะเบียนร้านค้า / SME Portal (Register as a Business)`** แยกจากการใช้งานของผู้ใช้ทั่วไปอย่างชัดเจน
+6. **🗺️ ฐานข้อมูลสถานที่ท่องเที่ยวครบ 6 ภูมิภาคของไทย (27 แห่ง / 24 จังหวัด):**
+   - ครอบคลุมภาคเหนือ (7), ภาคกลางและกรุงเทพฯ (4), ภาคใต้ (4), ภาคอีสาน (4), ภาคตะวันออก (4), และภาคตะวันตก (4) พร้อมร้าน Local SME 16 แห่ง
 
 ---
 
-## ✅ 4. ผลการตรวจสอบคุณภาพ (Verification & Test Suite)
+## 🤝 3. สิ่งที่ส่งต่อและแนวทางต่อยอดกับเพื่อนในทีม (Handoff & Integration Guide)
 
-- **Syntax & Runtime Check:** `node --check frontend/traveler/app.js` และทดสอบเรนเดอร์ DOM จริงผ่าน JSDOM (ทุกหน้าและทุก Modal ทำงานสมบูรณ์ 0 Error)
-- **Automated Test Suite (`npm test`):** ผ่านครบ **35 / 35 Tests (100% Pass, 0 Fail)**
-- **Backup ล่าสุด:** ซิงก์ลง `_backup/moo-backup-latest/` และ `_backup/moo-backup-latest.zip` เรียบร้อยแล้ว
+- **ส่งต่อให้ Tommy (Maps, Routing, Cost & OSM):**
+  - เชื่อม `TravalRoute`, `TravalCost`, `TravalLinks`, `TravalMapGestures` และ `/api/osm/places` ครบ 100% แล้ว
+  - สถานที่ทั้ง 27 แห่งตั้งค่า `googlePlaceId: ''` และมีพิกัด `lat`/`lon` จริงพร้อมใช้งาน หาก Tommy มี Place ID จริงสามารถใส่เพิ่มได้ทันที และสามารถต่อยอดสูตรคำนวณค่าโดยสารโหมด `transit` ใน `travel-cost.js` ได้เลย
+- **ส่งต่อให้ Prom (Backend, Admin CMS, Moderation & Business Portal):**
+  - เชื่อม `GET/POST /api/safety/reports` และ `PUT /api/places/:id/my-review` เข้ากับ Backend ของ Prom ครบแล้ว เมื่อ Admin อนุมัติรีวิวหรือรายงานจุดเสี่ยงใน `/admin.html` / `/moderation.html` ข้อมูลจะแสดงบนหน้าแอปของ Moo ทันที
+  - เชื่อมปุ่ม **Register as a Business / SME Portal** จากหน้าโปรไฟล์และเมนูหลักไปยัง `/business.html` ของ Prom เรียบร้อยแล้ว
+- **ส่งต่อให้ Nine (Auth, Profile & Smart Trip Planner):**
+  - เชื่อมระบบ Login/Register/Logout-All และซิงก์ Collection/Trip ผ่าน `/api/me/collections` เรียบร้อยแล้ว
+  - เชื่อมการส่งรายการสถานที่ที่เลือกจากหน้า Collection (`traval-selected-plan-stops` และ `/planner.html?places=...`) ไปยังหน้า `/planner.html` ของ Nine พร้อมใช้งานต่อยอดจัดตารางทริปรายวันได้ทันที
