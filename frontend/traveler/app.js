@@ -1205,9 +1205,11 @@ function actionBtn(action,content,extra='',attributes=''){
 }
 
 function brand(){
- return `<button class="brand" data-action="navigate" data-page="welcome" aria-label="GoAround - ${html(t('homeLink'))}">
-  <span class="brand-mark">G<span class="brand-dot">.</span></span>
-  <span class="brand-full" style="font-family:var(--font)">GoAround</span>
+ return `<button class="brand v26-brand" data-action="navigate" data-page="welcome" aria-label="GoAround - ${html(t('homeLink'))}">
+  <span class="v26-brand-stack">
+    <span class="brand-mark v26-brand-serif">GoAround<i class="brand-dot v26-olive-dot">.</i></span>
+    <small class="v26-brand-sub">${state.lang==='th'?'TRAVEL & LOCAL DISCOVERY':'THE ART OF DISCOVERY'}</small>
+  </span>
  </button>`;
 }
 
@@ -1345,7 +1347,7 @@ function categoryButtons(){
  return `<div class="category-list" role="group" aria-label="Category">
   ${CATEGORIES.map(cat=>`
     <button class="category-pill ${state.category===cat?'active':''} ${cat==='sme'?'category-sme-pill':''}" data-action="category" data-category="${cat}" aria-pressed="${state.category===cat}">
-      ${ico(({all:'spark',sme:'star',nature:'tree',food:'coffee',stay:'bed',culture:'camera'})[cat],16)}
+      ${cat==='all'?'':ico(({sme:'star',nature:'tree',food:'coffee',stay:'bed',culture:'camera'})[cat],16)}
       <span>${html(t(cat))}</span>
     </button>
   `).join('')}
@@ -1382,31 +1384,33 @@ function placeCard(p,compact=false){
  const dist = state.nearbyPoint && p.lat && p.lon ? calcDistance(state.nearbyPoint.lat, state.nearbyPoint.lon, p.lat, p.lon) : p.distanceKm;
  const planned=state.trip.includes(p.id);
  const secMeta = `${loc(p)}${dist!=null?` · ${String(dist)} ${t('distKm')}`:''}${p.rating?` · ★ ${p.rating}${p.reviewsCount?` (${p.reviewsCount})`:''}`:''}`;
- return `<article class="place-card item ${compact?'compact':''}" data-place="${p.id}" data-title="${html(name(p))}" data-secondary="${html(secMeta)}" data-text="${html(story(p))}">
-  <div class="place-picture">
+ const topBadge = sponsored(p) ? t('sponsored') : p.isSme ? (p.smeBadge || '★ Local SME') : 'Published';
+ return `<article class="place-card v26-owner-tile item ${compact?'compact':''}" data-place="${p.id}" data-title="${html(name(p))}" data-secondary="${html(secMeta)}" data-text="${html(story(p))}">
+  <div class="place-picture v26-tile-image">
     <img src="${photo(p.photo)}" alt="${html(p.en||p.th||'')}" loading="lazy" onerror="this.onerror=null;this.src='assets/hero-forest.webp'"/>
-    <span class="card-gradient"></span>
     <button class="place-card-link" data-action="flip-item" data-id="${p.id}" aria-label="${html(t('view'))}: ${html(name(p))}"></button>
-    ${badgeRow(p)}
+    <div class="v26-tile-status">
+      <span class="v26-tag ${sponsored(p)?'sponsored':p.isSme?'sme':'published'}">${html(topBadge)}</span>
+    </div>
     ${heartButton(p)}
-    <span class="card-caption">
-      <b>${html(name(p))}</b>
-      <small>${html(loc(p))}${dist!=null?` · ${html(String(dist))} ${html(t('distKm'))}`:''}${p.rating?` · ★ ${p.rating}${p.reviewsCount?` (${p.reviewsCount})`:''}`:''}</small>
-    </span>
   </div>
-  ${compact?'':`
-  <div class="place-card-body">
-    <div class="place-card-meta">
-      <span>${html(catLabel(p))}</span>
-      <span class="hours-${hoursStatus(p)}">${html(hoursLabel(p))}</span>
-      ${p.priceFrom!=null?`<span>${html(t('startingFrom'))} ฿${Number(p.priceFrom).toLocaleString()}</span>`:''}
+  <div class="v26-tile-content">
+    <strong class="v26-tile-title" data-action="place" data-id="${p.id}">${html(name(p))}</strong>
+    <p class="v26-tile-loc">+ ${html(loc(p))}${dist!=null?` · ${html(String(dist))} ${html(t('distKm'))}`:''}${p.rating?` · ★ ${p.rating}`:''}</p>
+    ${compact?'':`
+    <div class="v26-tile-meta">
+      <span>${html(catLabel(p))} · <em class="hours-${hoursStatus(p)}" style="font-style:normal;">${html(hoursLabel(p))}</em></span>
+      <span>${p.priceFrom!=null?`${state.lang==='th'?'เริ่มต้น':'From'} ${Number(p.priceFrom).toLocaleString()} THB`:(state.lang==='th'?'เข้าชมฟรี':'Free entry')}</span>
     </div>
-    <div class="place-card-actions">
-      <button type="button" class="${state.saved.includes(p.id)?'on':''}" data-action="save" data-id="${p.id}" aria-label="${html(t('save'))}">${ico('heart',14)} <span>${html(t(state.saved.includes(p.id)?'unsave':'save'))}</span></button>
-      <button type="button" class="${planned?'on':''}" data-action="trip-toggle" data-id="${p.id}" aria-label="${html(t('addTrip'))}">${ico(planned?'check':'plus',14)} <span>${html(t(planned?'removeTrip':'addTrip'))}</span></button>
-      <button type="button" class="btn-dir" data-action="directions" data-id="${p.id}" aria-label="${html(t('route'))}">${ico('route',14)} <span>${html(t('route'))}</span></button>
-    </div>
-  </div>`}
+    <button type="button" class="v26-propose-btn" data-action="place" data-id="${p.id}">
+      ${state.lang==='th'?'ดูรายละเอียดสถานที่ →':'Explore place details →'}
+    </button>
+    <div class="place-card-actions v26-tile-actions">
+      <button type="button" class="${state.saved.includes(p.id)?'on':''}" data-action="save" data-id="${p.id}" aria-label="${html(t('save'))}">${ico('heart',13)} <span>${html(t(state.saved.includes(p.id)?'unsave':'save'))}</span></button>
+      <button type="button" class="${planned?'on':''}" data-action="trip-toggle" data-id="${p.id}" aria-label="${html(t('addTrip'))}">${ico(planned?'check':'plus',13)} <span>${html(t(planned?'removeTrip':'addTrip'))}</span></button>
+      <button type="button" class="btn-dir" data-action="directions" data-id="${p.id}" aria-label="${html(t('route'))}">${ico('route',13)} <span>${html(t('route'))}</span></button>
+    </div>`}
+  </div>
  </article>`;
 }
 
@@ -1536,24 +1540,37 @@ function discover(){
   <div id="smooth-wrapper">
   <div id="smooth-content">
   <main class="content-area">
-    <div class="explore-heading" data-speed="clamp(0.85)">
+    <div class="explore-heading v26-page-heading" data-speed="clamp(0.85)">
       <div class="explore-heading-main">
-        <p class="mini-overline explore-eyebrow">${html(t('exploreEyebrow'))}</p>
-        <h1 class="split-text-target">${html(t('exploreTitle').replace(/\n/g, ' '))}</h1>
+        <p class="mini-overline explore-eyebrow">GOAROUND / ${html(t('exploreEyebrow'))}</p>
+        <h1 class="split-text-target v26-serif-h1">${html(t('exploreTitle').replace(/\n/g, ' '))}<span class="v26-olive-dot">.</span></h1>
         <p class="explore-quiet">${html(t('exploreIntro'))}</p>
       </div>
       <div class="explore-quick-toolbar" role="toolbar" aria-label="Quick Navigation">
-        <button type="button" id="btn-open-ai-toolbar" class="explore-pill-btn" data-action="open-ai">
-          <span>🤖 ${state.lang==='th'?'AI แนะนำทริป':'AI Advisor'}</span>
-        </button>
         <button type="button" id="btn-jump-pin" class="explore-pill-btn" data-action="gsap-jump" data-target="#pinned-shape">
-          <span>📌 ${state.lang==='th'?'ไปยังจุดตรึง (Pin)':'Jump to Pin'}</span>
+          <span>${state.lang==='th'?'สถานที่ลับน่าไป':'Hidden gems'}</span>
         </button>
         <button type="button" id="btn-jump-gallery" class="explore-pill-btn explore-pill-highlight" data-action="gsap-jump" data-target="#gallery-section">
-          <span>🖼️ ${state.lang==='th'?'ไปยังตาราง Flip Grid':'Jump to Flip Grid'}</span>
+          <span>${state.lang==='th'?'สถานที่น่าสนใจ':'Popular places'}</span>
         </button>
       </div>
     </div>
+
+    <!-- v2.6 Editorial Hero Banner & 4-KPI Summary Cards (from docs/screenshots) -->
+    <section class="v26-owner-hero" aria-label="Editorial highlight">
+      <div class="v26-owner-hero-overlay">
+        <span>${state.lang==='th'?'YOUR JOURNEY. LOCAL THAI HERITAGE.':'YOUR PLACES. THEIR NEXT DISCOVERY.'}</span>
+        <h2>${state.lang==='th'?'สถานที่และร้านค้าชุมชนที่คู่ควรแก่การค้นพบ.':'Great places deserve<br/>to be found.'}</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="button" class="v26-sage-btn" data-action="open-ai">
+            ${state.lang==='th'?'ให้ AI แนะนำทริป ↗':'Ask AI Advisor ↗'}
+          </button>
+          <button type="button" class="v26-ghost-light-btn" data-action="navigate" data-page="map">
+            ${state.lang==='th'?'สำรวจแผนที่รอบตัว ↗':'Open live map ↗'}
+          </button>
+        </div>
+      </div>
+    </section>
 
     ${state.onboarding?`
       <aside class="onboarding-card" role="dialog" aria-label="${html(t('onboardTitle'))}">
@@ -1569,6 +1586,7 @@ function discover(){
       <span aria-hidden="true">${ico('search',18)}</span>
       <input id="home-query" type="search" placeholder="${html(t('search'))}" value="${html(state.query)}" aria-label="${html(t('search'))}" autocomplete="off"/>
       ${state.query?`<button type="button" class="clear-query" data-action="clear-search" aria-label="${html(t('clear'))}">✕</button>`:''}<button class="search-go" type="submit">${html(t('searchShort'))}</button>
+      <div id="home-suggest" class="home-suggest" role="listbox" hidden></div>
     </form>
 
     ${categoryButtons()}
@@ -1589,7 +1607,7 @@ function discover(){
     ${!state.nearbyActive && (!state.category || state.category==='all' || state.category==='sme') ? `
       <section style="margin-bottom:28px;">
         <div class="section-line">
-          <h2>📖 ${html(t('communityStories'))}</h2>
+          <h2>${html(t('communityStories'))}</h2>
           <small class="spotlight-sub">${html(t('communityStoriesSub'))}</small>
         </div>
         <div class="local-stories-rail">
@@ -1617,7 +1635,7 @@ function discover(){
     ${!state.nearbyActive && !state.query && PLACES.filter(p=>p.rating>=4.7).length ? `
       <section class="spotlight-section" style="margin-bottom:28px;">
         <div class="section-line">
-          <h2>✨ ${html(t('recommendedForYou'))}</h2>
+          <h2>${html(t('recommendedForYou'))}</h2>
           <small class="spotlight-sub">${state.lang==='th'?'คัดสรรสถานที่คะแนนรีวิวสูงและเป็นที่ประทับใจ':'Curated high-rated gems with excellent reviews'}</small>
         </div>
         <div class="featured-rail">
@@ -1630,7 +1648,7 @@ function discover(){
     ${!state.nearbyActive && smePlaces.length && (!state.category || state.category==='all' || state.category==='sme') ? `
       <section style="margin-bottom:34px;">
         <div class="section-line">
-          <h2><span class="spotlight-star">★</span> ${html(t('spotlightTitle'))}</h2>
+          <h2>${html(t('spotlightTitle'))}</h2>
           <small class="spotlight-sub">${html(t('spotlightSub'))}</small>
         </div>
         <div style="display:flex;gap:16px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none;">
@@ -3816,6 +3834,41 @@ document.addEventListener('submit', async event => {
 document.addEventListener('click',dispatch);
 document.addEventListener('input',onInput);
 document.addEventListener('change',onChange);
+
+/* ---- Moo: Explore search bar suggestions (recommended places dropdown) ---- */
+function homeSuggestItems(){
+  const q=state.query.trim();
+  if(q) return filteredPlaces().slice(0,6);
+  const picks=PLACES.filter(p=>!sponsored(p)&&(Number(p.rating||0)>=4.7||p.isSme));
+  return (picks.length?picks:PLACES).slice(0,6);
+}
+function showHomeSuggest(){
+  const box=$('#home-suggest');
+  if(!box) return;
+  const th=state.lang==='th', q=state.query.trim(), items=homeSuggestItems();
+  box.innerHTML=`
+    <div class="home-suggest-head">${q?(th?`ผลการค้นหา “${html(q)}”`:`Results for “${html(q)}”`):(th?'สถานที่แนะนำ':'Recommended places')}</div>
+    ${items.length?items.map(p=>`
+      <button type="button" class="home-suggest-item" role="option" data-action="search-place" data-id="${p.id}">
+        <img src="${photo(p.photo)}" alt="" loading="lazy" onerror="this.onerror=null;this.src='assets/hero-forest.webp'"/>
+        <span class="home-suggest-text">
+          <strong>${html(name(p))}</strong>
+          <small>${html(loc(p))}${p.rating?` · ★ ${p.rating}`:''}${p.isSme?` · ${th?'ร้านชุมชน':'Local SME'}`:''}</small>
+        </span>
+        <span class="home-suggest-go">${th?'ดู':'View'} →</span>
+      </button>`).join(''):`<div class="home-suggest-empty">${html(t('nothing'))}</div>`}`;
+  box.hidden=false;
+}
+function hideHomeSuggest(){const box=$('#home-suggest');if(box)box.hidden=true;}
+document.addEventListener('focusin',e=>{if(e.target.id==='home-query')showHomeSuggest();});
+document.addEventListener('click',e=>{if(!e.target.closest('#home-search'))hideHomeSuggest();});
+document.addEventListener('submit',e=>{
+  if(e.target.id!=='home-search') return;
+  hideHomeSuggest();
+  $('#home-query')?.blur();
+  $('#gallery-section')?.scrollIntoView({behavior:'smooth',block:'start'});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hideHomeSuggest();});
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     if(activeFlipItem){hideFlipDetails();return;}
