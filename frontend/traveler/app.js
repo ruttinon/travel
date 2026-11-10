@@ -976,6 +976,7 @@ const ONBOARD_KEY='traval-moo-onboard-v3';
 
 const state={
  page:'welcome',previous:'discover',lang:stored.lang==='th'?'th':'en',category:'all',query:'',
+ theme:(localStorage.getItem('traval-theme')==='dark'?'dark':'light'),
  searchOpen:false,menuOpen:false,showAll:false,region:'all',
  saved:Array.isArray(stored.saved)?stored.saved.filter(x=>getPlace(x)):['sme-mae-kampong-coffee','sme-talad-noi-noodle'],
  trip:Array.isArray(stored.trip)?stored.trip.filter(x=>getPlace(x)):[],
@@ -1040,15 +1041,13 @@ const story=p=>state.lang==='th'?(p.storyTh||p.storyEn):p.storyEn;
 const photo=p=>typeof p==='string' && p.startsWith('/uploads/')?p:`assets/${p||'hero-forest.webp'}`;
 
 function resolvedTheme(){
- if(state.theme==='light')return'light';
- if(state.theme==='dark')return'dark';
- return window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+ return state.theme==='dark'?'dark':'light';
 }
 function applyTheme(){
  const res=resolvedTheme();
  document.documentElement.setAttribute('data-theme',res);
  const metaTheme=document.querySelector('meta[name="theme-color"]');
- if(metaTheme)metaTheme.setAttribute('content',res==='dark'?'#111418':'#0D2C1C');
+ if(metaTheme)metaTheme.setAttribute('content',res==='dark'?'#0D1117':'#143B2A');
 }
 if(window.matchMedia){
  window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{
@@ -3453,12 +3452,13 @@ async function dispatch(event){
     break;
    }
    case'toggle-theme':{
-   const cycle={system:'light',light:'dark',dark:'system'};
-   state.theme=cycle[state.theme]||'light';
-   store();render({keepScroll:true});
-   const msg=state.lang==='th'?(state.theme==='system'?'ธีมตามอุปกรณ์':state.theme==='dark'?'โหมดมืด':'โหมดสว่าง'):(state.theme==='system'?'System theme':'Dark'===state.theme?'Dark mode':'Light mode');
-   toast(msg);break;
-  }
+    state.theme=state.theme==='dark'?'light':'dark';
+    localStorage.setItem('traval-theme',state.theme);
+    applyTheme();
+    store();render({keepScroll:true});
+    const msg=state.lang==='th'?(state.theme==='dark'?'โหมดมืด':'โหมดสว่าง'):(state.theme==='dark'?'Dark mode':'Light mode');
+    toast(msg);break;
+   }
    case'language':state.lang=state.lang==='en'?'th':'en';store();render({keepScroll:true});break;
    case'set-language':state.lang=target.dataset.lang;store();render({keepScroll:true});break;
    case'clear-search':state.query='';render({keepScroll:true});$('#home-query')?.focus();break;
@@ -3896,6 +3896,7 @@ else if(location.hash==='#profile') {
 }
 else if(['welcome','discover','map','saved','trip'].includes(location.hash.slice(1))) state.page=location.hash.slice(1);
 
+applyTheme();
 render();
 refreshSession();
 initRealData();

@@ -3603,14 +3603,44 @@ html:not([data-theme="dark"]) #smooth-content {
   color: #143B2A;
 }
 
-/* Top Site Header matching trip-planner.png & owner-dashboard.png */
-html:not([data-theme="dark"]) .site-header {
-  height: 82px;
-  max-width: 100%;
+/* Deep Obsidian Canvas across all pages (Dark Mode) — Same Scale & Structure */
+html[data-theme="dark"] body,
+html[data-theme="dark"] .app-shell,
+html[data-theme="dark"] .detail-page,
+html[data-theme="dark"] #smooth-wrapper,
+html[data-theme="dark"] #smooth-content {
+  background-color: #0D1117 !important;
+  color: #F0F6FC !important;
+}
+
+/* Top Site Header matching trip-planner.png & owner-dashboard.png (Unified Scale & Sizing in Both Themes) */
+.site-header {
+  height: 82px !important;
+  max-width: 100% !important;
+  padding: 0 clamp(20px, 4.4vw, 68px) !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+}
+html:not([data-theme="dark"]) .site-header,
+html[data-theme="light"] .site-header {
   background: rgba(251, 251, 246, 0.94) !important;
   border-bottom: 1px solid #E6E8E2 !important;
-  box-shadow: none !important;
-  padding: 0 clamp(20px, 4.4vw, 68px);
+}
+html[data-theme="dark"] .site-header {
+  background: rgba(22, 27, 34, 0.95) !important;
+  border-bottom: 1px solid #30363D !important;
+}
+body.gsap-smoother-on #smooth-content {
+  padding-top: 82px !important;
+}
+@media (max-width: 700px) {
+  .site-header {
+    height: 72px !important;
+    padding: 0 16px !important;
+  }
+  body.gsap-smoother-on #smooth-content {
+    padding-top: 72px !important;
+  }
 }
 
 /* Serif Brand Wordmark + Olive Dot + Subcaption */
@@ -4061,7 +4091,7 @@ html[lang="th"] .v26-owner-hero-overlay h2 {
   }
 }
 
-/* Preserve Dark Mode support cleanly */
+/* Preserve Dark Mode support cleanly — Exact same scale, dimensions & proportions as light mode */
 html[data-theme="dark"] .v26-kpi-card,
 html[data-theme="dark"] .place-card.v26-owner-tile,
 html[data-theme="dark"] .v26-tile-content,
@@ -4075,16 +4105,118 @@ html[data-theme="dark"] .sme-spotlight-card {
   border-color: #30363D !important;
   color: #F0F6FC !important;
 }
+html[data-theme="dark"] .place-card.v26-owner-tile {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45) !important;
+}
+html[data-theme="dark"] .place-card.v26-owner-tile:hover {
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65) !important;
+  border-color: #8DE026 !important;
+}
+html[data-theme="dark"] .place-picture.v26-tile-image {
+  background: #21262D !important;
+}
 html[data-theme="dark"] .v26-tile-title,
 html[data-theme="dark"] .v26-kpi-card strong,
 html[data-theme="dark"] .v26-serif-h1,
 html[data-theme="dark"] .section-line h2 {
   color: #F0F6FC !important;
 }
+html[data-theme="dark"] .v26-tile-loc {
+  color: #8B949E !important;
+}
+html[data-theme="dark"] .v26-tile-meta {
+  color: #8B949E !important;
+  border-top-color: #21262D !important;
+}
 html[data-theme="dark"] .v26-propose-btn {
   background: #21262D !important;
   border-color: #30363D !important;
   color: #DCEBC0 !important;
+}
+html[data-theme="dark"] .v26-propose-btn:hover {
+  background: #2D333B !important;
+  border-color: #8DE026 !important;
+  color: #FFFFFF !important;
+}
+html[data-theme="dark"] .v26-owner-tile .heart-button {
+  background: rgba(22, 27, 34, 0.88) !important;
+  color: #F0F6FC !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+/* Category Pills in Dark Mode — identical 99px pill scale */
+html[data-theme="dark"] .category-pill {
+  background: #161B22 !important;
+  border: 1px solid #30363D !important;
+  color: #C9D1D9 !important;
+}
+html[data-theme="dark"] .category-pill:hover {
+  background: #21262D !important;
+  border-color: #8DE026 !important;
+  color: #FFFFFF !important;
+}
+html[data-theme="dark"] .category-pill.active {
+  background: #143B2A !important;
+  border-color: #2EA043 !important;
+  color: #FFFFFF !important;
+}
+html[data-theme="dark"] .category-pill.category-sme-pill.active {
+  background: #DCEBC0 !important;
+  color: #0D2C1C !important;
+  border-color: #B8D48C !important;
+}
+/* Search Bar in Dark Mode — identical height & padding */
+html[data-theme="dark"] .hero-search input {
+  color: #F0F6FC !important;
+  background: transparent !important;
+}
+html[data-theme="dark"] .hero-search input::placeholder {
+  color: #8B949E !important;
+}
+html[data-theme="dark"] .hero-search .search-go {
+  background: #238636 !important;
+  border-color: #2EA043 !important;
+  color: #FFFFFF !important;
+}
+html[data-theme="dark"] .hero-search .search-go:hover {
+  background: #2EA043 !important;
+}
+html[data-theme="dark"] .hero-search .clear-query {
+  color: #8B949E !important;
+}
+html[data-theme="dark"] .hero-search .clear-query:hover {
+  color: #F0F6FC !important;
+}
+/* Quick Jump buttons in Dark Mode — identical 36px pill scale */
+html[data-theme="dark"] .explore-pill-btn {
+  background: #161B22 !important;
+  color: #F0F6FC !important;
+  border: 1px solid #30363D !important;
+}
+html[data-theme="dark"] .explore-pill-btn:hover {
+  border-color: #8DE026 !important;
+  color: #8DE026 !important;
+}
+html[data-theme="dark"] .explore-pill-btn.explore-pill-highlight {
+  background: #238636 !important;
+  color: #FFFFFF !important;
+  border-color: #2EA043 !important;
+}
+/* Editorial Band in Dark Mode — identical scale & padding */
+html[data-theme="dark"] .editorial-band {
+  background: #161B22 !important;
+  border: 1px solid #30363D !important;
+  color: #F0F6FC !important;
+}
+html[data-theme="dark"] .editorial-band h2 {
+  color: #F0F6FC !important;
+}
+html[data-theme="dark"] .editorial-band .mini-overline {
+  color: #8DE026 !important;
+}
+html[data-theme="dark"] .editorial-band .outline-light {
+  background: #238636 !important;
+  border-color: #2EA043 !important;
+  color: #FFFFFF !important;
 }
 
 
