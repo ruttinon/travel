@@ -29,6 +29,9 @@
     doc.head.appendChild(style);
 
     const pointers = new Map(); // pointerId → {x, y}
+    // Fingers that landed on a pin/button inside the map. Alone they are taps (left to the button), but together
+    // with another finger they are a pinch — at low zoom the map is full of pins and a pinch often starts on one.
+    const onButtons = new Map();
     let frame = null, startX = 0, startY = 0, moved = false, panning = false;
     let pinchBase = 0, wheelAcc = 0, wheelAt = 0;
 
@@ -37,11 +40,36 @@
       return Math.hypot(a.x - b.x, a.y - b.y);
     };
 
+    function startPinch() {
+      if (panning) { panning = false; handlers.onPanEnd && handlers.onPanEnd(moved, frame); }
+      pinchBase = distance();
+    }
     function onDown(e) {
       const target = e.target.closest ? e.target.closest(selector) : null;
-      if (!target || (e.target.closest && e.target.closest(IGNORE))) return;
+      if (!target) return;
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       if (frame && frame !== target) return;
+      if (e.target.closest && e.target.closest(IGNORE)) {
+        if (e.pointerType === 'mouse') return;
+        if (pointers.size === 1) {            // second finger on a pin while one finger is on the map → pinch
+          pointers.set(e.pointerId, {x: e.clientX, y: e.clientY});
+          startPinch();
+        } else if (pointers.size === 0) {
+          onButtons.set(e.pointerId, {x: e.clientX, y: e.clientY, target});
+        }
+        return;
+      }
+      if (pointers.size === 0 && onButtons.size === 1) {
+        // first finger was on a pin, this one is on the map → pinch with both
+        const [[id, b]] = [...onButtons.entries()];
+        onButtons.clear();
+        frame = b.target;
+        pointers.set(id, {x: b.x, y: b.y});
+        pointers.set(e.pointerId, {x: e.clientX, y: e.clientY});
+        try { target.setPointerCapture(e.pointerId); } catch {}
+        startPinch();
+        return;
+      }
       frame = target;
       pointers.set(e.pointerId, {x: e.clientX, y: e.clientY});
       try { target.setPointerCapture(e.pointerId); } catch {}
@@ -50,12 +78,12 @@
         handlers.onPanStart && handlers.onPanStart(frame);
       } else if (pointers.size === 2) {
         // Second finger: stop panning, start pinching.
-        if (panning) { panning = false; handlers.onPanEnd && handlers.onPanEnd(moved, frame); }
-        pinchBase = distance();
+        startPinch();
       }
     }
 
     function onMove(e) {
+      if (onButtons.has(e.pointerId)) { const b = onButtons.get(e.pointerId); b.x = e.clientX; b.y = e.clientY; return; }
       if (!pointers.has(e.pointerId)) return;
       pointers.set(e.pointerId, {x: e.clientX, y: e.clientY});
       if (pointers.size >= 2) {
@@ -72,6 +100,7 @@
     }
 
     function onUp(e) {
+      onButtons.delete(e.pointerId);
       if (!pointers.has(e.pointerId)) return;
       pointers.delete(e.pointerId);
       if (pointers.size === 0) {

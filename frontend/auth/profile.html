@@ -234,6 +234,7 @@
             color: #FFFFFF;
         }
     </style>
+  <link rel="stylesheet" href="/site-ux.css"><!-- Tommy (UX pass 2026-11-06): phone layout, focus outline -->
 </head>
 
 <body>
@@ -242,16 +243,16 @@
 
         <!-- Top Header -->
         <header class="header">
-            <a href="login.html" class="brand">
-                <span class="brand-mark">U</span>
+            <a href="/" class="brand" aria-label="GoAround — กลับหน้าแรก / home">
+                <span class="brand-mark">G</span>
                 <span class="wordmark">GoAround</span>
             </a>
 
             <nav class="navigation">
-                <a href="../../index.html" class="nav-link">Explore</a>
-                <a href="../../index.html#map" class="nav-link">Map</a>
-                <a href="profile.html" class="nav-link" style="color: #172B23; font-weight: 700;">Saved</a>
-                <a href="../planner/planner.html" class="nav-link">My trips</a>
+                <a href="/" class="nav-link keep">← Explore</a>
+                <a href="/#map" class="nav-link">Map</a>
+                <a href="/#saved" class="nav-link">Saved</a>
+                <a href="/planner.html" class="nav-link">Trip planner</a>
                 <div class="divider"></div>
                 <div class="lang-selector">
                     <span class="lang-text">EN</span>
@@ -277,19 +278,28 @@
 
                     <!-- Activity Stats -->
                     <div class="stats-row">
-                        <div class="stat-pill" onclick="window.location.href='../planner/planner.html'" title="Open My Trips Planner">
-                            <div class="stat-number">4</div>
+                        <!-- Tommy (2026-11-06): real numbers from the server (were fixed 4 / 18 / 6 for every account) -->
+                        <!-- Tommy (UX pass): real links (were clickable boxes a keyboard / screen reader could not use) -->
+                        <a class="stat-pill" href="/planner.html" title="Open My Trips Planner" style="text-decoration:none;color:inherit;">
+                            <div class="stat-number" id="statTrips">–</div>
                             <div class="stat-name">My Trips ↗</div>
-                        </div>
-                        <div class="stat-pill" onclick="window.location.href='../../index.html#saved'" title="View Saved Collections">
-                            <div class="stat-number">18</div>
+                        </a>
+                        <a class="stat-pill" href="/#saved" title="View Saved Collections" style="text-decoration:none;color:inherit;">
+                            <div class="stat-number" id="statSaved">–</div>
                             <div class="stat-name">Saved Places ↗</div>
-                        </div>
-                        <div class="stat-pill" onclick="alert('You have written 6 reviews for local Thai places.')" title="View Reviews">
-                            <div class="stat-number">6</div>
+                        </a>
+                        <div class="stat-pill" title="Reviews you have written">
+                            <div class="stat-number" id="statReviews">–</div>
                             <div class="stat-name">Reviews</div>
                         </div>
                     </div>
+
+                    <!-- Tommy (UX pass): way in to the business portal for shop owners -->
+                    <a href="/business.html" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid #DCE2DC;border-radius:14px;text-decoration:none;color:#172B23;">
+                        <span style="font-size:22px;">🏪</span>
+                        <span style="flex:1;"><strong style="display:block;font-size:14px;">Own a shop? / เป็นเจ้าของร้าน?</strong><small style="color:#5D6B63;font-size:12px;">List it on the GoAround map and build your shop page</small></span>
+                        <span aria-hidden="true">→</span>
+                    </a>
 
                     <button class="btn-guest" style="border-radius: 12px; margin-top: auto;" onclick="openEditModal()">
                         <span>Edit Profile Information</span>
@@ -303,7 +313,7 @@
                             </svg>
                         </button>
                         <button class="btn-guest" style="border:1px solid #FEB2B2;color:#C53030;padding:12px 14px;font-size:12px;border-radius:12px;" onclick="signOutAll()" title="Sign out all devices">
-                            <span>ทุกเครื่อง ↗</span>
+                            <span>Sign out all devices<br><small style="font-weight:500;">ออกจากระบบทุกเครื่อง</small></span>
                         </button>
                     </div>
                 </section>
@@ -439,6 +449,34 @@
     <script>
         let currentUser = null;
 
+        // Tommy: the account's photo (saved from Google at sign-in as avatarUrl). Only https images are shown;
+        // if the image cannot load, fall back to the first letter of the name.
+        // Tommy: trips saved in the Planner, places saved in the app, reviews written — counted on the server
+        async function loadProfileCounts() {
+            const count = async (url, key) => { try { const r = await fetch(url, { credentials: 'same-origin' }); if (!r.ok) return '–'; const j = await r.json(); return (j[key] || []).length; } catch (e) { return '–'; } };
+            const [trips, saved, reviews] = await Promise.all([count('/api/me/itineraries', 'itineraries'), count('/api/me/collections', 'saved'), count('/api/me/reviews', 'reviews')]);
+            document.getElementById('statTrips').textContent = trips;
+            document.getElementById('statSaved').textContent = saved;
+            document.getElementById('statReviews').textContent = reviews;
+        }
+
+        function showAvatar(user) {
+            const box = document.querySelector('.avatar-large');
+            if (!box) return;
+            const letter = ((user && user.name) || 'U').charAt(0).toUpperCase();
+            const url = user && typeof user.avatarUrl === 'string' && /^https:\/\//.test(user.avatarUrl) ? user.avatarUrl : '';
+            box.textContent = letter;
+            if (!url) return;
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = '';
+            img.referrerPolicy = 'no-referrer'; // Google photo links refuse requests that carry another site's address
+            img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;';
+            img.onerror = () => { box.textContent = letter; };
+            box.textContent = '';
+            box.appendChild(img);
+        }
+
         async function loadProfile() {
             try {
                 const res = await fetch('/api/auth/me');
@@ -447,7 +485,8 @@
                     currentUser = json.user;
                     document.querySelector('.user-meta h2').textContent = currentUser.name;
                     document.querySelector('.user-meta p').textContent = currentUser.phone ? `📱 ${currentUser.phone}` : currentUser.email;
-                    document.querySelector('.avatar-large').textContent = (currentUser.name || 'U').charAt(0).toUpperCase();
+                    showAvatar(currentUser); // Tommy: Google profile photo when there is one, else the first letter
+                    loadProfileCounts();
 
                     const badge = document.querySelector('.role-badge');
                     if (badge) {
@@ -488,7 +527,7 @@
                 const json = await res.json();
                 if (!res.ok) throw new Error(json.error || 'Failed to update name');
                 document.querySelector('.user-meta h2').textContent = json.user.name;
-                document.querySelector('.avatar-large').textContent = json.user.name.charAt(0).toUpperCase();
+                showAvatar({ ...currentUser, ...json.user }); // Tommy: keep the photo after a rename
                 closeEditModal();
             } catch (e) {
                 alert(e.message);

@@ -64,6 +64,9 @@ function toPlace(r) {
   };
 }
 
+// Ids made by scripts/osm: osm-n123 (node), osm-w123 (way), osm-r123 (relation)
+const ID_PATTERN = /^osm-[nwr]\d{1,15}$/;
+
 class OsmError extends Error { constructor(status, message) { super(message); this.status = status; } }
 
 function parseBbox(raw) {
@@ -135,6 +138,16 @@ function search(dataDir, query) {
   return {places: rows.slice(0, limit).map(toPlace), imported: true};
 }
 
+/** Places by id, for lists saved on the server. Returns null when the place file is not imported. */
+function getByIds(dataDir, ids) {
+  const d = open(dataDir);
+  if (!d) return null;
+  const want = [...new Set((ids || []).filter(id => ID_PATTERN.test(id)))].slice(0, 200);
+  if (!want.length) return [];
+  const rows = d.prepare(`SELECT * FROM osm_places WHERE id IN (${want.map(() => '?').join(',')})`).all(...want);
+  return rows.map(toPlace);
+}
+
 function stats(dataDir) {
   const conn = open(dataDir);
   if (!conn) return {imported: false};
@@ -200,4 +213,4 @@ function importFile(dataDir, sourceFile) {
   return {count, skipped, file: target};
 }
 
-module.exports = {FILE_NAME, MAX_RESULTS, KIND_RANK, parseBbox, placesInArea, search, stats, handle, importFile, close};
+module.exports = {FILE_NAME, MAX_RESULTS, KIND_RANK, ID_PATTERN, parseBbox, placesInArea, search, getByIds, stats, handle, importFile, close};

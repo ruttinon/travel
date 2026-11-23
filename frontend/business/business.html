@@ -8,6 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
   
+  <!-- Tommy: SME shop page editor (tab "หน้าร้านของฉัน") — look of the page + the editor itself -->
+  <link rel="stylesheet" href="/shop-render.css">
+  <link rel="stylesheet" href="/shop-editor.css">
   <style>
     :root {
       --forest: #172B23;
@@ -704,53 +707,95 @@
     .tab-view { display: none; }
     .tab-view.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Tommy (2026-11-06): phones & small tablets. Before, the 260px side menu stayed beside the content, leaving
+       the content ~130px wide on a phone. Now the menu becomes a scrollable bar on top and content uses the full width. */
+    @media (max-width: 860px) {
+      body { flex-direction: column; }
+      .owner-sidebar { width: 100%; height: auto; position: sticky; top: 0; flex-direction: row; align-items: center; gap: 12px; padding: 10px 12px; border-right: 0; border-bottom: 1px solid var(--line); overflow-x: auto; }
+      .owner-sidebar .brand-wrap { margin-bottom: 0; flex-shrink: 0; }
+      .owner-sidebar .rail-sub, .owner-sidebar .sidebar-card, .owner-sidebar .rail-user { display: none; }
+      .side-nav { flex-direction: row; flex-shrink: 0; gap: 6px; }
+      .side-nav .nav-btn { white-space: nowrap; width: auto; padding: 8px 12px; }
+      .business-main { padding: 0 16px 60px; overflow: visible; }
+      .topbar { height: auto; flex-wrap: wrap; gap: 8px; padding: 12px 0; margin-bottom: 18px; }
+      .page-head { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 20px; }
+      .kpi-grid { grid-template-columns: 1fr 1fr; }
+      .places-grid, .pricing-grid { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr !important; display: grid; }
+      .tab-view table { display: block; overflow-x: auto; white-space: nowrap; }
+      .wizard-card { padding: 20px !important; }
+      .wizard-actions { flex-wrap: wrap; gap: 10px; }
+    }
+    /* Tommy (UX pass 2026-11-06): owner's next steps on the overview */
+    .steps-card { background: #fff; border: 1px solid var(--line, #E5E9E2); border-radius: 22px; padding: 22px 24px; margin-bottom: 24px; }
+    .steps-card h2 { font-size: 18px; font-weight: 800; color: #172B23; margin: 0 0 6px; }
+    .steps-card > p { color: #627267; font-size: 14px; margin: 0 0 14px; line-height: 1.6; }
+    .steps-card.all-done { border-color: #B7E08A; background: #F7FCEF; }
+    .owner-step-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; }
+    .owner-step-list li { display: flex; gap: 14px; align-items: flex-start; padding: 10px 6px; border-radius: 14px; }
+    .owner-step-list li.next { background: #F4F8EC; }
+    .owner-step-list strong { display: block; font-size: 14.5px; color: #172B23; }
+    .owner-step-list small { display: block; font-size: 13px; color: #627267; line-height: 1.5; margin-top: 2px; }
+    .owner-step-list li.done strong { color: #3F6B4F; }
+    .step-dot { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 13px; background: #EEF1EC; color: #627267; }
+    .owner-step-list li.done .step-dot { background: #8DE026; color: #172B23; }
+    .owner-step-list li.wait .step-dot { background: #FFF1D6; color: #8A5A00; }
+    .owner-step-list li.next .step-dot { background: #172B23; color: #fff; }
+    .step-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .step-actions .btn-outline { flex: none; padding: 10px 16px; }
+    .empty-places { grid-column: 1 / -1; padding: 28px; border: 2px dashed #DCE3D8; border-radius: 18px; text-align: center; color: #627267; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   </style>
+  <link rel="stylesheet" href="/site-ux.css">
 </head>
 <body>
 
   <!-- Left Sidebar -->
   <aside class="owner-sidebar">
     <div class="brand-wrap">
-      <a href="/" class="brand-logo">GoAround<span>.</span></a>
+      <a href="/" class="brand-logo" aria-label="GoAround — หน้าแรก">GoAround<span>.</span></a>
       <div class="rail-sub">Business · Local SME</div>
     </div>
 
-    <nav class="side-nav">
+    <!-- Tommy (UX pass 2026-11-06): menu in the order an owner goes through it; numbered so the path is obvious.
+         Removed "Admin Control Studio" (staff only — confusing for shop owners). -->
+    <nav class="side-nav" aria-label="เมนูเจ้าของร้าน">
       <button class="nav-btn active" onclick="switchView('overview', this)">
         <span class="icon">⌂</span>
-        <span>ภาพรวมร้านค้า (Overview)</span>
+        <span>ภาพรวม · เริ่มต้นที่นี่</span>
       </button>
 
       <button class="nav-btn" onclick="switchView('wizard', this)">
-        <span class="icon">➕</span>
-        <span>สมัครลงทะเบียนร้าน (3-Step)</span>
+        <span class="icon">1</span>
+        <span>ลงทะเบียนร้านใหม่</span>
+      </button>
+
+      <button class="nav-btn" onclick="switchView('claim', this)">
+        <span class="icon">1</span>
+        <span>หรือ อ้างสิทธิ์ร้านที่มีบนแผนที่แล้ว</span>
+      </button>
+
+      <button class="nav-btn" onclick="switchView('profile', this)">
+        <span class="icon">2</span>
+        <span>ข้อมูลร้าน & Local Story</span>
+      </button>
+
+      <button class="nav-btn" onclick="switchView('shoppage', this)">
+        <span class="icon">3</span>
+        <span>หน้าร้านของฉัน (Shop page)</span>
       </button>
 
       <button class="nav-btn" onclick="switchView('promotions', this)">
         <span class="icon">★</span>
-        <span>แพ็กเกจโปรโมต (Ads)</span>
+        <span>โปรโมตร้าน (Ads)</span>
         <span class="badge-gold">Boost</span>
       </button>
 
-      <button class="nav-btn" onclick="switchView('profile', this)">
-        <span class="icon">◎</span>
-        <span>โปรไฟล์ร้าน & Local Story</span>
-      </button>
-
-      <button class="nav-btn" onclick="switchView('claim', this)">
-        <span class="icon">🏷️</span>
-        <span>อ้างสิทธิ์ร้านค้า (Claim)</span>
-      </button>
-
-      <button class="nav-btn" onclick="window.location.href='../admin/admin.html'">
-        <span class="icon">🛡️</span>
-        <span>Admin Control Studio ↗</span>
-      </button>
-
-      <button class="nav-btn" onclick="window.location.href='../../index.html'" target="_blank">
+      <a class="nav-btn" href="/" style="text-decoration:none;">
         <span class="icon">↗</span>
-        <span>ดูหน้าแอปนักท่องเที่ยว</span>
-      </button>
+        <span>กลับไปหน้าแอปนักท่องเที่ยว</span>
+      </a>
     </nav>
 
     <div class="sidebar-card">
@@ -759,8 +804,8 @@
     </div>
 
     <div class="rail-user">
-      <span>ร้าน: <strong>กาแฟคั่วเตาฟืนแม่กำปอง</strong></span>
-      <button onclick="window.location.href='../auth/login.html'">Sign out ↗</button>
+      <span id="railUserName">ยังไม่ได้เข้าสู่ระบบ</span><!-- Tommy (UX pass): was a fixed sample shop name -->
+      <button id="railSignBtn" onclick="window.location.href='/login.html?next=/business.html'">เข้าสู่ระบบ ↗</button>
     </div>
   </aside>
 
@@ -771,8 +816,8 @@
     <header class="topbar">
       <div class="breadcrumb">GoAround / Business / <strong id="sectionBreadcrumb">ภาพรวมร้านค้า</strong></div>
       <div class="user-pill">
-        <span class="verified-chip" id="ownerStatusBadge">✓ ยืนยันสิทธิ์ร้านค้าแล้ว (Verified)</span>
-        <div class="avatar-circle">สม</div>
+        <span class="verified-chip" id="ownerStatusBadge">กำลังโหลด…</span>
+        <div class="avatar-circle" id="ownerAvatar" aria-hidden="true">?</div>
       </div>
     </header>
 
@@ -783,11 +828,14 @@
       <div class="page-head">
         <div>
           <span class="overline">BUSINESS / OWNER PORTAL</span>
-          <h1 class="page-title" id="ownerNameHeader">สวัสดี, คุณสมชาย<span>.</span></h1>
+          <h1 class="page-title" id="ownerNameHeader">สวัสดีค่ะ<span>.</span></h1>
           <p class="page-sub">จัดการร้านค้าชุมชน ดูสถิติการเข้าถึง และยื่นขอโปรโมตผ่านแคมเปญ</p>
         </div>
-        <button class="btn-action primary" onclick="switchView('wizard', document.querySelectorAll('.nav-btn')[1])">+ ลงทะเบียนเพิ่มสาขา/ร้าน</button>
+        <button class="btn-action primary" onclick="switchView('wizard')">+ ลงทะเบียนเพิ่มสาขา/ร้าน</button>
       </div>
+
+      <!-- Tommy (UX pass): what to do next, from the real account state (filled by renderOwnerSteps) -->
+      <div id="ownerSteps" class="owner-steps" aria-live="polite"></div>
 
       <!-- Hero Banner -->
       <div class="owner-hero">
@@ -803,7 +851,7 @@
         <div class="kpi-card">
           <div class="kpi-icon mint">🏪</div>
           <div class="kpi-data">
-            <strong id="kpiManagedCount">2</strong>
+            <strong id="kpiManagedCount">–</strong>
             <small>ร้านค้าที่ดูแล (Managed)</small>
           </div>
         </div>
@@ -811,12 +859,12 @@
         <div class="kpi-card">
           <div class="kpi-icon blue">✓</div>
           <div class="kpi-data">
-            <strong id="kpiPublishedCount">1</strong>
+            <strong id="kpiPublishedCount">–</strong>
             <small>เผยแพร่บนแผนที่แล้ว</small>
           </div>
         </div>
 
-        <div class="kpi-card">
+        <div class="kpi-card" style="display:none"><!-- Tommy (UX pass): hidden until there is real data (was a fixed sample number) -->
           <div class="kpi-icon gold">★</div>
           <div class="kpi-data">
             <strong id="kpiSpotlightCount">1</strong>
@@ -824,7 +872,7 @@
           </div>
         </div>
 
-        <div class="kpi-card">
+        <div class="kpi-card" style="display:none"><!-- Tommy (UX pass): hidden until there is real data (was a fixed sample number) -->
           <div class="kpi-icon gray">📍</div>
           <div class="kpi-data">
             <strong id="kpiDirectionsCount">1,120</strong>
@@ -839,48 +887,7 @@
       </div>
 
       <div class="places-grid" id="placesGridContainer">
-        
-        <!-- Card 1 -->
-        <article class="place-card">
-          <div class="place-img-wrap">
-            <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80" alt="">
-            <span class="badge-on-image spotlight">★ Spotlight Hero Active</span>
-          </div>
-          <div class="place-body">
-            <h3>ร้านกาแฟคั่วเตาฟืนแม่กำปอง</h3>
-            <p>กาแฟอาราบิก้าแท้ปลูกใต้ร่มไม้ คั่วเตาฟืนโบราณสูตร 30 ปี บรรยากาศติดริมธารแม่กำปอง</p>
-            <div class="place-meta-line">
-              <span>☕ คาเฟ่ & ชุมชน</span>
-              <span>·</span>
-              <span>📍 แม่กำปอง เชียงใหม่</span>
-            </div>
-            <div class="place-actions">
-              <button class="btn-outline" onclick="switchView('profile', document.querySelectorAll('.nav-btn')[3])">แก้ไขข้อมูลร้าน</button>
-              <button class="btn-boost" onclick="switchView('promotions', document.querySelectorAll('.nav-btn')[2])">★ ซื้อ Ads เพิ่ม</button>
-            </div>
-          </div>
-        </article>
-
-        <!-- Card 2 -->
-        <article class="place-card">
-          <div class="place-img-wrap">
-            <img src="https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=600&q=80" alt="">
-            <span class="badge-on-image" style="background: #F59E0B; color: #FFF;">◷ รอแอดมินตรวจ (Pending)</span>
-          </div>
-          <div class="place-body">
-            <h3>โฮมสเตย์เรือนไม้ริมธาร แม่กำปอง</h3>
-            <p>สัมผัสสายหมอกและเสียงน้ำไหลยามเช้า บริการอาหารขันโตกพื้นบ้านและกิจกรรมเก็บใบชา</p>
-            <div class="place-meta-line">
-              <span>🏡 ที่พักโฮมสเตย์</span>
-              <span>·</span>
-              <span>📍 แม่ออน เชียงใหม่</span>
-            </div>
-            <div class="place-actions">
-              <button class="btn-outline" style="flex:1;" onclick="showToast('คำขอส่งถึง Admin แล้ว อยู่ระหว่างตรวจสอบ')">ดูสถานะคำขอ ↗</button>
-            </div>
-          </div>
-        </article>
-
+        <div class="empty-places">กำลังโหลด…</div><!-- Tommy (UX pass): sample shop cards removed; real shops come from /api/business/me -->
       </div>
     </section>
 
@@ -918,17 +925,19 @@
         <div class="wizard-step-content active" id="stepContent-1">
           <h3 style="font-size: 20px; font-weight: 700; color: var(--forest); margin-bottom: 8px;">01 · ข้อมูลทั่วไปและช่องทางติดต่อ</h3>
           <p style="font-size: 13px; color: var(--muted); margin-bottom: 24px;">กรอกข้อมูลเบื้องต้นเพื่อให้เจ้าหน้าที่ติดต่อและนักท่องเที่ยวค้นพบ</p>
+          <!-- Tommy: real account / business status (sign-in, waiting for admin, email not verified …) -->
+          <div id="wizStatus" style="display:none;margin-bottom:18px;padding:12px 16px;border-radius:12px;font-size:13px;line-height:1.5;"></div>
 
           <div class="form-group">
             <div class="field-wrap">
               <label>ชื่อร้านค้า หรือ สถานที่ (ภาษาไทย) *</label>
-              <input type="text" id="wizShopName" placeholder="เช่น ร้านกาแฟคั่วเตาฟืนแม่กำปอง" value="ร้านกาแฟคั่วเตาฟืนแม่กำปอง">
+              <input type="text" id="wizShopName" placeholder="เช่น ร้านกาแฟคั่วเตาฟืนแม่กำปอง" value="" maxlength="120">
             </div>
 
             <div class="form-row">
               <div class="field-wrap">
                 <label>ชื่อร้านค้า (English) *</label>
-                <input type="text" id="wizShopNameEn" placeholder="e.g. Mae Kampong Firewood Coffee" value="Mae Kampong Firewood Coffee">
+                <input type="text" id="wizShopNameEn" placeholder="e.g. Mae Kampong Firewood Coffee" value="" maxlength="120">
               </div>
               <div class="field-wrap">
                 <label>ประเภทธุรกิจ (SME Category) *</label>
@@ -944,11 +953,11 @@
             <div class="form-row">
               <div class="field-wrap">
                 <label>เบอร์โทรศัพท์ติดต่อ *</label>
-                <input type="tel" id="wizPhone" placeholder="081-234-5678" value="081-234-5678">
+                <input type="tel" id="wizPhone" placeholder="081-234-5678" value="" maxlength="40">
               </div>
               <div class="field-wrap">
                 <label>LINE ID หรือ เพจ Facebook</label>
-                <input type="text" id="wizLine" placeholder="@maekampongcoffee" value="@maekampongcoffee">
+                <input type="text" id="wizLine" placeholder="@maekampongcoffee" value="" maxlength="80">
               </div>
             </div>
           </div>
@@ -968,39 +977,37 @@
             <div class="form-row">
               <div class="field-wrap">
                 <label>ละติจูด (Latitude) *</label>
-                <input type="text" id="wizLat" value="18.8651" placeholder="18.8651">
+                <input type="text" id="wizLat" value="" placeholder="เช่น 18.865100" inputmode="decimal" onchange="onBizCoordTyped()">
               </div>
               <div class="field-wrap">
                 <label>ลองจิจูด (Longitude) *</label>
-                <input type="text" id="wizLon" value="99.3498" placeholder="99.3498">
+                <input type="text" id="wizLon" value="" placeholder="เช่น 99.349800" inputmode="decimal" onchange="onBizCoordTyped()">
               </div>
             </div>
 
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-              <small style="color:var(--muted);font-size:12px;">คลิกบนแผนที่ด้านล่างเพื่อปักหมุดตำแหน่งร้าน หรือกดปุ่มดึงพิกัดจาก GPS</small>
+              <small style="color:var(--muted);font-size:12px;">ลากแผนที่ให้หมุดตรงหน้าร้าน แตะจุดบนแผนที่ ค้นหาชื่อสถานที่ หรือกดปุ่มดึงพิกัดจาก GPS</small>
               <button type="button" onclick="useCurrentGpsForBiz()" style="background:#FFF;border:1px solid var(--line);font-size:11px;padding:6px 14px;border-radius:99px;font-weight:700;color:var(--forest);cursor:pointer;">
                 📍 ใช้ตำแหน่งปัจจุบัน (GPS)
               </button>
             </div>
-            <div id="bizMiniMap" onclick="onBizMapClick(event)" style="height:180px;border-radius:14px;background:#E2E8F0;position:relative;overflow:hidden;border:1px solid var(--line);margin-bottom:16px;cursor:crosshair;display:flex;align-items:center;justify-content:center;">
-              <img src="https://tile.openstreetmap.org/13/6410/3505.png" style="width:100%;height:100%;object-fit:cover;opacity:0.85;" alt="Map preview">
-              <div id="bizMapMarker" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);pointer-events:none;font-size:28px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.4));">
-                📍
-              </div>
-              <span style="position:absolute;bottom:8px;right:10px;background:rgba(255,255,255,0.9);font-size:10px;padding:2px 8px;border-radius:99px;color:#333;">คลิกบนแผนที่เพื่อย้ายหมุด</span>
-            </div>
+            <!-- Tommy: real map picker (frontend/shared/map-picker.js): drag the map so the pin is on the shop, tap a spot, or search -->
+            <div id="bizMiniMap" style="width:100%;box-sizing:border-box;height:260px;border-radius:14px;background:#E2E8F0;position:relative;overflow:hidden;border:1px solid var(--line);margin-bottom:16px;"></div>
 
             <div class="field-wrap">
               <label>ที่อยู่ / จุดสังเกต (ภาษาไทย) *</label>
-              <input type="text" id="wizAddress" value="หมู่ 3 ต.ห้วยแก้ว อ.แม่ออน จ.เชียงใหม่ (ตรงข้ามสะพานไม้)">
+              <input type="text" id="wizAddress" value="" placeholder="เช่น หมู่ 3 ต.ห้วยแก้ว อ.แม่ออน จ.เชียงใหม่ (ตรงข้ามสะพานไม้)" maxlength="160">
             </div>
 
             <div class="field-wrap">
-              <label>อัปโหลดภาพหน้าร้านและบรรยากาศ (สูงสุด 5 รูป)</label>
-              <div class="upload-zone" onclick="showToast('จำลอง: เลือกรูปภาพจากเครื่องเรียบร้อย')">
+              <label>ภาพหน้าร้าน *</label>
+              <!-- Tommy: real photo (was a fake "จำลอง" upload). Sent to the server when the shop is sent to admin. -->
+              <input type="file" id="wizPhoto" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="onWizPhotoChosen(this)">
+              <div class="upload-zone" id="wizPhotoZone" onclick="document.getElementById('wizPhoto').click()">
                 <div style="font-size: 32px; margin-bottom: 8px;">📸</div>
-                <strong style="font-size: 14px; color: var(--forest);">คลิกเพื่ออัปโหลดรูปภาพหน้าร้าน</strong>
+                <strong style="font-size: 14px; color: var(--forest);">คลิกเพื่อเลือกรูปภาพหน้าร้าน (1 รูป) *</strong>
                 <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">รองรับ JPG, PNG หรือ WebP ขนาดไม่เกิน 5 MB</p>
+                <img id="wizPhotoPreview" alt="" style="display:none;max-width:100%;max-height:180px;margin-top:10px;border-radius:10px;object-fit:cover;">
               </div>
             </div>
           </div>
@@ -1026,17 +1033,16 @@
               </select>
             </div>
 
+            <!-- Tommy: the server has no place to store proof documents yet, so we don't pretend to upload one.
+                 Admin contacts the owner (phone / email on the business profile) to check the document. -->
             <div class="field-wrap">
-              <label>อัปโหลดหลักฐานยืนยัน *</label>
-              <div class="upload-zone" onclick="showToast('จำลอง: แนบเอกสารหลักฐานแล้ว')">
-                <div style="font-size: 32px; margin-bottom: 8px;">📄</div>
-                <strong style="font-size: 14px; color: var(--forest);">คลิกเพื่อแนบเอกสารยืนยันสิทธิ์</strong>
-                <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">เอกสารนี้จะแสดงเฉพาะกับผู้ดูแลระบบเท่านั้น ไม่เปิดเผยต่อสาธารณะ</p>
-              </div>
+              <p style="font-size:13px;color:var(--muted);line-height:1.6;background:#F5F7F2;border-radius:12px;padding:12px 16px;">
+                📄 เตรียมเอกสารตามที่เลือกไว้ — แอดมินจะติดต่อกลับทางเบอร์โทรหรืออีเมลของบัญชีนี้เพื่อขอดูเอกสารก่อนอนุมัติ
+              </p>
             </div>
 
             <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--forest); cursor:pointer; margin-top:10px;">
-              <input type="checkbox" checked> ข้าพเจ้ายืนยันว่าเป็นเจ้าของหรือผู้มีอำนาจดูแลสถานที่จริง
+              <input type="checkbox" id="wizConsent"> ข้าพเจ้ายืนยันว่าเป็นเจ้าของหรือผู้มีอำนาจดูแลสถานที่จริง *
             </label>
           </div>
 
@@ -1205,6 +1211,21 @@
           </div>
         </div>
       </div>
+    </section> <!-- Tommy: profile tab was never closed, so the Claim tab sat inside it and never showed -->
+
+    <!-- ============================================== -->
+    <!-- Tommy 2026-11-06: SME SHOP PAGE EDITOR (frontend/business/shop-editor.js, server backend/shop-pages.js) -->
+    <!-- ============================================== -->
+    <section class="tab-view" id="view-shoppage">
+      <div class="page-head">
+        <div>
+          <span class="overline">SHOP PAGE / หน้าร้านบน GoAround</span>
+          <h1 class="page-title">หน้าร้านของฉัน<span>.</span></h1>
+          <p class="page-sub">ออกแบบหน้าร้านที่นักท่องเที่ยวเปิดจากแผนที่ เลือกแม่แบบ ใส่เมนู รูป เวลาเปิด และช่องทางติดต่อ — ครั้งแรกแอดมินตรวจก่อน หลังจากนั้นแก้ไขได้เองทันที</p>
+        </div>
+      </div>
+      <div id="shopEditorRoot"></div>
+    </section>
 
     <!-- ============================================== -->
     <!-- TAB 5: CLAIM A PLACE (อ้างสิทธิ์ความเป็นเจ้าของ) -->
@@ -1243,13 +1264,16 @@
       </div>
     </section>
 
-    </section>
-
   </main>
 
   <!-- Toast -->
   <div class="toast" id="toastMessage"></div>
 
+  <!-- Tommy: map picker for the shop location step -->
+  <script src="/map-picker.js"></script>
+  <script src="/maps-links.js"></script>
+  <script src="/shop-render.js"></script>
+  <script src="/shop-editor.js"></script>
   <script>
     function showToast(msg) {
       const toast = document.getElementById('toastMessage');
@@ -1259,6 +1283,8 @@
     }
 
     function switchView(tabId, btn) {
+      // Tommy (UX pass): find the menu button by its tab, so the menu order can change safely
+      if (!btn) btn = document.querySelector(`.nav-btn[onclick*="'${tabId}'"]`);
       document.querySelectorAll('.tab-view').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
       
@@ -1270,12 +1296,15 @@
         overview: 'ภาพรวมร้านค้า (Overview)',
         wizard: 'ลงทะเบียนร้านค้า (3-Step Wizard)',
         promotions: 'แพ็กเกจโปรโมตร้านค้า (SME Boost)',
-        profile: 'โปรไฟล์ร้าน & Local Story'
+        profile: 'โปรไฟล์ร้าน & Local Story',
+        claim: 'อ้างสิทธิ์ร้านค้า (Claim)',
+        shoppage: 'หน้าร้านของฉัน (Shop page)'
       };
       document.getElementById('sectionBreadcrumb').textContent = titles[tabId] || 'Business';
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
       if (tabId === 'overview') loadBusinessOverview();
+      if (tabId === 'shoppage' && window.TravalShopEditor) TravalShopEditor.load(); // Tommy: shop page editor
     }
 
     // Wizard Step Navigation
@@ -1289,17 +1318,74 @@
 
       document.getElementById('stepContent-' + stepNum).classList.add('active');
       document.getElementById('stepIndicator-' + stepNum).classList.add('active');
+      if (stepNum === 2) initBizPicker(); // Tommy: map picker draws once its step is visible
     }
 
     // Load Business Portal Overview
+    // Tommy (UX pass 2026-11-06): "what to do next" for the owner, from the real account state.
+    // Before, a brand-new owner saw sample shops, "Verified" and 1,120 visits, as if they already had shops.
+    function renderOwnerSteps(data, shopPages) {
+      const box = document.getElementById('ownerSteps');
+      if (!box) return;
+      if (!data) {
+        box.innerHTML = `<div class="steps-card"><h2>เริ่มต้นใช้งาน Business portal</h2>
+          <p>เข้าสู่ระบบด้วยบัญชี GoAround ก่อน (ใช้บัญชีเดียวกับแอป หรือสมัครด้วย Google ได้) แล้วกลับมาที่หน้านี้</p>
+          <a class="btn-action primary" href="/login.html?next=/business.html" style="text-decoration:none;display:inline-flex;">เข้าสู่ระบบ / สมัครสมาชิก →</a></div>`;
+        return;
+      }
+      const b = data.business, places = data.places || [], user = data.user || {};
+      const pages = shopPages || [];
+      const anyLivePage = pages.some(x => x.page && x.page.hasPublished);
+      const pendingPage = pages.some(x => x.page && x.page.status === 'pending');
+      const pendingSub = (data.submissions || []).some(x => x.status === 'pending');
+      const steps = [
+        { done: !!b, title: 'สมัครโปรไฟล์ธุรกิจ', text: 'กรอกชื่อร้าน ประเภท และช่องทางติดต่อ', go: 'wizard', btn: 'เริ่มลงทะเบียน' },
+        { done: !!b && b.status === 'approved', wait: !!b && b.status === 'pending', title: 'รอทีมงานตรวจสอบธุรกิจ', text: b && b.status === 'pending' ? 'ทีมงานกำลังตรวจสอบ ปกติภายใน 1–2 วันทำการ' : (b && b.status !== 'approved' ? 'สถานะ: ' + b.status + ' — ติดต่อทีมงาน' : 'หลังส่งข้อมูล ทีมงานจะตรวจสอบให้') },
+        { done: !!user.emailVerified, title: 'ยืนยันอีเมล', text: user.emailVerified ? 'ยืนยันแล้ว' : 'เปิดอีเมลที่เราส่งไป แล้วกดลิงก์ยืนยัน (ต้องทำก่อนอัปโหลดรูปและส่งร้าน)' },
+        { done: places.length > 0, wait: pendingSub, title: 'ร้านขึ้นบนแผนที่', text: places.length ? `มี ${places.length} ร้านบนแผนที่แล้ว` : pendingSub ? 'ส่งร้านแล้ว รอทีมงานอนุมัติ' : 'ส่งร้านใหม่ หรืออ้างสิทธิ์ร้านที่มีบนแผนที่แล้ว', go: places.length ? null : 'wizard', btn: 'ส่งร้าน', go2: places.length ? null : 'claim', btn2: 'อ้างสิทธิ์ร้านเดิม' },
+        { done: anyLivePage, wait: pendingPage, title: 'ทำหน้าร้าน (Shop page)', text: anyLivePage ? 'หน้าร้านเผยแพร่แล้ว — แก้ไขได้ตลอด' : pendingPage ? 'ส่งให้ทีมงานตรวจแล้ว (ครั้งแรกเท่านั้น)' : 'ใส่เมนู รูป เวลาเปิด และช่องทางติดต่อ ให้นักท่องเที่ยวเห็น', go: places.length ? 'shoppage' : null, btn: anyLivePage ? 'แก้ไขหน้าร้าน' : 'ทำหน้าร้าน' }
+      ];
+      const next = steps.findIndex(x => !x.done && !x.wait);
+      const allDone = steps.every(x => x.done);
+      box.innerHTML = `<div class="steps-card${allDone ? ' all-done' : ''}">
+        <h2>${allDone ? 'ร้านของคุณพร้อมแล้ว ✓' : 'ขั้นตอนต่อไปของคุณ'}</h2>
+        <ol class="owner-step-list">${steps.map((x, i) => `<li class="${x.done ? 'done' : x.wait ? 'wait' : i === next ? 'next' : ''}">
+          <span class="step-dot" aria-hidden="true">${x.done ? '✓' : x.wait ? '◷' : i + 1}</span>
+          <div><strong>${x.title}</strong><small>${escHtml(x.text)}</small>
+          ${i === next && (x.go || x.go2) ? `<div class="step-actions">${x.go ? `<button class="btn-action primary" onclick="switchView('${x.go}')">${x.btn} →</button>` : ''}${x.go2 ? `<button class="btn-outline" onclick="switchView('${x.go2}')">${x.btn2}</button>` : ''}</div>` : ''}</div>
+          <span class="sr-only">${x.done ? '(เสร็จแล้ว)' : x.wait ? '(รอทีมงาน)' : ''}</span></li>`).join('')}</ol></div>`;
+    }
+
     async function loadBusinessOverview() {
       try {
         const res = await fetch('/api/business/me');
-        if (res.ok) {
+        // Tommy (UX pass): no sample data — real numbers or an empty state
+        const grid0 = document.getElementById('placesGridContainer');
+        if (!res.ok) {
+          renderOwnerSteps(null);
+          if (grid0) grid0.innerHTML = '';
+          ['kpiManagedCount', 'kpiPublishedCount'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '0'; });
+          const badge0 = document.getElementById('ownerStatusBadge'); if (badge0) badge0.textContent = 'ยังไม่ได้เข้าสู่ระบบ';
+          return;
+        }
+        {
           const data = await res.json();
+          let shopPages = [];
+          if (data.business && data.business.status === 'approved') {
+            try { const r2 = await fetch('/api/business/shop-pages'); if (r2.ok) shopPages = (await r2.json()).pages || []; } catch (e) { /* ignore */ }
+          }
+          renderOwnerSteps(data, shopPages);
+          const av = document.getElementById('ownerAvatar'); if (av && data.user && data.user.name) av.textContent = data.user.name.trim().slice(0, 2);
+          const rn = document.getElementById('railUserName'); if (rn) rn.innerHTML = `บัญชี: <strong>${escHtml(data.user && data.user.name || '')}</strong>`;
+          const rb = document.getElementById('railSignBtn'); if (rb) { rb.textContent = 'ไปที่โปรไฟล์ ↗'; rb.onclick = () => { window.location.href = '/profile.html'; }; }
+          if (grid0 && !(data.places && data.places.length)) {
+            grid0.innerHTML = '<div class="empty-places">ยังไม่มีร้านบนแผนที่ — ทำตามขั้นตอนด้านบน เมื่อทีมงานอนุมัติแล้ว ร้านจะแสดงที่นี่</div>';
+            ['kpiManagedCount', 'kpiPublishedCount'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '0'; });
+          }
+          if (!data.business) { const badge1 = document.getElementById('ownerStatusBadge'); if (badge1) badge1.textContent = 'ยังไม่ได้ลงทะเบียนธุรกิจ'; }
           if (data.user) {
             const nameEl = document.getElementById('ownerNameHeader');
-            if (nameEl) nameEl.innerHTML = `สวัสดี, คุณ${data.user.name || 'เจ้าของร้าน'}<span>.</span>`;
+            if (nameEl) nameEl.innerHTML = `สวัสดี, คุณ${escHtml(data.user.name || 'เจ้าของร้าน')}<span>.</span>`;
           }
           if (data.business) {
             const badgeEl = document.getElementById('ownerStatusBadge');
@@ -1315,20 +1401,20 @@
               grid.innerHTML = data.places.map(p => `
                 <article class="place-card">
                   <div class="place-img-wrap">
-                    <img src="${p.photo || 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80'}" alt="">
+                    <img src="${escHtml(p.photo || 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80')}" alt="">
                     ${p.spotlightBadge ? `<span class="badge-on-image spotlight">★ ${p.spotlightBadge}</span>` : `<span class="badge-on-image" style="background:#15803D; color:#FFF;">✓ Published</span>`}
                   </div>
                   <div class="place-body">
-                    <h3>${p.th || p.en}</h3>
-                    <p>${p.storyTh || p.storyEn || 'ร้านค้าชุมชนคุณภาพดี'}</p>
+                    <h3>${escHtml(p.th || p.en)}</h3>
+                    <p>${escHtml(p.storyTh || p.storyEn || 'ร้านค้าชุมชนคุณภาพดี')}</p>
                     <div class="place-meta-line">
-                      <span>${p.smeType || p.category || 'Local SME'}</span>
+                      <span>${escHtml(p.smeType || p.category || 'Local SME')}</span>
                       <span>·</span>
-                      <span>📍 ${p.locTh || p.locEn || 'ประเทศไทย'}</span>
+                      <span>📍 ${escHtml(p.locTh || p.locEn || 'ประเทศไทย')}</span>
                     </div>
                     <div class="place-actions">
-                      <button class="btn-outline" onclick="switchView('profile', document.querySelectorAll('.nav-btn')[3])">แก้ไขข้อมูลร้าน</button>
-                      <button class="btn-boost" onclick="switchView('promotions', document.querySelectorAll('.nav-btn')[2])">★ ซื้อ Ads เพิ่ม</button>
+                      <button class="btn-outline" onclick="switchView('profile')">แก้ไขข้อมูลร้าน</button>
+                      <button class="btn-boost" onclick="switchView('promotions')">★ ซื้อ Ads เพิ่ม</button>
                     </div>
                   </div>
                 </article>
@@ -1343,117 +1429,202 @@
       }
     }
 
+    // ===== Tommy (2026-11-06): business forms talk to the server for real =====
+    // Before: the "register shop" form, profile save and claim form only showed success messages — nothing reached
+    // admin (wrong business type, no photo, fake contact email, errors hidden). See docs/handoff-2026-11-06.md.
+    // Server rules this follows (backend/server.js, unchanged):
+    //   1. POST /api/business/register  → business profile, status 'pending' until admin approves it
+    //   2. the business must be 'approved' and the account email verified before photos / shop proposals
+    //   3. POST /api/business/uploads (photo) → POST /api/business/submissions (draft) → POST …/:id/submit (to admin)
+    // While waiting for step 2, the shop form is kept on this device (localStorage) so the owner only presses send again.
+    const WIZ_TYPE = { cafe: 'food', food: 'food', stay: 'stay', craft: 'experience' };    // form choice → business type
+    const WIZ_CATEGORY = { cafe: 'food', food: 'food', stay: 'stay', craft: 'culture' };    // form choice → place category
+    const WIZ_DRAFT_KEY = 'traval-business-wizard-draft';
+    let wizPhotoDataUrl = '';
+
+    function escHtml(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    async function bizApi(method, url, body) {
+      const res = await fetch(url, {
+        method, credentials: 'same-origin',
+        headers: body ? { 'Content-Type': 'application/json' } : {},
+        body: body ? JSON.stringify(body) : undefined
+      });
+      let data = {};
+      try { data = await res.json(); } catch (e) { }
+      if (!res.ok) { const err = new Error(data.error || ('HTTP ' + res.status)); err.status = res.status; throw err; }
+      return data;
+    }
+    /** {user, business, places, submissions} — or null when not signed in. */
+    async function bizMe() {
+      try { return await bizApi('GET', '/api/business/me'); }
+      catch (e) { if (e.status === 401) return null; throw e; }
+    }
+
+    function setWizStatus(html, tone) {
+      const box = document.getElementById('wizStatus');
+      if (!box) return;
+      const colors = { info: ['#EEF6FF', '#1E3A8A'], warn: ['#FFF7E6', '#8A5A00'], ok: ['#ECFDF3', '#166534'], error: ['#FEF2F2', '#991B1B'] }[tone || 'info'];
+      box.style.display = html ? 'block' : 'none';
+      box.style.background = colors[0];
+      box.style.color = colors[1];
+      box.innerHTML = html;
+    }
+    async function refreshWizardStatus() {
+      let me;
+      try { me = await bizMe(); } catch (e) { setWizStatus('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: ' + escHtml(e.message), 'error'); return null; }
+      if (!me) { setWizStatus('กรุณา <a href="login.html" style="font-weight:700;color:inherit;">เข้าสู่ระบบ</a> ก่อนลงทะเบียนร้าน (ใช้บัญชีเดียวกับแอป GoAround)', 'warn'); return me; }
+      const b = me.business;
+      if (!b) setWizStatus('ยังไม่มีโปรไฟล์ธุรกิจ — กดส่งแบบฟอร์มครั้งแรก ระบบจะสร้างโปรไฟล์ธุรกิจและส่งให้แอดมินอนุมัติก่อน', 'info');
+      else if (b.status === 'pending') setWizStatus('◷ โปรไฟล์ธุรกิจ <b>' + escHtml(b.name) + '</b> กำลังรอแอดมินอนุมัติ — ข้อมูลร้านในฟอร์มนี้บันทึกไว้ในเครื่องแล้ว เมื่ออนุมัติแล้วกลับมากด "ส่งแบบฟอร์ม" อีกครั้ง', 'warn');
+      else if (b.status === 'rejected') setWizStatus('✕ แอดมินไม่อนุมัติโปรไฟล์ธุรกิจ' + (b.note ? ': ' + escHtml(b.note) : '') + ' — แก้ไขที่แท็บ "โปรไฟล์ร้าน" แล้วบันทึกเพื่อส่งตรวจใหม่', 'error');
+      else if (b.status === 'suspended') setWizStatus('บัญชีธุรกิจถูกระงับ กรุณาติดต่อแอดมิน', 'error');
+      else if (!me.user.emailVerified) setWizStatus('✓ ธุรกิจได้รับอนุมัติแล้ว — แต่ต้องยืนยันอีเมลก่อนส่งร้าน <button type="button" onclick="resendVerifyEmail()" style="margin-left:6px;border:1px solid currentColor;background:#fff;border-radius:99px;padding:2px 10px;cursor:pointer;">ส่งอีเมลยืนยันอีกครั้ง</button>', 'warn');
+      else setWizStatus('✓ ธุรกิจ <b>' + escHtml(b.name) + '</b> ได้รับอนุมัติแล้ว — ส่งร้านให้แอดมินตรวจได้เลย', 'ok');
+      return me;
+    }
+    async function resendVerifyEmail() {
+      try { await bizApi('POST', '/api/auth/verify/request', {}); showToast('ส่งอีเมลยืนยันแล้ว กรุณาตรวจกล่องจดหมาย'); }
+      catch (e) { showToast('ส่งอีเมลไม่สำเร็จ: ' + e.message); }
+    }
+
+    function wizardValues() {
+      const v = id => (document.getElementById(id)?.value || '').trim();
+      return { th: v('wizShopName'), en: v('wizShopNameEn'), choice: v('wizCategory') || 'cafe', phone: v('wizPhone'), line: v('wizLine'),
+        lat: parseFloat(v('wizLat')), lon: parseFloat(v('wizLon')), address: v('wizAddress'), proofType: v('wizProofType') };
+    }
+    function saveWizardDraft() {
+      const d = wizardValues();
+      try { localStorage.setItem(WIZ_DRAFT_KEY, JSON.stringify({ ...d, savedAt: Date.now() })); } catch (e) { }
+    }
+    function restoreWizardDraft() {
+      let d = null;
+      try { d = JSON.parse(localStorage.getItem(WIZ_DRAFT_KEY) || 'null'); } catch (e) { }
+      if (!d) return;
+      const set = (id, val) => { const el = document.getElementById(id); if (el && val != null && val !== '' && !(typeof val === 'number' && !Number.isFinite(val))) el.value = val; };
+      set('wizShopName', d.th); set('wizShopNameEn', d.en); set('wizCategory', d.choice); set('wizPhone', d.phone); set('wizLine', d.line);
+      set('wizAddress', d.address); set('wizProofType', d.proofType);
+      if (Number.isFinite(d.lat) && Number.isFinite(d.lon)) setBizCoords(d.lat, d.lon);
+    }
+    function onWizPhotoChosen(input) {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type)) { showToast('รองรับเฉพาะ JPG, PNG หรือ WebP'); input.value = ''; return; }
+      if (file.size > 5 * 1024 * 1024) { showToast('รูปใหญ่เกิน 5 MB'); input.value = ''; return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        wizPhotoDataUrl = String(reader.result || '');
+        const img = document.getElementById('wizPhotoPreview');
+        if (img) { img.src = wizPhotoDataUrl; img.style.display = 'block'; }
+      };
+      reader.readAsDataURL(file);
+    }
+    /** GoAround region for a position, from the nearest OpenStreetMap places (province boundaries are in that data). */
+    async function regionForPosition(lat, lon) {
+      try {
+        const d = 0.05;
+        const j = await bizApi('GET', `/api/map/places?bbox=${lon - d},${lat - d},${lon + d},${lat + d}&limit=60`);
+        const counts = {};
+        for (const p of j.places || []) if (p.region) counts[p.region] = (counts[p.region] || 0) + 1;
+        const best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+        if (best) return best[0];
+      } catch (e) { }
+      return 'central';
+    }
+
     async function submitWizard() {
-      const shopName = (document.getElementById('wizShopName').value || '').trim() || 'ร้านค้าชุมชนใหม่';
-      const shopNameEn = (document.getElementById('wizShopNameEn').value || '').trim() || shopName;
-      const category = document.getElementById('wizCategory').value || 'cafe';
-      const phone = (document.getElementById('wizPhone').value || '').trim() || '081-000-0000';
-      const line = (document.getElementById('wizLine').value || '').trim();
-      const lat = parseFloat(document.getElementById('wizLat').value) || 18.8651;
-      const lon = parseFloat(document.getElementById('wizLon').value) || 99.3498;
-      const address = (document.getElementById('wizAddress').value || '').trim() || 'เชียงใหม่';
-      const proofType = document.getElementById('wizProofType').value || 'ใบอนุญาตประกอบการ';
+      const w = wizardValues();
+      // 1. Check the form (all on this device — nothing is sent until it is complete)
+      if (!w.th || !w.en) { showToast('กรอกชื่อร้านทั้งภาษาไทยและภาษาอังกฤษ'); goToStep(1); return; }
+      if (!w.phone || !/^[+0-9() .-]{6,40}$/.test(w.phone)) { showToast('กรอกเบอร์โทรศัพท์ให้ถูกต้อง'); goToStep(1); return; }
+      if (!Number.isFinite(w.lat) || !Number.isFinite(w.lon)) { showToast('กรุณาปักหมุดตำแหน่งร้านบนแผนที่ (ขั้นตอนที่ 2) ก่อนส่ง'); goToStep(2); return; }
+      if (!w.address) { showToast('กรอกที่อยู่ / จุดสังเกตของร้าน'); goToStep(2); return; }
+      if (!document.getElementById('wizConsent')?.checked) { showToast('กรุณาติ๊กยืนยันว่าเป็นเจ้าของหรือผู้ดูแลสถานที่'); return; }
+      saveWizardDraft();
 
       try {
-        // Attempt business registration if not already registered
-        await fetch('/api/business/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: shopName,
-            type: category,
-            phone: phone,
-            contactEmail: 'merchant@local.th',
-            description: `ร้านค้า ${shopName}`
-          })
-        }).catch(() => {});
+        // 2. Account + business profile
+        let me = await bizMe();
+        if (!me) { showToast('กรุณาเข้าสู่ระบบก่อน — ข้อมูลร้านบันทึกไว้ในเครื่องแล้ว'); setTimeout(() => { location.href = 'login.html'; }, 1200); return; }
+        if (!me.business) {
+          await bizApi('POST', '/api/business/register', {
+            name: w.th, type: WIZ_TYPE[w.choice] || 'other', contactEmail: me.user.email, phone: w.phone,
+            description: [w.en, w.line ? 'LINE/Facebook: ' + w.line : ''].filter(Boolean).join(' · ')
+          });
+          me = await refreshWizardStatus();
+          showToast('ส่งโปรไฟล์ธุรกิจให้แอดมินอนุมัติแล้ว — เมื่ออนุมัติแล้วกลับมากดส่งร้านอีกครั้ง (ข้อมูลบันทึกไว้แล้ว)');
+          return;
+        }
+        if (me.business.status !== 'approved') { await refreshWizardStatus(); showToast('ยังส่งร้านไม่ได้ — ' + (document.getElementById('wizStatus')?.textContent || '').slice(0, 120)); return; }
+        if (!me.user.emailVerified) { await refreshWizardStatus(); showToast('ยืนยันอีเมลก่อนส่งร้าน'); return; }
+        if (!wizPhotoDataUrl) { showToast('เลือกรูปภาพหน้าร้าน 1 รูป (ขั้นตอนที่ 2)'); goToStep(2); return; }
 
-        // Submit place proposal to Admin
-        const subRes = await fetch('/api/business/submissions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'create',
-            payload: {
-              en: shopNameEn,
-              th: shopName,
-              category: category,
-              region: 'เชียงใหม่',
-              lat: lat,
-              lon: lon,
-              isSme: true,
-              smeType: category,
-              contactPhone: phone,
-              contactLine: line,
-              locTh: address,
-              locEn: address,
-              storyTh: 'ร้านค้าชุมชนคุณภาพดีและวิถีท้องถิ่น',
-              storyEn: 'Authentic local community shop and dining experience'
-            },
-            evidence: `เอกสารยืนยันความเป็นเจ้าของ: ${proofType} (ยื่นโดย ${shopName})`
-          })
+        // 3. Photo → shop proposal (draft) → send to admin
+        const photo = await bizApi('POST', '/api/business/uploads', { dataUrl: wizPhotoDataUrl });
+        const region = await regionForPosition(w.lat, w.lon);
+        const created = await bizApi('POST', '/api/business/submissions', {
+          action: 'create',
+          payload: {
+            en: w.en, th: w.th, category: WIZ_CATEGORY[w.choice] || 'food', region, lat: w.lat, lon: w.lon,
+            photo: photo.url, isSme: true, smeType: w.choice, locTh: w.address, locEn: w.address,
+            storyTh: `${w.th} — ${w.address}`, storyEn: `${w.en} — ${w.address}`
+          }
         });
+        await bizApi('POST', `/api/business/submissions/${created.submission.id}/submit`, {});
+        try { localStorage.removeItem(WIZ_DRAFT_KEY); } catch (e) { }
 
-        // Add newly submitted place card to UI list
         const grid = document.getElementById('placesGridContainer');
         if (grid) {
-          const newCard = document.createElement('article');
-          newCard.className = 'place-card';
-          newCard.innerHTML = `
+          const card = document.createElement('article');
+          card.className = 'place-card';
+          card.innerHTML = `
             <div class="place-img-wrap">
-              <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80" alt="">
+              <img src="${escHtml(photo.url)}" alt="">
               <span class="badge-on-image" style="background:#F59E0B; color:#FFF;">◷ รอแอดมินตรวจ (Pending)</span>
             </div>
             <div class="place-body">
-              <h3>${shopName}</h3>
+              <h3>${escHtml(w.th)}</h3>
               <p>คำขอส่งถึง Admin แล้ว อยู่ระหว่างการตรวจสอบข้อมูลและหลักฐาน</p>
-              <div class="place-meta-line">
-                <span>${category}</span>
-                <span>·</span>
-                <span>📍 ${address}</span>
-              </div>
-              <div class="place-actions">
-                <button class="btn-outline" style="flex:1;" onclick="showToast('คำขอส่งถึง Admin แล้ว รอการอนุมัติ')">ดูสถานะคำขอ ↗</button>
-              </div>
-            </div>
-          `;
-          grid.prepend(newCard);
+              <div class="place-meta-line"><span>${escHtml(w.choice)}</span><span>·</span><span>📍 ${escHtml(w.address)}</span></div>
+            </div>`;
+          grid.prepend(card);
         }
-
-        const countEl = document.getElementById('kpiManagedCount');
-        if (countEl) countEl.textContent = parseInt(countEl.textContent || '0') + 1;
-
-        showToast(`ส่งคำขอลงทะเบียน "${shopName}" ถึงแอดมินแล้ว!`);
+        showToast(`ส่งร้าน "${w.th}" ให้แอดมินตรวจแล้ว!`);
+        setTimeout(() => switchView('overview'), 1200);
       } catch (err) {
         console.error(err);
-        showToast(`บันทึกคำขอ "${shopName}" ส่งถึงระบบแล้ว!`);
+        showToast('ส่งไม่สำเร็จ: ' + err.message + ' (ข้อมูลร้านบันทึกไว้ในเครื่องแล้ว)');
       }
-
-      setTimeout(() => {
-        switchView('overview', document.querySelectorAll('.nav-btn')[0]);
-      }, 1000);
     }
 
-    async function saveProfile() {
-      const th = document.getElementById('profShopTh').value;
-      const en = document.getElementById('profShopEn').value;
-      const storyTh = document.getElementById('profStoryTh').value;
-      const storyEn = document.getElementById('profStoryEn').value;
-
+    // Shop profile tab: business name / phone / story are stored on the business profile.
+    async function fillProfileFromServer() {
       try {
-        await fetch('/api/business/me', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: th,
-            description: storyTh,
-            phone: '081-234-5678'
-          })
+        const me = await bizMe();
+        if (!me || !me.business) return;
+        const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+        set('profShopTh', me.business.name);
+        set('profStoryTh', me.business.description);
+      } catch (e) { }
+    }
+    async function saveProfile() {
+      try {
+        const me = await bizMe();
+        if (!me) { showToast('กรุณาเข้าสู่ระบบก่อน'); return; }
+        if (!me.business) { showToast('ยังไม่มีโปรไฟล์ธุรกิจ — ลงทะเบียนร้านที่แท็บ "ลงทะเบียนร้านค้า" ก่อน'); return; }
+        const b = me.business;
+        // The server needs the whole profile on every save (name, type, contact email …), so unchanged fields are sent back as they are.
+        await bizApi('PATCH', '/api/business/me', {
+          name: (document.getElementById('profShopTh').value || '').trim() || b.name,
+          type: b.type, contactEmail: b.contactEmail || me.user.email, phone: b.phone || '', website: b.website || '',
+          description: (document.getElementById('profStoryTh').value || '').trim()
         });
+        showToast(b.status === 'rejected' ? 'บันทึกแล้ว — ส่งให้แอดมินตรวจใหม่' : 'บันทึกโปรไฟล์ร้านแล้ว');
+        refreshWizardStatus();
       } catch (e) {
-        console.warn(e);
+        showToast('บันทึกไม่สำเร็จ: ' + e.message);
       }
-      showToast('บันทึกข้อมูลโปรไฟล์ร้านและเรื่องเล่า Local Story เรียบร้อยแล้ว!');
     }
 
     function buyPackage(pkgName, price) {
@@ -1464,37 +1635,45 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       loadBusinessOverview();
+      restoreWizardDraft();   // Tommy: bring back a shop form saved while waiting for admin
+      refreshWizardStatus();  // Tommy: show sign-in / approval / email status in the form
+      fillProfileFromServer();
+      loadClaimablePlaces();  // Tommy: was never called, so the claim list stayed on "loading"
     });
 
-    function useCurrentGpsForBiz() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-          document.getElementById('wizLat').value = pos.coords.latitude.toFixed(4);
-          document.getElementById('wizLon').value = pos.coords.longitude.toFixed(4);
-          showToast('ดึงพิกัด GPS สำเร็จ (' + pos.coords.latitude.toFixed(4) + ', ' + pos.coords.longitude.toFixed(4) + ')');
-        }, () => {
-          showToast('ไม่สามารถรับตำแหน่ง GPS ได้ โปรดอนุญาตในเบราว์เซอร์');
-        });
+    // Tommy: location step — real map picker + GPS + typed numbers, all kept in sync (was a fake pin near Mae Kampong)
+    let bizPicker = null;
+    function setBizCoords(lat, lon) {
+      document.getElementById('wizLat').value = Number(lat).toFixed(6);
+      document.getElementById('wizLon').value = Number(lon).toFixed(6);
+    }
+    function initBizPicker() {
+      const box = document.getElementById('bizMiniMap');
+      if (!box || bizPicker || !window.TravalMapPicker) return;
+      const lat = parseFloat(document.getElementById('wizLat').value);
+      const lon = parseFloat(document.getElementById('wizLon').value);
+      bizPicker = TravalMapPicker.attach(box, {
+        lat, lon, zoom: Number.isFinite(lat) ? 17 : undefined,   // no position yet → whole of Thailand
+        searchPlaceholder: 'ค้นหาชื่อร้าน ถนน หรือสถานที่ใกล้เคียง',
+        onChange: (la, lo) => { setBizCoords(la, lo); }
+      });
+    }
+    function onBizCoordTyped() {
+      const lat = parseFloat(document.getElementById('wizLat').value);
+      const lon = parseFloat(document.getElementById('wizLon').value);
+      if (bizPicker && Number.isFinite(lat) && Number.isFinite(lon) && !bizPicker.set(lat, lon, 17)) {
+        showToast('พิกัดไม่ถูกต้อง');
       }
     }
-
-    function onBizMapClick(e) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const marker = document.getElementById('bizMapMarker');
-      if (marker) {
-        marker.style.left = x + 'px';
-        marker.style.top = y + 'px';
-      }
-      const baseLat = 18.8651, baseLon = 99.3498;
-      const deltaLat = ((rect.height / 2 - y) / 1000).toFixed(4);
-      const deltaLon = ((x - rect.width / 2) / 1000).toFixed(4);
-      const newLat = (baseLat + parseFloat(deltaLat)).toFixed(4);
-      const newLon = (baseLon + parseFloat(deltaLon)).toFixed(4);
-      document.getElementById('wizLat').value = newLat;
-      document.getElementById('wizLon').value = newLon;
-      showToast('ปักหมุดพิกัดใหม่: ' + newLat + ', ' + newLon);
+    function useCurrentGpsForBiz() {
+      if (!navigator.geolocation) { showToast('เบราว์เซอร์นี้ไม่รองรับ GPS'); return; }
+      navigator.geolocation.getCurrentPosition(pos => {
+        setBizCoords(pos.coords.latitude, pos.coords.longitude);
+        if (bizPicker) bizPicker.set(pos.coords.latitude, pos.coords.longitude, 18);
+        showToast('ดึงพิกัด GPS สำเร็จ — ลากแผนที่เพื่อปรับหมุดให้ตรงหน้าร้านได้');
+      }, () => {
+        showToast('ไม่สามารถรับตำแหน่ง GPS ได้ โปรดอนุญาตในเบราว์เซอร์');
+      }, { enableHighAccuracy: true, timeout: 15000 });
     }
 
     async function loadClaimablePlaces() {
@@ -1505,25 +1684,37 @@
         const select = document.getElementById('claimPlaceSelect');
         if (select && places) {
           select.innerHTML = '<option value="">-- เลือกร้านค้าของคุณ --</option>' + 
-            places.map(p => `<option value="${p.id}">${p.th || p.en} (${p.locTh || p.locEn})</option>`).join('');
+            places.map(p => `<option value="${escHtml(p.id)}">${escHtml(p.th || p.en)} (${escHtml(p.locTh || p.locEn)})</option>`).join(''); // Tommy: escaped
         }
       } catch (e) {
         console.warn(e);
       }
     }
 
+    // Tommy (2026-11-06): claim form sends a real 'claim' proposal (was a success message only).
     async function submitClaimRequest(e) {
       e.preventDefault();
       const placeId = document.getElementById('claimPlaceSelect').value;
-      const ownerName = document.getElementById('claimOwnerName').value;
-      const phone = document.getElementById('claimPhone').value;
-      const note = document.getElementById('claimNote').value;
-      if (!placeId) {
-        showToast('โปรดเลือกร้านค้าที่ต้องการอ้างสิทธิ์');
-        return;
+      const ownerName = document.getElementById('claimOwnerName').value.trim();
+      const phone = document.getElementById('claimPhone').value.trim();
+      const note = document.getElementById('claimNote').value.trim();
+      if (!placeId) { showToast('โปรดเลือกร้านค้าที่ต้องการอ้างสิทธิ์'); return; }
+      try {
+        const me = await bizMe();
+        if (!me) { showToast('กรุณาเข้าสู่ระบบก่อน'); setTimeout(() => { location.href = 'login.html'; }, 1200); return; }
+        if (!me.business) { showToast('สร้างโปรไฟล์ธุรกิจก่อน (แท็บ "ลงทะเบียนร้านค้า") แล้วรอแอดมินอนุมัติ'); return; }
+        if (me.business.status !== 'approved') { showToast('โปรไฟล์ธุรกิจยังรอแอดมินอนุมัติ — อ้างสิทธิ์ได้หลังอนุมัติ'); return; }
+        if (!me.user.emailVerified) { showToast('ยืนยันอีเมลก่อนส่งคำขอ'); return; }
+        const created = await bizApi('POST', '/api/business/submissions', {
+          action: 'claim', placeId,
+          evidence: `ผู้ยื่น: ${ownerName}\nโทร: ${phone}\nหลักฐาน: ${note}`.slice(0, 2000)
+        });
+        await bizApi('POST', `/api/business/submissions/${created.submission.id}/submit`, {});
+        showToast('ยื่นคำขออ้างสิทธิ์แล้ว — แอดมินจะตรวจสอบและติดต่อกลับทางเบอร์ ' + phone);
+        switchView('overview');
+      } catch (err) {
+        showToast('ส่งคำขอไม่สำเร็จ: ' + err.message);
       }
-      showToast('ยื่นคำขออ้างสิทธิ์สำเร็จ! เจ้าหน้าที่จะตรวจสอบข้อมูลและติดต่อกลับทางเบอร์ ' + phone);
-      switchView('overview', document.querySelectorAll('.nav-btn')[0]);
     }
   </script>
 

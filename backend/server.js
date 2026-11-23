@@ -8,6 +8,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { URL } = require('node:url');
 const routing = require('./routing.js'); // Tommy: road routing (POST /api/routes)
+const TravalCost = require('../frontend/shared/travel-cost.js'); // Tommy: the one taxi/fuel formula (same file the pages use)
+const TravalRoute = require('../frontend/shared/road-route.js'); // Tommy: straight-line road estimate when no road route is available
+const { makeShopPages } = require('./shop-pages.js'); // Tommy: SME shop pages (/shop/<place id>)
 const osmPlaces = require('./osm-places.js'); // Tommy: OpenStreetMap places for the map (GET /api/map/*)
 const googleAuth = require('./google-auth.js'); // Tommy: real Sign in with Google (token checked with Google)
 
@@ -39,16 +42,11 @@ const PAGE_FILES={
   'business-admin.js':'frontend/business/business-admin.js',
   'business-admin.css':'frontend/business/business-admin.css',
   'planner.html':'frontend/planner/planner.html',
-  'planner.js':'frontend/planner/planner.js',
-  'planner.css':'frontend/planner/planner.css',
   'planner-showcase.html':'frontend/planner/planner.html',
   'admin-showcase.html':'frontend/admin/admin.html',
   'business-showcase.html':'frontend/business/business.html',
-  'planner-legacy.html':'frontend/planner/planner-legacy.html',
   'admin-legacy.html':'frontend/admin/admin-legacy.html',
   'business-legacy.html':'frontend/business/business-legacy.html',
-  'google-maps-poc.html':'frontend/poc/google-maps-poc.html',
-  'poc/google-maps-poc.html':'frontend/poc/google-maps-poc.html',
   'trip-engine.js':'frontend/planner/trip-engine.js',
   // Tommy: shared travel tools used by several pages
   'map-gestures.js':'frontend/shared/map-gestures.js',
@@ -56,6 +54,14 @@ const PAGE_FILES={
   'travel-cost.js':'frontend/shared/travel-cost.js',
   'maps-links.js':'frontend/shared/maps-links.js',
   'google-login.js':'frontend/shared/google-login.js',
+  'map-picker.js':'frontend/shared/map-picker.js', // Tommy: location picker for business/admin forms
+  'site-ux.css':'frontend/shared/site-ux.css', // Tommy: shared UX fixes for auth/planner/business pages
+  'shop-render.js':'frontend/shared/shop-render.js', // Tommy: draws an SME shop page (public page + editor preview)
+  'shop-render.css':'frontend/shared/shop-render.css',
+  'shop.js':'frontend/shop/shop.js',
+  'shop-editor.js':'frontend/business/shop-editor.js', // Tommy: Business portal shop page editor
+  'shop-editor.css':'frontend/business/shop-editor.css',
+  'admin-shop-pages.js':'frontend/admin/admin-shop-pages.js', // Tommy: admin approvals for SME shop pages
   'auth/login.html':'frontend/auth/login.html',
   'auth/register.html':'frontend/auth/register.html',
   'auth/profile.html':'frontend/auth/profile.html',
@@ -486,6 +492,17 @@ function itineraryPublic(row){
   budgetBreakdown,
   groups,createdAt:row.created_at,updatedAt:row.updated_at};
 }
+// Tommy: OpenStreetMap places (osm-n123 …) in a user's Saved / Trip lists. They are not in the places table, so they
+// live in their own table; positions share one numbering with user_collections so the list order is kept.
+db.exec(`CREATE TABLE IF NOT EXISTS user_osm_collections (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  osm_id TEXT NOT NULL, kind TEXT NOT NULL CHECK (kind IN ('saved','trip')), position INTEGER NOT NULL,
+  PRIMARY KEY (user_id,osm_id,kind))`);
+function collectionWithOsm(userId,kind){
+  const team=db.prepare("SELECT c.place_slug AS id,c.position FROM user_collections c JOIN places p ON p.slug=c.place_slug WHERE c.user_id=? AND c.kind=? AND p.status='published'").all(userId,kind);
+  const osm=db.prepare('SELECT osm_id AS id,position FROM user_osm_collections WHERE user_id=? AND kind=?').all(userId,kind);
+  return [...team,...osm].sort((a,b)=>a.position-b.position).map(r=>r.id);
+}
 function collectionList(userId,kind){return db.prepare("SELECT c.place_slug FROM user_collections c JOIN places p ON p.slug=c.place_slug WHERE c.user_id=? AND c.kind=? AND p.status='published' ORDER BY c.position ASC").all(userId,kind).map(r=>r.place_slug);}
 function reviewPublic(r,own=false){const item={id:r.id,placeId:r.place_slug,name:r.name,stars:r.stars,text:r.text,photo:r.photo,status:r.status,createdAt:r.created_at,updatedAt:r.updated_at};if(!own)delete item.status;return item;}
 const pickReviews=db.prepare('SELECT r.*,u.name FROM reviews r JOIN users u ON u.id=r.user_id WHERE r.place_slug=? AND r.status=\'approved\' ORDER BY r.updated_at DESC LIMIT 100');
@@ -622,6 +639,8 @@ function approveSubmission(row,adminNote){
  }catch(e){db.exec('ROLLBACK');throw e;}
 }
 function ownerPlaces(businessId){return db.prepare('SELECT p.* FROM places p JOIN place_owners o ON o.place_slug=p.slug WHERE o.business_id=? ORDER BY p.updated_at DESC').all(businessId).map(x=>rowToPlace(x,true));}
+// Tommy: SME shop pages — table, checks and routes live in backend/shop-pages.js
+const shopPages=makeShopPages({db,fail,audit,getRow,rowToPlace});
 function uploadImage(body){return uploadImageTo(body);}
 function slugFor(name){const base=name.normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,46)||'place';let s=base;while(getRow.get(s))s=base+'-'+crypto.randomBytes(3).toString('hex');return s;}
 function saveNew(p){const t=new Date().toISOString(),slug=slugFor(p.name_en);
@@ -639,7 +658,8 @@ function saveExisting(slug,p){const result=db.prepare('UPDATE places SET name_en
  return rowToPlace(getRow.get(slug),true);
 }
 function generateAiTripPlan(params){
-  const destination=(params.destination||'').toLowerCase().trim();
+  // Tommy: the planner sends ids like 'chiang-mai' / 'mae-hong-son' — match them against 'Chiang Mai' etc.
+  const destination=(params.destination||'').toLowerCase().replace(/[-_]+/g,' ').trim();
   const days=Math.max(1,Math.min(7,Number(params.days)||1));
   const travelMode=['driving','walking','transit','taxi'].includes(params.travelMode)?params.travelMode:'driving';
   const pace=params.pace||'moderate';
@@ -679,16 +699,37 @@ function generateAiTripPlan(params){
 
   const allPub=getPublic.all();
   let pool=allPub;
+  let poolNote=''; // Tommy: told to the traveler when the plan had to look outside the destination
+  // Tommy: also match the Thai name the page shows ('กรุงเทพมหานคร' → 'กรุงเทพ…'), first word only
+  const destName=(typeof params.destinationName==='string'?params.destinationName:'').trim().toLowerCase().replace(/มหานคร$/,'').split(/\s+/)[0]||'';
   if(destination&&destination!=='all'){
+    // Tommy: whole words for English ('nan' must not match 'Ao Nang'); Thai has no spaces, so Thai stays "contains"
+    const word=new RegExp(`(^|[^a-z])${destination.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}($|[^a-z])`,'i');
     const matched=allPub.filter(p=>
       p.region.toLowerCase()===destination||
-      p.location_en.toLowerCase().includes(destination)||
+      word.test(p.location_en)||
       p.location_th.toLowerCase().includes(destination)||
-      p.name_en.toLowerCase().includes(destination)||
-      p.name_th.toLowerCase().includes(destination)
+      word.test(p.name_en)||
+      p.name_th.toLowerCase().includes(destination)||
+      (destName.length>=2&&p.location_th.toLowerCase().includes(destName))
     );
     if(matched.length>=3)pool=matched;
+    else if(matched.length){
+      // Tommy (2026-11-06): few places there → add the nearest others (within 150 km of them), not the whole
+      // country (before: a "Bangkok" plan went through Phuket, Samui and Chiang Mai).
+      const pts=matched.filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon));
+      const cLat=pts.reduce((n,p)=>n+p.lat,0)/(pts.length||1),cLon=pts.reduce((n,p)=>n+p.lon,0)/(pts.length||1);
+      const near=pts.length?allPub.filter(p=>!matched.includes(p)&&Number.isFinite(p.lat)&&Number.isFinite(p.lon))
+        .map(p=>[p,kmBetween(cLat,cLon,p.lat,p.lon)]).filter(([,d])=>d<=150).sort((a,b)=>a[1]-b[1]).map(([p])=>p):[];
+      pool=[...matched,...near];
+      poolNote=near.length?`มีสถานที่ในปลายทางนี้ ${matched.length} แห่ง จึงเพิ่มสถานที่ใกล้เคียง (ไม่เกิน 150 กม.) อีก ${near.length} แห่ง`:`มีสถานที่ในปลายทางนี้เพียง ${matched.length} แห่ง`;
+    } else {
+      pool=[];
+      poolNote='ยังไม่มีสถานที่ในปลายทางนี้ในระบบ ลองเลือกปลายทางอื่น';
+    }
   }
+  // Tommy: places the user picked in the app join the plan even when they are outside the chosen destination
+  for(const id of mustVisit){const row=allPub.find(p=>p.slug===id);if(row&&!pool.includes(row))pool=[...pool,row];}
   const scored=pool.map(p=>{
     let score=0;
     if(mustVisit.includes(p.slug))score+=1000;
@@ -703,7 +744,8 @@ function generateAiTripPlan(params){
   scored.sort((a,b)=>b.score-a.score);
 
   const targetPerDay=pace==='relaxed'?3:pace==='packed'?5:4;
-  const totalTarget=Math.min(scored.length,days*targetPerDay);
+  // Tommy: places the user picked (mustVisit) are always kept, even past the per-day target
+  const totalTarget=Math.min(scored.length,Math.max(days*targetPerDay,mustVisit.filter(id=>pool.some(p=>p.slug===id)).length));
   const selectedPlaces=scored.slice(0,totalTarget).map(x=>x.place);
 
   const arranged=[];
@@ -727,16 +769,18 @@ function generateAiTripPlan(params){
   }
 
   let totalKm=0;
+  const allLegs=[]; // Tommy: every leg of every day, priced with TravalCost below
   const dailyItinerary=[];
   const allSuggestedSme=[];
   const usedSlugs=new Set(arranged.map(p=>p.slug));
 
   dailyGroups.forEach((dayPlaces,idx)=>{
-    let dayKm=0;
-    for(let j=1;j<dayPlaces.length;j++){
-      dayKm+=kmBetween(dayPlaces[j-1].lat,dayPlaces[j-1].lon,dayPlaces[j].lat,dayPlaces[j].lon);
-    }
+    // Tommy: road estimate per leg (straight line x detour, same numbers as the pages' fallback); the planner page
+    // then swaps in real road distances from POST /api/routes. Each leg also gets its own taxi fare (meter restarts).
+    const dayRoute=dayPlaces.length>1?TravalRoute.estimate(dayPlaces,travelMode==='taxi'?'driving':travelMode):{legs:[],distanceKm:0,travelMinutes:0};
+    const dayKm=dayRoute.distanceKm;
     totalKm+=dayKm;
+    allLegs.push(...dayRoute.legs);
 
     const daySmeRecs=[];
     if(includeSme&&dayPlaces.length>0){
@@ -765,20 +809,19 @@ function generateAiTripPlan(params){
       day:idx+1,
       places:dayPlaces.map(p=>rowToPlace(p)),
       distanceKm:Math.round(dayKm*10)/10,
-      estimatedDriveMinutes:Math.round((dayKm/35)*60),
+      estimatedDriveMinutes:Math.round(dayRoute.travelMinutes),
+      legs:dayRoute.legs, // Tommy: [{distanceKm, travelMinutes}] between consecutive places
       smeRecommendations:topDaySme
     });
   });
 
+  // Tommy: one formula for the whole app — frontend/shared/travel-cost.js (taxi meter per leg, fuel for own car)
   let transportEst=0;
+  const legCost=TravalCost.tripCost(allLegs,travelMode==='taxi'?'driving':travelMode);
   if(travelMode==='taxi'){
-    let base=35;
-    if(totalKm>1)base+=Math.min(9,totalKm-1)*6.5;
-    if(totalKm>10)base+=Math.min(10,totalKm-10)*7.0;
-    if(totalKm>20)base+=(totalKm-20)*8.0;
-    transportEst=Math.round(base*1.15);
+    transportEst=Math.round((legCost.taxi.min+legCost.taxi.max)/2);
   }else if(travelMode==='driving'){
-    transportEst=Math.round(totalKm*3.2);
+    transportEst=legCost.fuel;
   }else if(travelMode==='transit'){
     transportEst=Math.round(days*180*travelers);
   }else{
@@ -799,7 +842,9 @@ function generateAiTripPlan(params){
     totalEstimated
   };
 
-  const titleDest=destination&&destination!=='all'?destination:(arranged[0]?.location_th||'กรุงเทพและปริมณฑล');
+  // Tommy: show the destination's name as the page shows it (e.g. 'เชียงใหม่'), not the internal id 'chiang mai'
+  const destinationName=typeof params.destinationName==='string'?params.destinationName.trim().slice(0,40):'';
+  const titleDest=destinationName||(destination&&destination!=='all'?destination:(arranged[0]?.location_th||'กรุงเทพและปริมณฑล'));
   const tripTitle=`ทริปเที่ยว${titleDest} ${days} วัน (${pace==='relaxed'?'สไตล์ชิลๆ':pace==='packed'?'จัดเต็มทุกจุด':'ครบเครื่อง'})`;
   const interestText=interests.length?`เน้น${interests.join(', ')}`:'' ;
   const aiSummary=`จัดแผนการเดินทาง ${days} วัน ${interestText} รวมระยะทางประมาณ ${Math.round(totalKm*10)/10} กม. จัดกลุ่มสถานที่ใกล้กันในแต่ละวันเพื่อประหยัดเวลาเดินทาง พร้อมแนะนำร้าน Local SME ${allSuggestedSme.length} แห่งระหว่างเส้นทาง ค่าใช้จ่ายประมาณการรวม ${totalEstimated.toLocaleString()} บาท${budget?(budget>=totalEstimated?` (อยู่ในงบประมาณ ${budget.toLocaleString()} บาทที่ตั้งไว้)`:` (เกินจากงบที่ตั้งไว้ แนะนำปรับเปลี่ยนที่พักหรือลดมื้อพิเศษ)`):''}`;
@@ -817,7 +862,8 @@ function generateAiTripPlan(params){
     suggestedSmeStops:allSuggestedSme,
     budgetBreakdown,
     budgetStatus:budget?(budget>=totalEstimated?'within_budget':'exceeds_budget'):'not_specified',
-    aiSummary
+    aiSummary,
+    note:poolNote // Tommy: '' normally; explains a plan that is small or reaches beyond the destination
   };
 }
 async function api(req,res,u){
@@ -909,6 +955,10 @@ async function api(req,res,u){
     const sliced=recs.slice(0,limit);
     return reply(res,200,{recommendations:sliced,stopovers:sliced,count:sliced.length});
   }
+  if(route.startsWith('/api/shop-pages')||route.startsWith('/api/business/shop-pages')||route.startsWith('/api/admin/shop-pages')){ // Tommy: SME shop pages
+    const done=await shopPages.handle(req,res,route,method,u,{reply,jsonBody,checkOrigin,requireBusiness,requireAdmin,userSession,businessOf,rowToPlace});
+    if(done!==false)return;
+  }
   { // Tommy: OpenStreetMap places by map area and name search (backend/osm-places.js)
     const out=osmPlaces.handle(DATA,route,method,u.searchParams);if(out)return reply(res,out.status,out.body);
   }
@@ -919,17 +969,16 @@ async function api(req,res,u){
   }
   if(route==='/api/trips/estimate-cost'&&method==='GET'){
     const dist=parsedCoord(u.searchParams.get('distanceKm'),'distanceKm',0,5000);
-    let taxiBase=35;
-    if(dist>1){const d1=Math.min(9,dist-1);taxiBase+=d1*6.5;}
-    if(dist>10){const d2=Math.min(10,dist-10);taxiBase+=d2*7.0;}
-    if(dist>20){const d3=dist-20;taxiBase+=d3*8.0;}
-    const taxiMin=Math.round(taxiBase),taxiMax=Math.round(taxiBase*1.25);
-    const fuelMin=Math.round(dist*2.8),fuelMax=Math.round(dist*3.5);
+    // Tommy: same maths as the pages (frontend/shared/travel-cost.js). Optional travelMinutes widens the taxi range for traffic.
+    const mins=Number(u.searchParams.get('travelMinutes'));
+    const taxi=TravalCost.taxiFareRange(dist,Number.isFinite(mins)&&mins>0?mins:dist/20*60);
+    const taxiMin=taxi.min,taxiMax=taxi.max;
+    const fuelMin=TravalCost.fuelCost(dist),fuelMax=TravalCost.fuelCost(dist,{kmPerLitre:9});
     return reply(res,200,{
       distanceKm:dist,
       currency:'THB',
       taxiFare:{min:taxiMin,max:taxiMax,note:'ประมาณการตามมิเตอร์แท็กซี่เบื้องต้น อาจผันแปรตามสภาพการจราจร'},
-      fuelCost:{min:fuelMin,max:fuelMax,note:'ประมาณการค่าน้ำมันรถยนต์ส่วนบุคคลเฉลี่ย 3 บาท/กม.'}
+      fuelCost:{min:fuelMin,max:fuelMax,note:'ประมาณการค่าน้ำมันรถยนต์ส่วนบุคคล (9–12 กม./ลิตร, 35 บาท/ลิตร)'}
     });
   }
   if(route==='/api/ai/advisor'&&method==='POST'){
@@ -1085,6 +1134,9 @@ async function api(req,res,u){
     if(!['google','facebook'].includes(provider))fail(400,'Supported providers: google, facebook');
     // Tommy: Google must send a real Google-signed token; email/name/picture come from the token, not the browser.
     if(provider==='google'){const g=await googleAuth.googleLoginFields(b,req);if(g)Object.assign(b,g);}
+    // Tommy (2026-11-06): Facebook is still the demo "type an email" box (no Facebook app yet), which lets anyone into
+    // anyone's account. Keep it for testing on this computer only; refuse it from other devices / when online.
+    if(provider==='facebook'&&!googleAuth.isLocalRequest(req))fail(503,'Facebook sign-in is not set up on this server yet');
     const email=validateEmail(b?.email);
     const name=validString(b?.name||(email.split('@')[0]),60,'Name');
     const providerId=validString(b?.providerId||b?.sub||b?.id||('id_'+crypto.randomUUID().slice(0,8)),100,'Provider ID');
@@ -1112,6 +1164,10 @@ async function api(req,res,u){
   }
   if(route==='/api/auth/phone/otp-request'&&method==='POST'){
     checkOrigin(req);allowUserAttempt(req,'phone-otp-req');const b=await jsonBody(req);
+    // Tommy (2026-11-06): no SMS service yet, so the code is shown to the browser (devOtp) — anyone could log in with
+    // anyone's number. Allowed only for testing on this computer; other devices get "not set up" until SMS is added.
+    const localDemo=googleAuth.isLocalRequest(req);
+    if(!localDemo)fail(503,'Phone sign-in is not set up on this server yet (no SMS service)');
     const phone=normalizePhone(b?.phone);
     const otp=String(Math.floor(100000 + Math.random() * 900000));
     const otpHash=hashToken(otp);
@@ -1121,7 +1177,7 @@ async function api(req,res,u){
       .run(phone,otpHash,expiresAt,now);
     console.log(`[DEV PHONE OTP] ${phone} -> ${otp}`);
     audit('anon','0','auth.phone_otp_request','phone',phone);
-    return reply(res,200,{ok:true,message:'OTP sent successfully (valid for 5 minutes)',devOtp:otp,phone});
+    return reply(res,200,{ok:true,message:'OTP sent successfully (valid for 5 minutes)',devOtp:localDemo?otp:undefined,phone});
   }
   if(route==='/api/auth/phone/otp-verify'&&method==='POST'){
     checkOrigin(req);allowUserAttempt(req,'phone-otp-ver');const b=await jsonBody(req);
@@ -1235,8 +1291,10 @@ async function api(req,res,u){
   }
   if(route==='/api/me/collections'&&method==='GET'){
     const user=requireUser(req);
-    const saved=collectionList(user.id,'saved'),trip=collectionList(user.id,'trip');
+    const saved=collectionWithOsm(user.id,'saved'),trip=collectionWithOsm(user.id,'trip'); // Tommy: includes OSM places, in order
     const result={saved,trip};
+    // Tommy: details of the OpenStreetMap places in these lists, so any device can show them
+    result.osmPlaces=osmPlaces.getByIds(DATA,[...saved,...trip].filter(id=>osmPlaces.ID_PATTERN.test(id)))||[];
     if(u.searchParams.get('populated')==='1'){
       result.savedPlaces=saved.map(s=>{const p=getRow.get(s);return p?rowToPlace(p):null;}).filter(Boolean);
       result.tripPlaces=trip.map(s=>{const p=getRow.get(s);return p?rowToPlace(p):null;}).filter(Boolean);
@@ -1249,17 +1307,23 @@ async function api(req,res,u){
     for(const kind of ['saved','trip']){
       if(b[kind].some(v=>typeof v!=='string'||!/^[-a-z0-9]{1,65}$/.test(v)))fail(400,'Invalid place identifier');
       const ids=new Set(b[kind]);if(ids.size!==b[kind].length)fail(400,'Duplicate place');
-      for(const id of ids)publishedPlace(id);
+      // Tommy: OpenStreetMap ids are checked against the imported OSM place file (when it is imported)
+      const osmIds=[...ids].filter(id=>osmPlaces.ID_PATTERN.test(id));
+      const known=osmPlaces.getByIds(DATA,osmIds);
+      if(known&&known.length!==osmIds.length)fail(400,'Unknown OpenStreetMap place');
+      for(const id of ids)if(!osmPlaces.ID_PATTERN.test(id))publishedPlace(id);
     }
     db.exec('BEGIN');try{
       for(const kind of ['saved','trip']){
         db.prepare('DELETE FROM user_collections WHERE user_id=? AND kind=?').run(user.id,kind);
+        db.prepare('DELETE FROM user_osm_collections WHERE user_id=? AND kind=?').run(user.id,kind); // Tommy
         const insert=db.prepare('INSERT INTO user_collections(user_id,place_slug,kind,position) VALUES(?,?,?,?)');
-        b[kind].forEach((id,index)=>insert.run(user.id,id,kind,index));
+        const insertOsm=db.prepare('INSERT INTO user_osm_collections(user_id,osm_id,kind,position) VALUES(?,?,?,?)'); // Tommy
+        b[kind].forEach((id,index)=>(osmPlaces.ID_PATTERN.test(id)?insertOsm:insert).run(user.id,id,kind,index));
       }
       db.exec('COMMIT');
     }catch(e){db.exec('ROLLBACK');throw e;}
-    return reply(res,200,{saved:collectionList(user.id,'saved'),trip:collectionList(user.id,'trip')});
+    return reply(res,200,{saved:collectionWithOsm(user.id,'saved'),trip:collectionWithOsm(user.id,'trip')}); // Tommy: with OSM places
   }
   // v2.7: Custom User Folders (by province/theme)
   if(route==='/api/me/folders'&&method==='GET'){
@@ -1800,7 +1864,9 @@ function staticFile(req,res,u,adminImageAccess=false){
     if(!adminImageAccess){
       const merchantMedia=db.prepare('SELECT business_id FROM business_media WHERE filename=?').get(filename);
       const published=db.prepare("SELECT 1 FROM places WHERE status='published' AND (cover=? OR instr(gallery_json,?)>0) LIMIT 1").get(u.pathname,JSON.stringify(u.pathname).slice(1,-1));
-      if(!published){
+      // Tommy: photos on an approved SME shop page are public too
+      const onShopPage=!published&&db.prepare("SELECT 1 FROM shop_pages s JOIN places p ON p.slug=s.place_slug WHERE p.status='published' AND s.published_json IS NOT NULL AND instr(s.published_json,?)>0 LIMIT 1").get(JSON.stringify(u.pathname).slice(1,-1));
+      if(!published&&!onShopPage){
         const user=userSession(req),biz=user&&businessOf(user.id);
         if(!merchantMedia||biz?.id!==merchantMedia.business_id)fail(404,'Not found');
       }
@@ -1809,6 +1875,7 @@ function staticFile(req,res,u,adminImageAccess=false){
   } else {
     const route=u.pathname==='/'?'index.html':u.pathname==='/admin'?'admin.html':u.pathname.replace(/^\//,'');
     if(PAGE_FILES[route])filePath=path.resolve(ROOT,PAGE_FILES[route]);
+    else if(/^shop\/[-a-z0-9]{1,65}$/.test(route))filePath=path.resolve(ROOT,'frontend/shop/shop.html'); // Tommy: SME shop page
     else if(/^assets\/[a-z0-9_.-]+\.(?:webp|png|svg|jpg)$/.test(route))filePath=path.resolve(ROOT,route);
     else if(/^(?:frontend\/(?:admin|auth|business|planner|traveler)\/[a-zA-Z0-9_.-]+)$/.test(route))filePath=path.resolve(ROOT,route);
     else fail(404,'Not found');
@@ -1832,10 +1899,13 @@ function listen(port,remaining=12){
    if(!db.prepare('SELECT id FROM admins WHERE id=1').get()){
      console.log('');console.log('[FIRST TIME SETUP] Enter this code in the Admin setup page:');console.log(`  ${SETUP_TOKEN}`);
    }
+   // Tommy: Google sign-in only works on the address registered with Google (localhost), not 127.0.0.1
+   const openHost=googleAuth.clientId()?'localhost':'127.0.0.1';
+   if(openHost==='localhost')console.log(`[GOOGLE] Sign in with Google is ON — use http://localhost:${server.address().port}/`);
    console.log('Press Ctrl+C to stop.');
    if(process.platform==='win32'&&process.env.UNFOLD_NO_BROWSER!=='1'){
      const {execFile}=require('node:child_process');
-     execFile('cmd.exe',['/d','/c',`start "" "http://127.0.0.1:${server.address().port}/"`],{windowsHide:true},(err)=>{if(err)console.log('Open the URL above manually in your browser.');});
+     execFile('cmd.exe',['/d','/c',`start "" "http://${openHost}:${server.address().port}/"`],{windowsHide:true},(err)=>{if(err)console.log('Open the URL above manually in your browser.');});
    }
  });
 }

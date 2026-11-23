@@ -1,0 +1,88 @@
+/* Traval SME shop page look (owner: Tommy). Everything is scoped under .tsp so it can sit inside the
+   Business portal preview without touching that page. Templates: .tsp-t-classic / -modern / -market.
+   Colours: .tsp-c-forest / -sunset / -ocean / -berry / -charcoal. */
+.tsp{--tsp-ink:#111D15;--tsp-soft:#57685D;--tsp-bg:#F8F7F3;--tsp-card:#fff;--tsp-line:#E8ECE6;--tsp-main:#1E5538;--tsp-deep:#0D2C1C;--tsp-accent:#8DE026;--tsp-on-accent:#0D2C1C;
+  font-family:'Prompt','Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans Thai",sans-serif;color:var(--tsp-ink);background:var(--tsp-bg);
+  max-width:560px;margin:0 auto;min-height:100%;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-wrap:anywhere}
+.tsp *{box-sizing:border-box}
+.tsp-c-forest{--tsp-main:#1E5538;--tsp-deep:#0D2C1C;--tsp-accent:#8DE026;--tsp-on-accent:#0D2C1C}
+.tsp-c-sunset{--tsp-main:#C2410C;--tsp-deep:#431407;--tsp-accent:#FDBA74;--tsp-on-accent:#431407}
+.tsp-c-ocean{--tsp-main:#0E4A6E;--tsp-deep:#082F49;--tsp-accent:#7DD3FC;--tsp-on-accent:#082F49}
+.tsp-c-berry{--tsp-main:#9D174D;--tsp-deep:#500724;--tsp-accent:#F9A8D4;--tsp-on-accent:#500724}
+.tsp-c-charcoal{--tsp-main:#1F2937;--tsp-deep:#111827;--tsp-accent:#FBBF24;--tsp-on-accent:#111827}
+.tsp svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* Header */
+.tsp-hero{position:relative;min-height:220px;display:flex;align-items:flex-end;background:var(--tsp-main);color:#fff;overflow:hidden}
+.tsp-hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tsp-hero.has-img::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(0,0,0,.72))}
+.tsp-hero-text{position:relative;z-index:1;padding:28px 20px 22px;width:100%}
+.tsp-hero h1{margin:8px 0 4px;font-size:30px;line-height:1.15;font-weight:700;letter-spacing:-.4px}
+.tsp-hero p{margin:0;opacity:.9;font-size:15px}
+.tsp-badge,.tsp-chip{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.6px;padding:3px 10px;border-radius:99px;background:var(--tsp-accent);color:var(--tsp-on-accent);margin-right:6px}
+.tsp-chip{background:rgba(255,255,255,.2);color:#fff}
+
+/* Action bar */
+.tsp-actions{display:flex;gap:8px;padding:14px 16px;overflow-x:auto;background:var(--tsp-card);border-bottom:1px solid var(--tsp-line);scrollbar-width:none}
+.tsp-act{display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-radius:99px;border:1px solid var(--tsp-line);background:var(--tsp-card);color:var(--tsp-ink);font:inherit;font-size:14px;font-weight:500;text-decoration:none;white-space:nowrap;cursor:pointer;min-height:44px}
+.tsp-act.primary{background:var(--tsp-main);border-color:var(--tsp-main);color:#fff}
+
+/* Sections */
+.tsp-sec{padding:22px 20px;background:var(--tsp-card);margin-top:10px}
+.tsp-sec h2{margin:0 0 12px;font-size:19px;font-weight:600;color:var(--tsp-deep)}
+.tsp-sec p{margin:0 0 10px}
+.tsp-note{color:var(--tsp-soft);font-size:13px}
+.tsp-empty{border:2px dashed var(--tsp-line);background:transparent;color:var(--tsp-soft);font-size:13px;text-align:center}
+.tsp-menu ul,.tsp-reviews ul{list-style:none;margin:0;padding:0}
+.tsp-menu li{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--tsp-line)}
+.tsp-menu li:last-child{border-bottom:0}
+.tsp-menu img{width:64px;height:64px;border-radius:12px;object-fit:cover;flex:none}
+.tsp-item{flex:1;min-width:0}
+.tsp-item-row{display:flex;align-items:baseline;gap:8px}
+.tsp-dots{flex:1}
+.tsp-price{font-weight:600;color:var(--tsp-main);white-space:nowrap}
+.tsp-item small{display:block;color:var(--tsp-soft);font-size:13px}
+.tsp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tsp-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px}
+.tsp-grid img:first-child{grid-column:span 2;grid-row:span 2}
+.tsp-grid.n1{grid-template-columns:1fr}.tsp-grid.n2,.tsp-grid.n4{grid-template-columns:1fr 1fr}
+.tsp-grid.n1 img:first-child,.tsp-grid.n2 img:first-child,.tsp-grid.n4 img:first-child{grid-column:auto;grid-row:auto}
+.tsp-grid.n1 img{aspect-ratio:4/3}
+.tsp-hours dl{margin:0}
+.tsp-hours dl div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--tsp-line)}
+.tsp-hours dt{font-weight:500}.tsp-hours dd{margin:0;color:var(--tsp-soft)}
+.tsp-promo{background:var(--tsp-accent);color:var(--tsp-on-accent)}
+.tsp-promo h2{color:var(--tsp-on-accent)}
+.tsp-promo .tsp-note{color:var(--tsp-on-accent);opacity:.8}
+.tsp-promo.expired{opacity:.55}
+.tsp-promo-tag{display:block;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.tsp-links{display:grid;gap:8px}
+.tsp-links a{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1px solid var(--tsp-line);color:var(--tsp-ink);text-decoration:none;min-height:44px}
+.tsp-links a svg{color:var(--tsp-main)}
+.tsp-avg{font-size:15px}.tsp-avg strong{font-size:22px;color:var(--tsp-main)}
+.tsp-reviews li{padding:12px 0;border-bottom:1px solid var(--tsp-line)}
+.tsp-reviews li p{margin:4px 0}
+.tsp-reviews small{color:var(--tsp-soft)}
+.tsp-stars{color:#E5A836;letter-spacing:2px}.tsp-stars span{color:var(--tsp-line)}
+.tsp-review-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.tsp-btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 18px;border-radius:99px;background:var(--tsp-main);color:#fff;text-decoration:none;font-weight:500;font-size:14px;min-height:44px}
+.tsp-btn.ghost{background:transparent;color:var(--tsp-main);border:1px solid var(--tsp-main)}
+.tsp-foot{padding:24px 20px 40px;text-align:center;font-size:12px;color:var(--tsp-soft)}
+
+/* Template: Modern — dark header, bold type, rounded cards */
+.tsp-t-modern{--tsp-bg:#EEF0EC}
+.tsp-t-modern .tsp-hero{min-height:280px;background:var(--tsp-deep)}
+.tsp-t-modern .tsp-hero h1{font-size:36px;font-weight:700;text-transform:none}
+.tsp-t-modern .tsp-sec{margin:12px 12px 0;border-radius:20px}
+.tsp-t-modern .tsp-actions{margin:0;border-bottom:0}
+.tsp-t-modern .tsp-sec h2{font-size:21px;font-weight:700}
+
+/* Template: Market — warm paper, stamp headings, dotted price list */
+.tsp-t-market{--tsp-bg:#F6EEDC;--tsp-card:#FFFBF2;--tsp-line:#E9DCC0}
+.tsp-t-market .tsp-hero{min-height:200px;border-bottom:6px dashed var(--tsp-accent)}
+.tsp-t-market .tsp-sec h2{display:inline-block;background:var(--tsp-main);color:#fff;padding:4px 14px;border-radius:6px;transform:rotate(-1.5deg);font-size:17px}
+.tsp-t-market .tsp-promo h2{background:var(--tsp-on-accent);color:var(--tsp-accent)}
+.tsp-t-market .tsp-dots{border-bottom:2px dotted var(--tsp-line);transform:translateY(-4px)}
+.tsp-t-market .tsp-menu img{border-radius:50%}
+
+@media (min-width:600px){.tsp{box-shadow:0 0 0 1px var(--tsp-line)}}

@@ -552,6 +552,36 @@
     /* Section Views */
     .tab-view { display: none; }
     .tab-view.active { display: block; }
+
+    /* Tommy (2026-11-06): phones & small tablets — side menu becomes a scrollable bar on top (was 250px beside
+       ~140px of content on a phone). */
+    @media (max-width: 860px) {
+      body { flex-direction: column; }
+      .admin-rail { width: 100%; height: auto; position: sticky; top: 0; flex-direction: row; align-items: center; gap: 12px; padding: 10px 12px; overflow-x: auto; }
+      .admin-rail .brand-wrap { margin-bottom: 0; flex-shrink: 0; }
+      .admin-rail .rail-sub, .admin-rail .rail-heading, .admin-rail .rail-promo, .admin-rail .rail-user { display: none; }
+      .rail-nav { flex-direction: row; flex-shrink: 0; gap: 6px; display: flex; }
+      .rail-nav .nav-btn { white-space: nowrap; width: auto; padding: 8px 12px; }
+      .admin-main { padding: 0 16px 60px; overflow: visible; }
+      .admin-topbar { height: auto; flex-wrap: wrap; gap: 8px; padding: 12px 0; }
+      .page-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .kpi-grid { grid-template-columns: 1fr 1fr; }
+      .content-grid-2, .tab-view [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+      .mod-grid { grid-template-columns: 1fr; }
+      .tab-view table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+  </style>
+  <!-- Tommy 2026-11-06: SME shop page approvals (admin-shop-pages.js) -->
+  <link rel="stylesheet" href="/shop-render.css">
+  <style>
+    .sp-section{margin-top:40px}
+    .sp-note{color:#627267;font-size:13px;padding:12px 0}
+    .sp-modal{position:fixed;inset:0;z-index:2000;background:rgba(10,20,15,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+    .sp-sheet{background:#111;border-radius:36px;padding:12px;width:min(400px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column}
+    .sp-head{display:flex;align-items:center;gap:8px;color:#fff;padding:4px 10px 10px;font-size:13px}
+    .sp-head span{opacity:.7;font-size:12px}
+    .sp-close{margin-left:auto;background:#fff;color:#111;border:0;border-radius:50%;width:30px;height:30px;cursor:pointer}
+    .sp-screen{overflow-y:auto;border-radius:26px;background:#F8F7F3;flex:1;min-height:0}
   </style>
 </head>
 <body>
@@ -559,7 +589,7 @@
   <!-- Left Sidebar Rail -->
   <aside class="admin-rail">
     <div class="brand-wrap">
-      <a href="/" class="brand-logo">GoAround<span>.</span></a>
+      <a href="/admin.html" class="brand-logo">GoAround<span>.</span></a>
       <div class="rail-sub">Admin Studio · v2.7</div>
     </div>
 
@@ -609,7 +639,7 @@
     </div>
 
     <div class="rail-user">
-      <span>Admin: <strong>Nine (Lead Designer)</strong></span>
+      <span>Admin: <strong>admin</strong></span>
       <button onclick="window.location.href='../auth/login.html'">Sign out ↗</button>
     </div>
   </aside>
@@ -856,6 +886,23 @@
           </div>
         </div>
 
+      </div>
+      <!-- Tommy 2026-11-06: SME shop pages. First version needs approval; later owner edits go live by themselves. -->
+      <div class="sp-section">
+        <div class="page-head">
+          <div>
+            <span class="overline">SHOP PAGES / หน้าร้าน SME</span>
+            <h2 class="page-title" style="font-size:26px;">หน้าร้าน SME <span id="shopPendingCount"></span></h2>
+            <p class="page-sub">อนุมัติหน้าร้านครั้งแรกของแต่ละร้าน หลังจากนั้นเจ้าของแก้ไขได้เอง — ถ้าเจอเนื้อหาไม่เหมาะสม กด "ซ่อน" ได้ทุกเมื่อ</p>
+          </div>
+        </div>
+        <div class="filter-tabs">
+          <button class="filter-pill active" data-shop-filter="pending">รออนุมัติ</button>
+          <button class="filter-pill" data-shop-filter="approved">เผยแพร่อยู่</button>
+          <button class="filter-pill" data-shop-filter="hidden">ซ่อนอยู่</button>
+          <button class="filter-pill" data-shop-filter="all">ทั้งหมด</button>
+        </div>
+        <div class="mod-grid" id="shopPagesContainer"></div>
       </div>
     </section>
 
@@ -1129,6 +1176,8 @@
   <!-- Toast Notification -->
   <div class="toast" id="toastMessage"></div>
 
+  <script src="/shop-render.js"></script>
+  <script src="/admin-shop-pages.js"></script>
   <script>
     function showToast(msg) {
       const toast = document.getElementById('toastMessage');
@@ -1155,7 +1204,7 @@
       };
       document.getElementById('sectionBreadcrumb').textContent = titles[tabId] || 'Admin';
 
-      if (tabId === 'businesses') loadBusinessSubmissions();
+      if (tabId === 'businesses') { loadBusinessSubmissions(); if (window.TravalAdminShopPages) TravalAdminShopPages.load(); } // Tommy: + shop pages
       else if (tabId === 'safety') loadSafetyReports();
       else if (tabId === 'analytics') loadSmeAnalytics();
       else if (tabId === 'users') loadUsers();

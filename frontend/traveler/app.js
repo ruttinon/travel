@@ -910,6 +910,16 @@ const SAMPLE_PLACES=[
 
 let PLACES=[...SAMPLE_PLACES];
 let LIVE_DATA=false,API_ONLINE=false;
+// Tommy (2026-11-06): SME shop pages (backend/shop-pages.js). id → Google link the owner added ('' when none).
+let SHOP_PAGES=new Map();
+const shopPageUrl=p=>p&&SHOP_PAGES.has(p.id)?'/shop/'+encodeURIComponent(p.id):'';
+/** "Reviews on Google" link. SME shops made in GoAround often have no Google listing: no button unless the owner linked one. */
+function googleReviewsUrl(p){
+ if(!p||!window.TravalLinks)return '';
+ if(p.googlePlaceId)return SHOP_PAGES.get(p.id)||TravalLinks.placeUrl(p);
+ if(SHOP_PAGES.has(p.id))return SHOP_PAGES.get(p.id); // shop made in GoAround: only the Google link its owner added
+ return p.isSme?'':TravalLinks.placeUrl(p);
+}
 const REMOTE_CACHE={};
 // Tommy: OpenStreetMap places the user opened or added to a trip. Kept out of PLACES so Discover/Home stay curated.
 const OSM_PICKED_KEY='traval-osm-places',OSM_PICKED=new Map();
@@ -975,11 +985,13 @@ const stored=readStore();
 const ONBOARD_KEY='traval-moo-onboard-v3';
 
 const state={
- page:'welcome',previous:'discover',lang:stored.lang==='th'?'th':'en',category:'all',query:'',
+ page:'welcome',previous:'discover',lang:stored.lang==='th'||stored.lang==='en'?stored.lang:(/^th/i.test(navigator.language||'')?'th':'en')/* Tommy: first visit follows the phone's language */,category:'all',query:'',
  theme:(localStorage.getItem('traval-theme')==='dark'?'dark':'light'),
  searchOpen:false,menuOpen:false,showAll:false,region:'all',
- saved:Array.isArray(stored.saved)?stored.saved.filter(x=>getPlace(x)):['sme-mae-kampong-coffee','sme-talad-noi-noodle'],
- trip:Array.isArray(stored.trip)?stored.trip.filter(x=>getPlace(x)):[],
+ // Tommy (2026-11-06): keep every saved id until the server's places have loaded (filtering here, against the 8
+ // built-in samples only, threw away places a guest saved from the server on every reload); start empty, not with 2 demo places.
+ saved:Array.isArray(stored.saved)?stored.saved.filter(x=>typeof x==='string'):[],
+ trip:Array.isArray(stored.trip)?stored.trip.filter(x=>typeof x==='string'):[],
  notes:stored.notes&&typeof stored.notes==='object'?stored.notes:{},
  suggestions:Array.isArray(stored.suggestions)?stored.suggestions:[],
  boxes:Array.isArray(stored.boxes)?stored.boxes:[],
@@ -1097,8 +1109,24 @@ async function userApi(route,method='GET',data){
 async function loadAccountCollections(){
  if(!state.account)return;
  const [collections,reviews]=await Promise.all([userApi('/api/me/collections'),userApi('/api/me/reviews')]);
- // Tommy: add back this account's OpenStreetMap places from this device, in their saved order
+ // Tommy: the server now keeps OpenStreetMap places in lists too (with their details, for any device).
+ for(const p of collections.osmPlaces||[])registerOsmPlace(p);
+ // Only the first time this account loads on this device (after this update): OSM places that were saved
+ // on this device alone are merged in and uploaded once. After that the server always wins, so a place
+ // removed on another device does not come back from this device's old copy.
+ const firstSync=!osmSynced();
  state.saved=mergeOsmLists(collections.saved,'saved');state.trip=mergeOsmLists(collections.trip,'trip');state.myReviews=reviews.reviews;
+ let upload=firstSync&&[...state.saved,...state.trip].some(isDeviceOsmId);
+ if(firstSync)markOsmSynced();
+ // Tommy (2026-11-06): places added as a guest on this device join the account at sign-in (before: the guest's lists
+ // were replaced by the account's and lost). Only places the server knows are added; the guest copy is then cleared.
+ await placesReady;
+ const serverKnows=id=>isDeviceOsmId(id)?!!getPlace(id):PLACES.some(p=>p.id===id&&p.live);
+ const addSaved=guestSaved.filter(id=>serverKnows(id)&&!state.saved.includes(id));
+ const addTrip=guestTrip.filter(id=>serverKnows(id)&&!state.trip.includes(id));
+ if(addSaved.length||addTrip.length){state.saved=[...state.saved,...addSaved];state.trip=[...state.trip,...addTrip];upload=true;}
+ if(guestSaved.length||guestTrip.length){guestSaved.length=0;guestTrip.length=0;store();}
+ if(upload)persistCollections();
  render({keepScroll:true});
 }
 
@@ -1110,13 +1138,22 @@ async function refreshSession(){
   }catch(err){console.info('Account service unavailable:',err.message)}
 }
 
+// Tommy (2026-11-06): the server's openingHours is an object ({} when unknown); it showed as "[object Object]"
+function hoursText(h){
+ if(!h)return '';
+ if(typeof h==='string')return h;
+ if(typeof h==='object')return Object.entries(h).filter(([,v])=>v).map(([k,v])=>`${k} ${v}`).join(', ');
+ return '';
+}
 async function initRealData(){
   try{
-    const [placesRes,spotRes,safetyRes]=await Promise.allSettled([
+    const [placesRes,spotRes,safetyRes,shopRes]=await Promise.allSettled([
       userApi('/api/places'),
       userApi('/api/places/spotlight'),
-      userApi('/api/safety/reports')
+      userApi('/api/safety/reports'),
+      userApi('/api/shop-pages') // Tommy: which places have an SME shop page
     ]);
+    if(shopRes.status==='fulfilled'&&Array.isArray(shopRes.value.pages))SHOP_PAGES=new Map(shopRes.value.pages.map(x=>[x.id,x.googleUrl||'']));
     if(placesRes.status==='fulfilled'&&Array.isArray(placesRes.value.places)&&placesRes.value.places.length){
       const realPlaces=placesRes.value.places.map(p=>({
         id:p.id,en:p.en,th:p.th||p.en,locEn:p.locEn,locTh:p.locTh||p.locEn,
@@ -1125,16 +1162,25 @@ async function initRealData(){
         storyEn:p.storyEn||'',storyTh:p.storyTh||'',photo:p.photo||'assets/hero-forest.webp',
         gallery:p.gallery||[],isSme:Boolean(p.isSme),smeType:p.smeType||'',
         smeBadge:p.spotlightBadge||p.smeBadge||(p.isSme?'Local SME Spotlight':''),
-        featured:Boolean(p.featured),openHours:p.openHours||p.openingHours||'',isOpen:p.isOpen,
+        featured:Boolean(p.featured),openHours:hoursText(p.openHours||p.openingHours),isOpen:p.isOpen, // Tommy: server sends opening hours as an object
         hoursStatus:p.hoursStatus||(p.isOpen===true?'open':p.isOpen===false?'closed':'unknown'),
         isSponsored:Boolean(p.isSponsored),province:p.province,provinceTh:p.provinceTh,provinceEn:p.provinceEn,
         phone:p.contactPhone||'',specialtiesTh:p.localStoryTh?[p.localStoryTh.slice(0,30)]:undefined,
         rating:p.rating,reviewsCount:p.reviewsCount,
-        googlePlaceId:p.googlePlaceId||'' // Tommy: keep for Google Maps links (allowed to store forever)
+        googlePlaceId:p.googlePlaceId||'', // Tommy: keep for Google Maps links (allowed to store forever)
+        live:true // Tommy: came from the server (can be saved to an account, reviewed, planned)
       }));
-      const ids=new Set(realPlaces.map(x=>x.id));
-      PLACES=[...realPlaces,...SAMPLE_PLACES.filter(s=>!ids.has(s.id))];
+      // Tommy (2026-11-06): server places only. Before, the 8 built-in samples were added too, so places showed twice
+      // under different ids (mae-kampong / mae-kampong-village) and some that don't exist on the server could not be
+      // reviewed or planned. The samples are still used when the server can't be reached.
+      PLACES=realPlaces;
       LIVE_DATA=true;API_ONLINE=true;
+      if(!state.account){
+        const known=id=>isDeviceOsmId(id)?!!getPlace(id):PLACES.some(p=>p.id===id);
+        state.saved=state.saved.filter(known);state.trip=state.trip.filter(known);
+        guestSaved.splice(0,guestSaved.length,...guestSaved.filter(known));guestTrip.splice(0,guestTrip.length,...guestTrip.filter(known));
+        store();
+      }
     }
     if(spotRes.status==='fulfilled'){
       const spotList = spotRes.value.places || spotRes.value.spotlight;
@@ -1160,8 +1206,9 @@ async function initRealData(){
 let persistOrder=Promise.resolve();
 function persistCollections(){
  if(!state.account||!LIVE_DATA){store();return}
- saveOsmLists(); // Tommy: remember this account's OpenStreetMap places (and their order) on this device
- const payload={saved:state.saved.filter(id=>!isDeviceOsmId(id)),trip:state.trip.filter(id=>!isDeviceOsmId(id))}; // Tommy: the server stores team places only
+ saveOsmLists(); // Tommy: also keep a copy on this device (works offline / before the first sync)
+ // Tommy: the server stores team places and OpenStreetMap places (backend: user_osm_collections); drop only ids we can't show
+ const payload={saved:state.saved.filter(id=>!isDeviceOsmId(id)||getPlace(id)),trip:state.trip.filter(id=>!isDeviceOsmId(id)||getPlace(id))};
  persistOrder=persistOrder.catch(()=>{}).then(async()=>{
   try{await userApi('/api/me/collections','PUT',payload)}catch(e){toast(e.message);try{await loadAccountCollections()}catch{}}
  });
@@ -1224,7 +1271,7 @@ function header(){
     `).join('')}
   </nav>
   <div class="head-actions">
-    <button class="language-btn" data-action="language" aria-label="Change language">${state.lang==='en'?'TH':'EN'}</button>
+    <button class="language-btn" data-action="language" aria-label="${state.lang==='en'?'เปลี่ยนเป็นภาษาไทย':'Switch to English'}" title="${state.lang==='en'?'เปลี่ยนเป็นภาษาไทย':'Switch to English'}">${ico('globe',15)} ${state.lang==='en'?'ไทย':'EN'}</button>
     <div class="theme-segmented-pill" role="radiogroup" aria-label="Theme switcher">
       <button type="button" class="theme-seg-btn ${resolvedTheme()==='light'?'active':''}" data-action="set-theme" data-theme="light" aria-label="${state.lang==='th'?'โหมดสว่าง':'Light mode'}" title="${state.lang==='th'?'โหมดสว่าง':'Light mode'}">
         ${ico('sun',15)}<span>${state.lang==='th'?'สว่าง':'Light'}</span>
@@ -1257,9 +1304,9 @@ function bottomNav(){
 
 
 const LANDING_SLIDES = [
-  { img: 'assets/1.png', alt: 'Travel Experience 1' },
-  { img: 'assets/2.png', alt: 'Travel Experience 2' },
-  { img: 'assets/3.png', alt: 'Travel Experience 3' }
+  { img: 'assets/1.jpg', alt: 'Travel Experience 1' },
+  { img: 'assets/2.jpg', alt: 'Travel Experience 2' },
+  { img: 'assets/3.jpg', alt: 'Travel Experience 3' }
 ];
 let landingSlideIndex = 0;
 let landingTimer = null;
@@ -1313,7 +1360,7 @@ function landing(){
   <div class="landing-header">
     ${brand()}
     <div class="landing-header-right">
-      <button class="landing-language" data-action="language">${state.lang==='en'?'TH':'EN'}</button>
+      <button class="landing-language" data-action="language" aria-label="${state.lang==='en'?'เปลี่ยนเป็นภาษาไทย':'Switch to English'}">${ico('globe',15)} ${state.lang==='en'?'ไทย':'EN'}</button>
       <div class="theme-segmented-pill landing-theme-pill" role="radiogroup" aria-label="Theme switcher">
         <button type="button" class="theme-seg-btn ${resolvedTheme()==='light'?'active':''}" data-action="set-theme" data-theme="light" aria-label="${state.lang==='th'?'โหมดสว่าง':'Light mode'}" title="${state.lang==='th'?'โหมดสว่าง':'Light mode'}">
           ${ico('sun',15)}<span>${state.lang==='th'?'สว่าง':'Light'}</span>
@@ -1576,6 +1623,14 @@ function discover(){
         <div>
           <h3>${html(t('onboardTitle'))}</h3>
           <p>${html(t('onboardBody'))}</p>
+          <!-- Tommy (UX pass): a 4-step "how to use" so first-time visitors need no training -->
+          <ol class="ob-steps">
+            ${(state.lang==='th'
+              ?[['search','ค้นหา','พิมพ์ชื่อสถานที่ ร้าน หรือจังหวัด'],['heart','บันทึก','แตะ ♡ เก็บที่ชอบไว้ดูทีหลัง'],['route','จัดทริป','แตะ "เพิ่มเข้าทริป" แล้วดูเส้นทาง'],['star','ร้านชุมชน','ป้าย ★ คือร้านท้องถิ่นที่เราแนะนำ']]
+              :[['search','Search','Type a place, shop or province'],['heart','Save','Tap ♡ to keep places for later'],['route','Plan','Tap "Add to trip" to get a route'],['star','Local SMEs','★ marks local shops we recommend']]
+            ).map(([g,a,b])=>`<li>${ico(g,18)}<span><strong>${a}</strong>${b}</span></li>`).join('')}
+          </ol>
+          <button type="button" class="action-lime ob-ok" data-action="dismiss-onboard">${html(t('dismiss'))}</button>
         </div>
         <button class="ob-close" data-action="dismiss-onboard" aria-label="${html(t('dismiss'))}">${ico('x',18)}</button>
       </aside>
@@ -1714,6 +1769,22 @@ function discover(){
         ${html(t('map'))} ${ico('arrow',19)}
       </button>
     </div>
+
+    <!-- Tommy (UX pass): the trip planner and the business portal had no way in from the app -->
+    <div class="more-ways">
+      <a href="/planner.html" class="more-way">
+        <span class="more-way-icon">${ico('route',22)}</span>
+        <span><strong>${state.lang==='th'?'ให้ระบบวางแผนทริปให้':'Plan a trip for me'}</strong>
+        <small>${state.lang==='th'?'เลือกจังหวัด จำนวนวัน และงบ แล้วได้เส้นทางพร้อมร้านชุมชนระหว่างทาง':'Pick a province, days and budget — get a route with local shops on the way'}</small></span>
+        ${ico('arrow',18)}
+      </a>
+      <a href="/business.html" class="more-way">
+        <span class="more-way-icon">🏪</span>
+        <span><strong>${state.lang==='th'?'เป็นเจ้าของร้าน? ลงร้านบน GoAround':'Own a local business? List it on GoAround'}</strong>
+        <small>${state.lang==='th'?'ให้นักท่องเที่ยวเห็นร้านบนแผนที่ และทำหน้าร้านของคุณเอง ฟรี':'Show up on the map and design your own shop page — free'}</small></span>
+        ${ico('arrow',18)}
+      </a>
+    </div>
   </main>
   </div>
   </div>
@@ -1776,6 +1847,7 @@ function bottomSheet(p){
         ${ico('x',17)}
       </button>
     </div>
+    ${shopPageUrl(p)?`<a href="${html(shopPageUrl(p))}" style="display:flex;align-items:center;justify-content:center;gap:8px;margin:-4px 0 14px;padding:11px;border-radius:14px;background:#FEF8EC;border:1px solid #F5D38C;color:#925C08;font-weight:700;font-size:14px;text-decoration:none;">🏪 ${state.lang==='th'?'ดูหน้าร้าน — เมนู รูป โปรโมชัน':'Open shop page — menu, photos, offers'} ›</a>`:''}<!-- Tommy: SME shop page -->
 
     ${narrative?`
       <div class="local-story-block">
@@ -1859,10 +1931,12 @@ function detail(p){
       <!-- Action bar -->
       <div class="detail-main-actions" style="margin:20px 0;display:flex;gap:10px;flex-wrap:wrap;">
         <button class="action-outline" data-action="directions" data-id="${p.id}" title="${html(t('route'))}">${ico('route',17)} ${html(t('route'))}</button>
-        <a class="action-outline btn-google-reviews" href="${html(window.TravalLinks?TravalLinks.placeUrl(p):'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p.lat+','+p.lon))}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">${ico('star',17)} <span>${state.lang==='th'?'รีวิวบน Google':'Google reviews'} ↗</span></a><!-- Tommy: link only; Google reviews are never copied -->
         <button class="action-lime" data-action="trip-toggle" data-id="${p.id}">${html(t(planned?'removeTrip':'addTrip'))} ${ico(planned?'check':'arrow',19)}</button>
         <button class="action-outline" data-action="explore-nearby-place" data-id="${p.id}" class="action-outline btn-outline-blue" title="${html(t('exploreNearby'))}">${ico('compass',17)} ${html(t('exploreNearby'))}</button>
         <button class="action-outline" data-action="share-place" data-id="${p.id}">${ico('share',17)} ${html(t('share'))}</button>
+        ${shopPageUrl(p)?`<a class="action-outline" href="${html(shopPageUrl(p))}" style="text-decoration:none;border-color:#E5A836;color:#925C08;">🏪 ${state.lang==='th'?'ดูหน้าร้าน':'Shop page'}</a>`:''}<!-- Tommy: SME shop page (/shop/<id>) -->
+        ${googleReviewsUrl(p)?`<a class="action-outline" href="${html(googleReviewsUrl(p))}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">${ico('star',17)} ${state.lang==='th'?'รีวิวบน Google':'Google reviews'} ↗</a>`:''}<!-- Tommy: link only; Google reviews are never copied. Hidden for SME shops with no Google listing -->
+
         ${p.phone?`<a href="tel:${p.phone}" class="action-outline" style="text-decoration:none;">${ico('phone',17)} ${html(t('call'))}</a>`:''}
       </div>
 
@@ -2238,7 +2312,13 @@ function collection(){
       <div class="collection-empty">
         ${ico(isTrip?'map':'heart',34)}
         <h2>${html(t(isTrip?'emptyTrip':'emptySaved'))}</h2>
-        <button data-action="navigate" data-page="discover" class="action-lime">${html(t('homeExplore'))} ${ico('arrow',18)}</button>
+        <p class="empty-howto">${isTrip
+          ?(state.lang==='th'?'แตะ "เพิ่มเข้าทริป" ในหน้าสถานที่ หรือให้ระบบจัดทริปให้ทั้งวันจากจังหวัด จำนวนวัน และงบของคุณ':'Tap "Add to trip" on any place, or let the planner build a whole day for you from a province, days and budget.')
+          :(state.lang==='th'?'แตะรูปหัวใจ ♡ บนสถานที่ที่ชอบ แล้วจะมาอยู่ที่นี่ — ยังไม่ต้องเข้าสู่ระบบก็ได้':'Tap the heart ♡ on any place to keep it here — no account needed.')}</p>
+        <div class="empty-actions">
+          <button data-action="navigate" data-page="discover" class="action-lime">${html(t('homeExplore'))} ${ico('arrow',18)}</button>
+          ${isTrip?`<a href="/planner.html" class="action-outline" style="text-decoration:none;">${ico('route',17)} ${state.lang==='th'?'ให้ระบบวางแผนทริป':'Open trip planner'}</a>`:''}
+        </div><!-- Tommy (UX pass): tell first-time users what to do here -->
       </div>
     `}
   </main>
@@ -2267,7 +2347,7 @@ function profile(){
           </div>
           <div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--color-subtle-border);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
             <a href="/profile.html" class="quiet-link" style="font-weight:700;color:var(--color-forest);font-size:12px;text-decoration:underline;text-underline-offset:3px;">
-              ${state.lang==='th'?'เปิดหน้าโปรไฟล์เต็ม (Nine) ↗':'Full Profile Portal ↗'}
+              ${state.lang==='th'?'เปิดหน้าโปรไฟล์ ↗':'Open my profile ↗'}
             </a>
             <button class="account-signout" type="button" data-action="auth-logout">${html(t('signOut'))} ${ico('arrow',17)}</button>
             <button class="account-signout" type="button" data-action="auth-logout-all" class="btn-sign-out-danger" title="${state.lang==='th'?'ออกจากระบบจากทุกอุปกรณ์ที่เคยล็อกอินไว้':'Sign out from all logged in devices'}">${state.lang==='th'?'ออกจากระบบทุกเครื่อง':'Sign out all devices'} ${ico('arrow',17)}</button>
@@ -2286,7 +2366,7 @@ function profile(){
           </form>
           <div style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--color-subtle-border);text-align:center;">
             <a href="/login.html" style="font-size:12px;font-weight:700;color:var(--color-forest);text-decoration:underline;text-underline-offset:3px;">
-              ${state.lang==='th'?'ไปที่หน้าเข้าสู่ระบบ / สมัครสมาชิกเต็มรูปแบบ (Nine) ↗':'Go to Full Auth Portal (Nine) ↗'}
+              ${state.lang==='th'?'ตัวเลือกอื่น: Google, ลืมรหัสผ่าน ↗':'More options: Google, forgot password ↗'}
             </a>
           </div>
         `}
@@ -3138,10 +3218,17 @@ async function loadOsmArea(){
 }
 function osmPinsHtml(origin,w,h,z){
  if(osmHidden()||!state.osm.places.length)return '';
- // The server sends the most interesting places first; draw them last so they sit on top.
- return [...state.osm.places].reverse().map(p=>{
+ // Tommy (2026-11-06): skip a dot that would sit on top of a more important one (within 18px), so every dot
+ // on screen can be tapped. The server sends the most interesting places first: those win and are drawn last (on top).
+ const placed=[],keep=new Set();
+ for(const p of state.osm.places){
    const xy=merc(p.lat,p.lon,z),px=xy.x-origin.x+w/2,py=xy.y-origin.y+h/2;
-   if(px<-20||px>w+20||py<-20||py>h+20)return '';
+   if(px<-20||px>w+20||py<-20||py>h+20)continue;
+   if(p.id!==state.mapSelected&&placed.some(q=>Math.abs(q[0]-px)<18&&Math.abs(q[1]-py)<18))continue;
+   placed.push([px,py]);keep.add(p.id);
+ }
+ return [...state.osm.places].reverse().filter(p=>keep.has(p.id)).map(p=>{
+   const xy=merc(p.lat,p.lon,z),px=xy.x-origin.x+w/2,py=xy.y-origin.y+h/2;
    const c=OSM_COLORS[p.category]||'#5F6B62',sel=state.mapSelected===p.id;
    // 26px tap target, 12px visible dot with a white ring
    return `<button class="osm-pin" data-action="osm-pick" data-id="${html(p.id)}" title="${html(name(p))}" aria-label="${html(name(p))}" style="position:absolute;left:${px}px;top:${py}px;transform:translate(-50%,-50%);width:26px;height:26px;padding:0;border:0;border-radius:50%;cursor:pointer;pointer-events:auto;background:radial-gradient(circle,${c} 0 ${sel?7:5}px,#FFF ${sel?7:5}px ${sel?9.5:7}px,transparent ${sel?10:7.5}px);filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));"></button>`;
@@ -3169,7 +3256,12 @@ function registerOsmPlace(p){
 // This device's lists per account (or guest), so OSM places survive a reload and never leak between accounts.
 const osmListsKey=()=>'traval-osm-lists:'+(state.account?.id||'guest');
 function saveOsmLists(){try{localStorage.setItem(osmListsKey(),JSON.stringify({saved:state.saved,trip:state.trip}))}catch{}}
+const osmSyncedKey=()=>'traval-osm-synced:'+(state.account?.id||'guest');
+function osmSynced(){try{return localStorage.getItem(osmSyncedKey())==='1'}catch{return false}}
+function markOsmSynced(){try{localStorage.setItem(osmSyncedKey(),'1')}catch{}}
 function mergeOsmLists(serverList,kind){
+ serverList=(serverList||[]).filter(id=>!isDeviceOsmId(id)||getPlace(id));
+ if(osmSynced()||serverList.some(isDeviceOsmId))return serverList; // Tommy: the server keeps this account's OSM places — it wins
  let local=[];try{local=JSON.parse(localStorage.getItem(osmListsKey())||'{}')[kind]||[]}catch{}
  if(!local.some(isDeviceOsmId))return serverList;
  const onServer=new Set(serverList);
@@ -3890,7 +3982,10 @@ window.addEventListener('hashchange',()=>{
 });
 
 // Initialize
-if(location.hash.startsWith('#place=')) state.detail=location.hash.slice(7);
+// Tommy (2026-11-06): a shared link /#place=<id> (share button, shop page "back"/"write a review") opened the welcome
+// screen, because only state.detail was set. Now it opens the place once the server places have loaded.
+const startPlace=location.hash.startsWith('#place=')?decodeURIComponent(location.hash.slice(7)):'';
+if(startPlace) state.page='discover';
 else if(location.hash==='#profile') {
   window.location.replace(state.account?'/profile.html':'/login.html');
 }
@@ -3898,8 +3993,9 @@ else if(['welcome','discover','map','saved','trip'].includes(location.hash.slice
 
 applyTheme();
 render();
+const placesReady=initRealData(); // Tommy: account lists wait for this (see loadAccountCollections)
+if(startPlace) placesReady.then(()=>{if(getPlace(startPlace))place(startPlace)});
 refreshSession();
-initRealData();
 
 if (typeof window !== 'undefined' && window.matchMedia) {
   try {

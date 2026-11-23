@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="register-style.css">
+  <link rel="stylesheet" href="/site-ux.css"><!-- Tommy (UX pass 2026-11-06): phone layout, focus outline -->
 </head>
 
 <body>
@@ -17,16 +18,16 @@
 
         <!-- Top Navigation Header -->
         <header class="header">
-            <a href="login.html" class="brand">
-                <span class="brand-mark">U</span>
+            <a href="/" class="brand" aria-label="GoAround — กลับหน้าแรก / home">
+                <span class="brand-mark">G</span>
                 <span class="wordmark">GoAround</span>
             </a>
 
             <nav class="navigation">
-                <a href="../../index.html" class="nav-link">Explore</a>
-                <a href="../../index.html#map" class="nav-link">Map</a>
-                <a href="profile.html" class="nav-link">Saved</a>
-                <a href="../planner/planner.html" class="nav-link">My trips</a>
+                <a href="/" class="nav-link keep">← Explore</a>
+                <a href="/#map" class="nav-link">Map</a>
+                <a href="/#saved" class="nav-link">Saved</a>
+                <a href="/planner.html" class="nav-link">Trip planner</a>
                 <div class="divider"></div>
                 <div class="lang-selector">
                     <svg class="icon-globe" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#172B23"
@@ -61,9 +62,9 @@
                                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                                 <circle cx="12" cy="10" r="3"></circle>
                             </svg>
-                            <span>The Italian Riviera, Italy</span>
+                            <span>Northern Thailand</span>
                         </div>
-                        <span class="editorial-label">GoAround Thailand</span>
+                        <span class="editorial-label">Local first · GoAround</span>
                     </div>
                 </div>
             </section>
@@ -142,11 +143,13 @@
                     </div>
 
                     <div style="display:flex;gap:12px;width:100%;margin-bottom:12px;">
-                        <button type="button" class="btn-guest" onclick="window.location.href='login.html'" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #DCE2DC;border-radius:12px;background:#fff;padding:12px;font-size:13px;font-weight:600;cursor:pointer;">
-                            <span>Google / Facebook</span>
+                        <!-- Tommy: real "Sign up with Google" — google-login.js swaps this for Google's button when the server has a Client ID;
+                             without one (local demo) it still goes to the login page as before -->
+                        <button type="button" id="btn-google" data-google-text="signup_with" class="btn-guest" onclick="window.location.href='login.html'" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #DCE2DC;border-radius:12px;background:#fff;padding:12px;font-size:13px;font-weight:600;cursor:pointer;">
+                            <span>Google</span>
                         </button>
                         <button type="button" class="btn-guest" onclick="window.location.href='login.html'" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #DCE2DC;border-radius:12px;background:#fff;padding:12px;font-size:13px;font-weight:600;cursor:pointer;">
-                            <span>Phone OTP</span>
+                            <span>Facebook / Phone OTP</span>
                         </button>
                     </div>
 
@@ -171,6 +174,8 @@
 
     </div>
 
+    <!-- Tommy: real Sign in with Google (same file as the login page) -->
+    <script src="/google-login.js" defer></script>
     <script>
         // Toggle Password Visibility
         const togglePassword = document.getElementById('togglePassword');
@@ -204,7 +209,7 @@
                     });
                     const json = await res.json();
                     if (!res.ok) throw new Error(json.error || 'Registration failed');
-                    window.location.href = 'profile.html';
+                    window.location.href = (window.travalNext ? travalNext() : 'profile.html'); // Tommy: ?next=
                 } catch (err) {
                     errBox.textContent = err.message;
                     errBox.style.display = 'block';

@@ -22,7 +22,7 @@ if errorlevel 1 (
 )
 
 for /f "tokens=*" %%v in ('node --version') do set NODE_VER=%%v
-echo       -> พบ Node.js: %NODE_VER% (พร้อมใช้งาน)
+echo       -^> พบ Node.js: %NODE_VER% (พร้อมใช้งาน)
 
 echo.
 echo [2/3] บริการที่พร้อมทำงาน:
@@ -30,7 +30,6 @@ echo       * 🗺️  Traveler App:       http://127.0.0.1:5173/
 echo       * 🧭 AI Planner:          http://127.0.0.1:5173/planner.html
 echo       * 🏪 Business Portal:     http://127.0.0.1:5173/business.html
 echo       * 📊 Admin Studio:        http://127.0.0.1:5173/admin.html
-echo       * 🧪 Map Comparison POC:  http://127.0.0.1:5173/google-maps-poc.html
 echo.
 echo [3/3] กำลังเริ่มเซิร์ฟเวอร์ที่ http://127.0.0.1:5173/ ...
 echo       (ระบบจะเปิดเว็บบราวเซอร์ให้อัตโนมัติ)

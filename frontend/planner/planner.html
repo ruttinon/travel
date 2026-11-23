@@ -572,27 +572,58 @@
       transition: all 0.2s;
     }
     .btn-submit:hover { background: var(--forest-light); }
+
+    /* Tommy (2026-11-06): phones & small tablets — one column (form, then timeline). Before, the page was laid out
+       951px wide on a 390px phone, so it had to be zoomed out or scrolled sideways. */
+    @media (max-width: 860px) {
+      .site-header { height: auto; padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
+      .nav-links { gap: 14px; overflow-x: auto; max-width: 100%; }
+      .planner-shell { padding-left: 16px !important; padding-right: 16px !important; }
+      .planner-tophead { flex-direction: column; align-items: flex-start; gap: 14px; }
+      .planner-grid { grid-template-columns: 1fr; gap: 20px; }
+      .sidebar-panel, .itinerary-panel { width: 100%; min-width: 0; }
+      .stop-card { flex-wrap: wrap; }
+      .sme-stopover-box { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .budget-bars-grid { grid-template-columns: 1fr 1fr; }
+      .day-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+    }
+    /* Tommy (UX pass 2026-11-06) */
+    .mode-hint { font-size: 12px; color: var(--muted); margin-top: 8px; max-width: 420px; line-height: 1.5; }
+    .sample-note { background: #FFF8E6; border: 1px solid #F3D08A; color: #6B4A06; border-radius: 14px; padding: 12px 16px; font-size: 13.5px; line-height: 1.55; margin-bottom: 16px; }
+    .sample-note small { display: block; color: #8A6A20; font-size: 12px; }
+    @media (max-width: 860px) {
+      .stop-card { display: grid !important; grid-template-columns: 52px minmax(0, 1fr); align-items: start; gap: 10px 12px; padding: 12px; }
+      .stop-img { width: 52px; height: 52px; }
+      .stop-card .stop-actions { grid-column: 1 / -1; justify-content: flex-end; }
+      .stop-item { gap: 8px !important; }
+      .timeline { padding-left: 0 !important; }
+      .stop-body h4 { font-size: 15px; }
+      .mode-switch { width: 100%; }
+      .field-row, .form-row { grid-template-columns: 1fr 1fr; }
+      select, input { max-width: 100%; min-width: 0; }
+    }
   </style>
+  <link rel="stylesheet" href="/site-ux.css">
 </head>
 <body>
 
   <!-- Top Navigation Header -->
   <header class="site-header">
-    <a href="../../index.html" class="brand">
+    <a href="/" class="brand" aria-label="GoAround — กลับหน้าแรก / home">
       <span class="brand-mark">GoAround<span>.</span></span>
       <span style="font-size:11px; font-weight:800; letter-spacing:0.1em; color:#7A8F82; text-transform:uppercase;">Trip Planner</span>
     </a>
 
     <nav class="nav-links">
-      <a href="../../index.html" class="nav-link">Explore</a>
-      <a href="../../index.html#map" class="nav-link">Map</a>
-      <a href="../auth/profile.html" class="nav-link">Saved</a>
-      <a href="planner.html" class="nav-link active">My Trips</a>
+      <a href="/" class="nav-link">← Explore</a>
+      <a href="/#map" class="nav-link">Map</a>
+      <a href="/#saved" class="nav-link">Saved</a>
+      <a href="/planner.html" class="nav-link active" aria-current="page">Trip planner</a>
     </nav>
 
-    <a href="../auth/profile.html" class="user-pill">
-      <span style="font-size: 13px; font-weight: 700; color: var(--forest);">Nine (UX/UI)</span>
-      <div class="user-avatar">N</div>
+    <!-- Tommy (UX pass): guests saw "Nine (UX/UI)" here. Now "Sign in" until checkAuthSession() finds the account. -->
+    <a href="/login.html" class="user-pill">
+      <span style="font-size: 13px; font-weight: 700; color: var(--forest);">เข้าสู่ระบบ / Sign in</span>
     </a>
   </header>
 
@@ -608,9 +639,13 @@
       </div>
 
       <!-- Mode Switcher -->
-      <div class="mode-switch">
-        <button class="mode-btn active" id="btnManualMode" onclick="setMode('manual')">Manual Mode (จัดเอง)</button>
-        <button class="mode-btn" id="btnAutoMode" onclick="setMode('auto')">Auto Mode (AI Generator) ✨</button>
+      <div>
+        <div class="mode-switch">
+          <button class="mode-btn active" id="btnManualMode" onclick="setMode('manual')">Manual Mode (จัดเอง)</button>
+          <button class="mode-btn" id="btnAutoMode" onclick="setMode('auto')">Auto Mode (AI Generator) ✨</button>
+        </div>
+        <!-- Tommy (UX pass): say what the two modes mean -->
+        <p class="mode-hint">จัดเอง = เลือกสถานที่เองจากรายการ · อัตโนมัติ = ระบบเลือกให้จากจังหวัด จำนวนวัน และงบ</p>
       </div>
     </div>
 
@@ -625,12 +660,12 @@
         <!-- Trip Settings Form -->
         <div class="form-group">
           <div class="field-wrap">
-            <label>ชื่อทริป (Trip Name)</label>
+            <label for="tripNameInput">ชื่อทริป (Trip Name)</label>
             <input type="text" id="tripNameInput" value="ทริปแอ่วเหนือ สัมผัสวิถีแม่กำปอง">
           </div>
 
           <div class="field-wrap">
-            <label>จุดหมายปลายทาง (Destination)</label>
+            <label for="destinationSelect">จุดหมายปลายทาง (Destination)</label>
             <select id="destinationSelect">
               <option value="chiang-mai" selected>เชียงใหม่ (Chiang Mai)</option>
               <option value="bangkok">กรุงเทพมหานคร (Bangkok)</option>
@@ -642,7 +677,7 @@
 
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
             <div class="field-wrap">
-              <label>จำนวนวัน (Days)</label>
+              <label for="daysSelect">จำนวนวัน (Days)</label>
               <select id="daysSelect" onchange="updateDays(this.value)">
                 <option value="1">1 วัน (One Day)</option>
                 <option value="2" selected>2 วัน 1 คืน</option>
@@ -651,7 +686,7 @@
               </select>
             </div>
             <div class="field-wrap">
-              <label>การเดินทาง (Mode)</label>
+              <label for="transportSelect">การเดินทาง (Mode)</label>
               <select id="transportSelect">
                 <option value="driving" selected>🚗 รถยนต์ส่วนตัว</option>
                 <option value="transit">🚌 รถสาธารณะ</option>
@@ -662,7 +697,7 @@
 
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
             <div class="field-wrap">
-              <label>สไตล์เที่ยว (Style)</label>
+              <label for="travelStyle">สไตล์เที่ยว (Style)</label>
               <select id="travelStyle">
                 <option value="all" selected>ทุกรูปแบบ</option>
                 <option value="nature">ธรรมชาติ</option>
@@ -672,7 +707,7 @@
               </select>
             </div>
             <div class="field-wrap">
-              <label>จังหวะเที่ยว (Pace)</label>
+              <label for="travelPace">จังหวะเที่ยว (Pace)</label>
               <select id="travelPace">
                 <option value="normal" selected>ปานกลาง</option>
                 <option value="relaxed">สบาย ๆ ไม่รีบ</option>
@@ -682,7 +717,7 @@
           </div>
 
           <div class="field-wrap">
-            <label>งบประมาณรวมที่ตั้งไว้ (Budget THB)</label>
+            <label for="budgetLimit">งบประมาณรวมที่ตั้งไว้ (Budget THB)</label>
             <input type="number" id="budgetLimit" value="10000" step="500" oninput="updateBudgetCalc()">
           </div>
 
@@ -696,7 +731,7 @@
         <!-- Available Places Pool -->
         <div>
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <span style="font-size:13px; font-weight:700; color:var(--forest);">สถานที่ที่เลือกไว้ (4 ที่)</span>
+            <span id="poolHeading" style="font-size:13px; font-weight:700; color:var(--forest);">สถานที่ที่เลือกไว้ (4 ที่)</span>
             <span style="font-size:11px; color:var(--muted);">คลิกเพื่อเพิ่ม</span>
           </div>
 
@@ -745,11 +780,23 @@
           <span>↗</span>
         </button>
 
+        <!-- Tommy (2026-11-06): trips saved with the button above (before: saved but never shown anywhere) -->
+        <div id="savedPlansBox" style="border-top:1px solid var(--line);padding-top:14px;">
+          <div style="font-size:13px;font-weight:700;color:var(--forest);margin-bottom:8px;">ทริปที่บันทึกไว้ (My Trips)</div>
+          <div id="savedPlansList" style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--muted);">กำลังโหลด…</div>
+        </div>
+
       </aside>
 
       <!-- Right Column: Itinerary Timeline & Budget -->
       <section class="itinerary-panel">
         
+        <!-- Tommy (UX pass): the plan below is an example until the user makes their own — say so -->
+        <div class="sample-note" id="samplePlanNote" role="note">
+          <strong>นี่คือแผนตัวอย่าง</strong> — ตั้งค่าทางซ้าย (มือถือ: ด้านบน) แล้วกด <b>"✨ คำนวณเส้นทางด้วย AI"</b> เพื่อทำแผนของคุณเอง
+          <small>This is an example plan. Set your trip and press "Generate AI Trip".</small>
+        </div>
+
         <!-- Hero Trip Summary Card -->
         <div class="trip-summary-card">
           <div class="summary-left">
@@ -933,7 +980,7 @@
             <span style="font-size:13px; color:var(--muted);">
               รวมค่าใช้จ่ายโดยประมาณทั้งทริป: <strong style="color:var(--forest); font-size:16px;" id="totalCost">7,400 บาท</strong>
             </span>
-            <button class="btn-submit" style="padding:10px 18px; font-size:13px;" onclick="window.open('https://maps.google.com', '_blank')">
+            <button class="btn-submit" style="padding:10px 18px; font-size:13px;" id="btnGoogleNav" onclick="openGoogleNav()">
               <span>เปิดนำทางใน Google Maps ↗</span>
             </button>
           </div>
@@ -947,6 +994,11 @@
   <!-- Toast -->
   <div class="toast" id="toastMessage"></div>
 
+  <!-- Tommy: shared map tools (same files as the traveler app) — road routes, one cost formula, Google Maps links -->
+  <script src="/trip-engine.js"></script>
+  <script src="/travel-cost.js"></script>
+  <script src="/maps-links.js"></script>
+  <script src="/road-route.js"></script>
   <script>
     let currentMode = 'manual';
     let currentPlanData = null;
@@ -984,11 +1036,11 @@
             userPill.innerHTML = `
               <div class="user-avatar">${(currentUser.name || 'U').charAt(0).toUpperCase()}</div>
               <div style="display:flex;flex-direction:column;">
-                <span style="font-size:12px;font-weight:700;color:var(--forest);">${currentUser.name}</span>
+                <span style="font-size:12px;font-weight:700;color:var(--forest);">${esc(currentUser.name)}</span>
                 <small style="font-size:10px;color:var(--muted);">${currentUser.provider ? currentUser.provider.toUpperCase() : 'MEMBER'}</small>
               </div>
             `;
-            userPill.href = '../auth/profile.html';
+            userPill.href = '/profile.html';
           }
         }
       } catch (e) {
@@ -1013,12 +1065,11 @@
         const res = await fetch('/api/ai/advisor', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ destination, days, budget, travelMode, style, pace })
+          body: JSON.stringify({ destination, destinationName: destinationLabel(), days, budget, travelMode, style, pace, mustVisit: importedPlaceIds() }) // Tommy: keep places picked in the app
         });
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Failed to generate itinerary');
-        currentPlanData = json.plan;
-        renderGeneratedPlan(json.plan);
+        showPlan(json.plan); // Tommy: draw it, then fetch real road routes
         showToast('✨ สร้างแผนการท่องเที่ยวด้วย AI สำเร็จแล้ว!');
       } catch (err) {
         showToast('เกิดข้อผิดพลาด: ' + err.message);
@@ -1028,105 +1079,152 @@
       }
     }
 
+    // ===== Tommy: the AI plan on screen, with real road routes, one cost formula and Google Maps links =====
+    // Uses the shared tools loaded above (same files as the traveler app):
+    //   TravalRoute (road-route.js)  → road distance/time per leg from POST /api/routes (falls back to an estimate)
+    //   TravalCost  (travel-cost.js) → taxi meter per leg / fuel for own car
+    //   TravalLinks (maps-links.js)  → "navigate in Google Maps" links
+    // The server's plan shape (POST /api/ai/advisor): {title, days, travelMode, dailyItinerary:[{day, places, legs,
+    //   distanceKm, estimatedDriveMinutes, smeRecommendations}], budgetBreakdown:{transport, food, activities, accommodation}}
+    const PLAN_DAY_START_MIN = 9 * 60;   // first stop at 09:00
+    const PLAN_VISIT_MIN = 90;           // time spent at each stop
+    const MODE_ICON = { driving: '🚗', taxi: '🚕', walking: '🚶', transit: '🚌' };
+    const MODE_VERB = { driving: 'ขับรถ', taxi: 'แท็กซี่', walking: 'เดิน', transit: 'รถสาธารณะ' };
+    let planRouteRun = 0;                // ignore route answers that arrive after a newer plan
+
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+    function clock(min) {
+      const m = Math.round(min) % (24 * 60);
+      return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+    }
+    function minutesText(min) {
+      const m = Math.max(1, Math.round(min));
+      return m < 60 ? `${m} นาที` : `${Math.floor(m / 60)} ชม.${m % 60 ? ' ' + (m % 60) + ' นาที' : ''}`;
+    }
+    function kmText(km) { return (km < 10 ? Math.round(km * 10) / 10 : Math.round(km)) + ' กม.'; }
+    function planMode(plan) { return (plan && plan.travelMode) || document.getElementById('transportSelect').value || 'driving'; }
+    function routeMode(mode) { return mode === 'taxi' ? 'driving' : mode; }
+    function safePhoto(src) {
+      return src && /^(https:\/\/|\/|assets\/)/.test(src) && !src.startsWith('assets/') ? src
+        : 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=200&q=80';
+    }
+    function planDays(plan) { return (plan && Array.isArray(plan.dailyItinerary)) ? plan.dailyItinerary : []; }
+    function allPlanPlaces(plan) { return planDays(plan).flatMap(d => d.places || []); }
+
     function renderGeneratedPlan(plan) {
-      if (!plan || !Array.isArray(plan.itinerary)) return;
+      const days = planDays(plan);
+      if (!days.length || !days.some(d => (d.places || []).length)) {
+        showToast((plan && plan.note) || 'ไม่พบสถานที่สำหรับปลายทางนี้ ลองเปลี่ยนปลายทางหรือจำนวนวัน');
+        return;
+      }
+      const mode = planMode(plan);
+      const title = plan.title || 'ทริปท่องเที่ยวส่วนบุคคล';
+      document.getElementById('tripNameInput').value = title;
+      document.getElementById('summaryTripTitle').textContent = title;
 
-      document.getElementById('tripNameInput').value = plan.title || 'ทริปท่องเที่ยวส่วนบุคคล';
-      document.getElementById('summaryTripTitle').textContent = plan.title || 'ทริปท่องเที่ยวส่วนบุคคล';
-      
-      let totalStops = 0;
-      let totalDistance = 0;
-      plan.itinerary.forEach(d => {
-        const stops = d.schedule || [];
-        totalStops += stops.length;
-        stops.forEach(s => {
-          if (s.distanceKm) totalDistance += Number(s.distanceKm);
-        });
-      });
-      if (totalDistance === 0) totalDistance = totalStops * 14;
-
-      document.getElementById('statDays').textContent = plan.days || plan.itinerary.length;
+      const totalStops = days.reduce((n, d) => n + (d.places || []).length, 0);
+      const totalKm = days.reduce((n, d) => n + (Number(d.distanceKm) || 0), 0);
+      const anyEstimate = days.some(d => d.routeSource !== 'road' && (d.places || []).length > 1);
+      document.getElementById('statDays').textContent = plan.days || days.length;
       document.getElementById('statStops').textContent = totalStops;
-      document.getElementById('statDistance').textContent = Math.round(totalDistance);
-      document.getElementById('summaryTripSub').textContent = `${plan.days || plan.itinerary.length} วัน · ${totalStops} สถานที่ · เส้นทางต่อเนื่องคำนวณด้วย AI`;
+      document.getElementById('statDistance').textContent = Math.round(totalKm);
+      document.getElementById('summaryTripSub').textContent =
+        `${plan.days || days.length} วัน · ${totalStops} สถานที่ · ${MODE_ICON[mode] || ''} ${anyEstimate ? 'ระยะทางโดยประมาณ' : 'ระยะทางตามถนนจริง (OpenStreetMap)'}`;
 
-      // Render Day Sections
-      const container = document.getElementById('timelineDaysWrapper');
       let stopCounter = 1;
-
-      container.innerHTML = plan.itinerary.map((day, idx) => {
-        const dayStops = day.schedule || [];
-        const stopsHtml = dayStops.map((stop, sIdx) => {
-          const place = stop.place || {};
+      document.getElementById('timelineDaysWrapper').innerHTML = days.map((day, dayIdx) => {
+        const places = day.places || [];
+        const legs = day.legs || [];
+        let t = PLAN_DAY_START_MIN;
+        const stopsHtml = places.map((place, i) => {
           const isSme = place.isSme || place.category === 'cafe';
-          const pPhoto = place.photo && !place.photo.startsWith('assets/') ? place.photo : 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=200&q=80';
-          const currentNum = stopCounter++;
-
-          let connectionHtml = '';
-          if (sIdx < dayStops.length - 1) {
-            connectionHtml = `
-              <div class="travel-connection">
-                <div class="travel-line"></div>
-                <span>🚗 เดินทาง ~${stop.travelMinutes || 20} นาที (${stop.distanceKm || 12} กม.)</span>
-              </div>
-            `;
-          }
-
-          return `
+          const leg = legs[i];
+          const html = `
             <div class="stop-item">
-              <div class="stop-marker">${currentNum}</div>
+              <div class="stop-marker">${stopCounter++}</div>
               <div class="stop-card">
-                <img src="${pPhoto}" class="stop-img" alt="">
+                <img src="${esc(safePhoto(place.photo))}" class="stop-img" alt="">
                 <div class="stop-body">
-                  <h4>${stop.time || '10:00'} · ${place.th || place.en || 'จุดแวะท่องเที่ยว'} ${isSme ? '<span class="sme-tag" style="display:inline-block;margin-left:6px;">★ Local SME</span>' : ''}</h4>
-                  <p>${place.storyTh || place.storyEn || place.locTh || 'จุดท่องเที่ยวและพักผ่อนในชุมชน'}</p>
+                  <h4>${clock(t)} · ${esc(place.th || place.en || 'จุดแวะท่องเที่ยว')} ${isSme ? '<span class="sme-tag" style="display:inline-block;margin-left:6px;">★ Local SME</span>' : ''}</h4>
+                  <p>${esc(place.storyTh || place.storyEn || place.locTh || place.locEn || 'จุดท่องเที่ยวและพักผ่อนในชุมชน')}</p>
                 </div>
                 <div class="stop-actions">
-                  <span class="drag-handle" title="ลากเพื่อสลับลำดับ">⋮⋮</span>
+                  <a href="${esc(TravalLinks.placeUrl(place))}" target="_blank" rel="noopener" title="ดูรีวิวบน Google Maps" style="font-size:12px;color:var(--muted);text-decoration:none;">รีวิว ↗</a>
                 </div>
               </div>
             </div>
-            ${connectionHtml}
-          `;
+            ${leg ? `
+            <div class="travel-connection">
+              <div class="travel-line"></div>
+              <span>${MODE_ICON[mode] || '🚗'} ${MODE_VERB[mode] || 'เดินทาง'} ~${minutesText(leg.travelMinutes)} (${kmText(leg.distanceKm)})${day.routeSource === 'road' ? '' : ' · ประมาณ'}</span>
+            </div>` : ''}`;
+          t += PLAN_VISIT_MIN + (leg ? Number(leg.travelMinutes) || 0 : 0);
+          return html;
         }).join('');
 
+        const sme = (day.smeRecommendations || []).find(r => r && r.place && !places.some(p => p.id === r.place.id));
+        const smeHtml = sme ? `
+            <div class="sme-stopover-box">
+              <div>
+                <span class="sme-tag">★ จุดแวะร้านค้าชุมชนระหว่างทาง (SME Stopover)</span>
+                <strong>${esc(sme.place.th || sme.place.en)}</strong>
+                <small>ใกล้ ${esc(sme.nearestStopName || 'จุดแวะในวันนี้')} ประมาณ ${esc(sme.detourKm)} กม. (+${esc(sme.estimatedDetourMin)} นาที)</small>
+              </div>
+              <button class="btn-add-sme" onclick="addSmeStop(${dayIdx})">+ แวะร้านนี้</button>
+            </div>` : '';
+
+        const navUrl = places.length ? TravalLinks.directionsUrl(places, mode) : '';
+        const driveMin = legs.reduce((n, l) => n + (Number(l.travelMinutes) || 0), 0);
         return `
           <div class="day-section">
             <div class="day-header">
               <div class="day-title">
-                <span class="day-badge">DAY ${day.day || idx + 1}</span>
-                <span>${day.title || `วันที่ ${day.day || idx + 1}`}</span>
+                <span class="day-badge">DAY ${esc(day.day || dayIdx + 1)}</span>
+                <span>${esc(day.title || `วันที่ ${day.day || dayIdx + 1}`)}</span>
               </div>
-              <div class="day-meta">${dayStops.length} จุดแวะ · แนะนำ ~${dayStops.length * 1.5} ชม.</div>
+              <div class="day-meta">${places.length} จุดแวะ · ${kmText(Number(day.distanceKm) || 0)} · เดินทาง ~${minutesText(driveMin)}
+                ${navUrl ? ` · <a href="${esc(navUrl)}" target="_blank" rel="noopener" style="color:var(--forest);font-weight:700;">นำทางวันนี้ใน Google Maps ↗</a>` : ''}</div>
             </div>
             <div class="timeline">
               ${stopsHtml}
+              ${smeHtml}
             </div>
-          </div>
-        `;
+          </div>`;
       }).join('');
 
-      // Update Budget
+      updatePlanBudget(plan);
+      updateGoogleNavButton(plan);
+    }
+
+    /** Transport from the shared formula on the current legs; food/stay/entry from the server's plan. */
+    function updatePlanBudget(plan) {
+      const mode = planMode(plan);
       const b = plan.budgetBreakdown || {};
-      const fuel = b.fuel || b.transport || 1200;
-      const stay = b.stay || 2800;
-      const food = b.food || 1800;
-      const entry = b.activities || 600;
+      const legs = planDays(plan).flatMap(d => d.legs || []);
+      const cost = TravalCost.tripCost(legs, routeMode(mode));
+      let fuel;
+      if (mode === 'taxi' && cost.taxi) fuel = Math.round((cost.taxi.min + cost.taxi.max) / 2);
+      else if (mode === 'driving') fuel = cost.fuel;
+      else if (mode === 'walking') fuel = 0;
+      else fuel = Number(b.transport) || 0; // transit: the server's per-day estimate
+      const stay = Number(b.accommodation ?? b.stay) || 0;
+      const food = Number(b.food) || 0;
+      const entry = Number(b.activities) || 0;
       const total = fuel + stay + food + entry;
+      plan.budgetBreakdown = { ...b, transport: fuel, totalEstimated: total };
 
       document.getElementById('costFuel').textContent = fuel.toLocaleString() + ' ฿';
       document.getElementById('costStay').textContent = stay.toLocaleString() + ' ฿';
       document.getElementById('costFood').textContent = food.toLocaleString() + ' ฿';
       document.getElementById('costEntry').textContent = entry.toLocaleString() + ' ฿';
       document.getElementById('totalCost').textContent = total.toLocaleString() + ' บาท';
-
       const limit = parseFloat(document.getElementById('budgetLimit').value) || 10000;
       const rem = limit - total;
       const remEl = document.getElementById('budgetRemaining');
       remEl.textContent = rem.toLocaleString() + ' บาท';
       remEl.style.color = rem >= 0 ? '#15803D' : '#DC2626';
-
-      // Meter percentages
       if (total > 0) {
         document.getElementById('meterFuel').style.width = Math.round((fuel / total) * 100) + '%';
         document.getElementById('meterStay').style.width = Math.round((stay / total) * 100) + '%';
@@ -1135,7 +1233,149 @@
       }
     }
 
+    /** Main "open in Google Maps" button: the whole trip if Google can take all stops, otherwise day 1. */
+    function updateGoogleNavButton(plan) {
+      const btn = document.getElementById('btnGoogleNav');
+      if (!btn) return;
+      const all = allPlanPlaces(plan);
+      const fits = all.length <= TravalLinks.MAX_WAYPOINTS + 2;
+      const places = fits ? all : (planDays(plan)[0]?.places || []);
+      btn.dataset.url = places.length ? TravalLinks.directionsUrl(places, planMode(plan)) : '';
+      btn.dataset.note = fits ? '' : 'ทริปนี้มีจุดแวะเกินที่ Google Maps รับได้ในครั้งเดียว — เปิดเส้นทางวันที่ 1 (ใช้ปุ่มของแต่ละวันสำหรับวันอื่น)';
+    }
+    function openGoogleNav() {
+      const btn = document.getElementById('btnGoogleNav');
+      const url = btn && btn.dataset.url;
+      if (!url) { showToast('สร้างแผนการเดินทางก่อน แล้วจึงเปิดนำทางใน Google Maps'); return; }
+      if (btn.dataset.note) showToast(btn.dataset.note);
+      window.open(url, '_blank', 'noopener');
+    }
+
+    /** Ask our server for real road routes, day by day, then redraw with them. */
+    async function routePlan(plan) {
+      const run = ++planRouteRun;
+      const mode = routeMode(planMode(plan));
+      for (const day of planDays(plan)) {
+        const places = (day.places || []).filter(p => Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lon)));
+        if (places.length < 2) { day.legs = []; day.distanceKm = 0; day.routeSource = 'road'; continue; }
+        const r = await TravalRoute.route(places, mode);
+        if (run !== planRouteRun || !r) return;
+        day.legs = r.legs;
+        day.distanceKm = Math.round(r.distanceKm * 10) / 10;
+        day.routeSource = r.source;
+      }
+      plan.totalDistanceKm = Math.round(planDays(plan).reduce((n, d) => n + (Number(d.distanceKm) || 0), 0) * 10) / 10;
+      if (run === planRouteRun && plan === currentPlanData) renderGeneratedPlan(plan);
+    }
+
+    function showPlan(plan, savedId) {
+      currentSavedId = savedId || null; // Tommy: which saved trip is on screen (null = new plan)
+      const sampleNote = document.getElementById('samplePlanNote'); if (sampleNote) sampleNote.remove(); // Tommy (UX pass)
+      if (plan && plan.note) showToast(plan.note);
+      currentPlanData = plan;
+      renderPlanPool(plan);
+      planDays(plan).forEach(d => { d.routeSource = 'estimate'; });
+      renderGeneratedPlan(plan);
+      routePlan(plan);
+    }
+
+    /** Put the day's suggested local shop right after the stop it is closest to, then re-route. */
+    function addSmeStop(dayIdx) {
+      const plan = currentPlanData;
+      const day = planDays(plan)[dayIdx];
+      if (!day) return;
+      const places = day.places || [];
+      const sme = (day.smeRecommendations || []).find(r => r && r.place && !places.some(p => p.id === r.place.id));
+      if (!sme) return;
+      const at = places.findIndex(p => p.id === sme.nearestStopId);
+      places.splice(at >= 0 ? at + 1 : places.length, 0, sme.place);
+      day.places = places;
+      day.smeRecommendations = (day.smeRecommendations || []).filter(r => r !== sme);
+      if (Array.isArray(plan.groups)) plan.groups[dayIdx] = places.map(p => p.id);
+      // Straight-line legs right away, road legs when the server answers.
+      day.legs = TravalRoute.estimate(places, routeMode(planMode(plan))).legs;
+      day.distanceKm = Math.round(day.legs.reduce((n, l) => n + l.distanceKm, 0) * 10) / 10;
+      day.routeSource = 'estimate';
+      renderGeneratedPlan(plan);
+      routePlan(plan);
+      showToast(`เพิ่ม "${sme.place.th || sme.place.en}" ลงในไทม์ไลน์สำเร็จ!`);
+    }
+
+    // ----- Tommy (2026-11-06): saved trips list + the real "places in this plan" list -----
+    let currentSavedId = null;
+    let placeIndexCache = null;
+    async function placeIndex() {
+      if (placeIndexCache) return placeIndexCache;
+      const j = await fetch('/api/places').then(r => r.json());
+      placeIndexCache = new Map((j.places || []).map(p => [p.id, p]));
+      return placeIndexCache;
+    }
+    function renderPlanPool(plan) {
+      const pool = document.querySelector('.places-pool');
+      const places = allPlanPlaces(plan);
+      if (!pool || !places.length) return;
+      document.getElementById('poolHeading').textContent = `สถานที่ในแผนนี้ (${places.length} ที่)`;
+      pool.innerHTML = places.map(p => `
+            <div class="pool-item">
+              <img src="${esc(safePhoto(p.photo))}" class="pool-img" alt="">
+              <div class="pool-info">
+                <strong>${esc(p.th || p.en)}</strong>
+                <small>${p.isSme ? '★ Local SME · ' : ''}${esc(p.locTh || p.locEn || '')}</small>
+              </div>
+              <span style="color:${p.isSme ? 'var(--sme-gold)' : 'var(--lime)'}; font-weight:800;">${p.isSme ? '★' : '✓'}</span>
+            </div>`).join('');
+    }
+    async function loadSavedPlans() {
+      const box = document.getElementById('savedPlansList');
+      if (!box) return;
+      try {
+        const res = await fetch('/api/me/itineraries', { credentials: 'same-origin' });
+        if (res.status === 401) { box.innerHTML = '<a href="/login.html" style="color:var(--forest);font-weight:700;">เข้าสู่ระบบ</a> เพื่อบันทึกและดูทริปของคุณ'; return; }
+        const j = await res.json();
+        const list = j.itineraries || [];
+        if (!list.length) { box.textContent = 'ยังไม่มีทริปที่บันทึกไว้'; return; }
+        box.innerHTML = list.map(t => `
+          <div style="display:flex;align-items:center;gap:8px;background:#F5F7F2;border-radius:10px;padding:8px 10px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;color:var(--forest);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(t.title)}</div>
+              <small>${esc(t.days)} วัน · ${(t.groups || []).flat().length} สถานที่ · ${esc(new Date(t.updatedAt || t.createdAt || Date.now()).toLocaleDateString('th-TH'))}</small>
+            </div>
+            <button type="button" onclick="openSavedPlan('${esc(t.id)}')" style="border:1px solid var(--line);background:#fff;border-radius:99px;padding:4px 10px;font-size:12px;cursor:pointer;">เปิด</button>
+            <button type="button" onclick="deleteSavedPlan('${esc(t.id)}')" title="ลบ" style="border:none;background:none;color:#B91C1C;cursor:pointer;font-size:14px;">✕</button>
+          </div>`).join('');
+      } catch (e) { box.textContent = 'โหลดทริปที่บันทึกไว้ไม่สำเร็จ'; }
+    }
+    async function openSavedPlan(id) {
+      try {
+        const [j, index] = await Promise.all([fetch(`/api/me/itineraries/${id}`).then(r => r.json()), placeIndex()]);
+        const t = j.itinerary;
+        if (!t) throw new Error(j.error || 'not found');
+        const plan = {
+          title: t.title, days: t.days, travelMode: t.travelMode, hoursPerDay: t.hoursPerDay,
+          budgetBreakdown: t.budgetBreakdown || {},
+          dailyItinerary: (t.groups || []).map((ids, i) => ({ day: i + 1, places: ids.map(x => index.get(x)).filter(Boolean), smeRecommendations: [] }))
+        };
+        planDays(plan).forEach(d => { d.legs = TravalRoute.estimate(d.places, routeMode(plan.travelMode)).legs; d.distanceKm = Math.round(d.legs.reduce((n, l) => n + l.distanceKm, 0) * 10) / 10; });
+        setMode('auto');
+        showPlan(plan, t.id);
+        showToast(`เปิดทริป "${t.title}" แล้ว`);
+      } catch (e) { showToast('เปิดทริปไม่สำเร็จ: ' + e.message); }
+    }
+    async function deleteSavedPlan(id) {
+      if (!confirm('ลบทริปนี้?')) return;
+      const res = await fetch(`/api/me/itineraries/${id}`, { method: 'DELETE' });
+      if (res.ok) { if (currentSavedId === id) currentSavedId = null; showToast('ลบทริปแล้ว'); loadSavedPlans(); }
+      else showToast('ลบไม่สำเร็จ');
+    }
+
     async function insertStopover() {
+      // Tommy: with a generated plan, add the real suggested shop for that plan (near its actual stops).
+      if (currentPlanData) {
+        const dayIdx = planDays(currentPlanData).findIndex(d => (d.smeRecommendations || []).length);
+        if (dayIdx >= 0) addSmeStop(dayIdx); else showToast('ไม่มีร้านค้าชุมชนใกล้เส้นทางนี้');
+        return;
+      }
+      // Demo timeline only (before "Generate"): its stops are Doi Mon Jam → Mae Kampong, so ask near those two.
       const box = document.getElementById('smeStopoverBox');
       if (!box) return;
       try {
@@ -1221,40 +1461,38 @@
 
         // Group places from real AI timeline
         let groups = [];
-        if (currentPlanData && Array.isArray(currentPlanData.itinerary)) {
-          groups = currentPlanData.itinerary.map(day => (day.schedule || []).map(s => s.place?.id || s.place?.slug).filter(Boolean));
+        // Tommy: save the plan on screen (places per day, in order) — never random places.
+        if (currentPlanData) {
+          groups = planDays(currentPlanData).map(day => (day.places || []).map(p => p.id).filter(id => id && !/^osm-/.test(id)));
         }
         if (!groups.length || !groups.flat().length) {
-          try {
-            const placesRes = await fetch('/api/places');
-            const pJson = await placesRes.json();
-            const pList = (pJson.places || []).slice(0, days * 2);
-            if (pList.length) {
-              groups = Array.from({ length: days }, (_, i) => [pList[i % pList.length]?.id].filter(Boolean));
-            }
-          } catch(e) {}
-        }
-        if (!groups.length) {
-          groups = Array.from({ length: days }, () => []);
+          showToast('กด "คำนวณเส้นทางด้วย AI" เพื่อสร้างแผนก่อน แล้วจึงบันทึก');
+          return;
         }
 
-        const res = await fetch('/api/itineraries', {
-          method: 'POST',
+        // Tommy: a plan opened from "ทริปที่บันทึกไว้" is updated in place (PUT), a new plan is created (POST)
+        const res = await fetch(currentSavedId ? `/api/me/itineraries/${currentSavedId}` : '/api/itineraries', {
+          method: currentSavedId ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title: name,
-            days: days,
-            hoursPerDay: 7,
+            days: currentPlanData ? planDays(currentPlanData).length : days,
+            hoursPerDay: (currentPlanData && currentPlanData.hoursPerDay) || 7,
             budget: budget,
             currency: 'THB',
-            travelMode: travelMode,
-            groups: groups
+            // Tommy: saved trips accept driving / walking / transit — a taxi plan is a driving route
+            travelMode: ({ taxi: 'driving' })[(currentPlanData && currentPlanData.travelMode) || travelMode] || (currentPlanData && currentPlanData.travelMode) || travelMode,
+            groups: groups,
+            budgetBreakdown: currentPlanData ? currentPlanData.budgetBreakdown : undefined
           })
         });
 
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || 'Failed to save itinerary');
-        showToast(`บันทึกทริป "${name}" ลงในฐานข้อมูล My Trips เรียบร้อยแล้ว!`);
+        if (json.itinerary) currentSavedId = json.itinerary.id;
+        const droppedOsm = currentPlanData ? planDays(currentPlanData).flatMap(d => d.places || []).filter(p => /^osm-/.test(p.id)).length : 0;
+        showToast(`บันทึกทริป "${name}" แล้ว!` + (droppedOsm ? ` (สถานที่จากแผนที่ OSM ${droppedOsm} แห่งยังบันทึกในทริปไม่ได้)` : ''));
+        loadSavedPlans();
       } catch (err) {
         showToast('เกิดข้อผิดพลาดในการบันทึก: ' + err.message);
       }
@@ -1266,26 +1504,31 @@
     }
 
     
-    function checkImportedPlaces() {
+    // Tommy: places picked in the traveler app ("send to planner") → kept in the AI plan via mustVisit.
+    function destinationLabel() {
+      const sel = document.getElementById('destinationSelect');
+      const text = sel && sel.selectedOptions[0] ? sel.selectedOptions[0].textContent : '';
+      return text.split('(')[0].trim();
+    }
+    function importedPlaceIds() {
       try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const placesParam = urlParams.get('places');
-        const storedStops = localStorage.getItem('traval-selected-plan-stops');
-        if (placesParam || storedStops) {
-          console.log('[Traval Sync] Detected incoming places from Moo Collection:', placesParam);
-          const stopCount = placesParam ? placesParam.split(',').filter(Boolean).length : 0;
-          if (stopCount > 0) {
-            const stopsEl = document.getElementById('statStops');
-            if (stopsEl) stopsEl.textContent = stopCount;
-            showToast('นำเข้า ' + stopCount + ' สถานที่จากคอลเลกชันสำเร็จ!');
-          }
-        }
-      } catch(e) {}
+        const fromUrl = new URLSearchParams(window.location.search).get('places');
+        return (fromUrl || '').split(',').map(s => s.trim()).filter(id => id && !/^osm-/.test(id)).slice(0, 30);
+      } catch (e) { return []; }
+    }
+    function checkImportedPlaces() {
+      const ids = importedPlaceIds();
+      if (!ids.length) return;
+      const stopsEl = document.getElementById('statStops');
+      if (stopsEl) stopsEl.textContent = ids.length;
+      setMode('auto');
+      showToast('นำเข้า ' + ids.length + ' สถานที่จากคอลเลกชันแล้ว — กด "คำนวณเส้นทางด้วย AI" เพื่อจัดทริป');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       checkAuthSession();
       checkImportedPlaces();
+      loadSavedPlans(); // Tommy: show this account's saved trips
     });
 
   </script>

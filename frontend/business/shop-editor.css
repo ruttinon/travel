@@ -1,0 +1,68 @@
+/* Business portal — shop page editor (owner: Tommy). See shop-editor.js. */
+#shopEditorRoot{--se-line:#E5E9E2}
+.se-empty{background:#fff;border:1px solid var(--se-line);border-radius:20px;padding:32px;text-align:center;color:#627267;line-height:1.7}
+.se-empty a{color:#172B23;font-weight:700}
+.se-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
+.se-place{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#172B23}
+.se-place select{padding:9px 12px;border:1px solid var(--se-line);border-radius:10px;font:inherit;font-weight:500;max-width:240px}
+.se-chip{font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px}
+.se-link{font-size:13px;font-weight:700;color:#172B23}
+.se-dirty{font-size:12px;color:#B45309;font-weight:700}
+.se-actions{margin-left:auto;display:flex;gap:8px}
+.se-actions .btn-outline{flex:none;padding:12px 16px}
+.se-actions button:disabled{opacity:.5;cursor:not-allowed}
+.se-banner{border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:12px;line-height:1.5}
+.se-banner.info{background:#EEF6FF;color:#1E3A8A}.se-banner.warn{background:#FFF7E6;color:#8A5A00}.se-banner.error{background:#FEF2F2;color:#991B1B}
+.se-grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+.se-form{display:flex;flex-direction:column;gap:12px;min-width:0}
+.se-card{background:#fff;border:1px solid var(--se-line);border-radius:18px;padding:18px}
+.se-card h3{font-size:14px;font-weight:800;color:#172B23;margin:0 0 10px}
+.se-card h3 small{font-weight:500;color:#627267}
+.se-card h3:not(:first-child){margin-top:16px}
+.se-small{font-size:12px;color:#627267;line-height:1.5;margin:0 0 8px;display:block}
+.se-templates{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.se-tpl{text-align:left;border:1.5px solid var(--se-line);background:#fff;border-radius:12px;padding:10px;cursor:pointer;font:inherit}
+.se-tpl b{display:block;font-size:13px;color:#172B23}.se-tpl small{font-size:11px;color:#627267}
+.se-tpl.on{border-color:#172B23;box-shadow:0 0 0 2px #8DE026}
+.se-colors{display:flex;gap:10px}
+.se-color{width:34px;height:34px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px var(--se-line);cursor:pointer}
+.se-color.on{box-shadow:0 0 0 2px #172B23}
+.se-sec.off{opacity:.65}
+.se-sec-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.se-sec-head h3{margin:0}
+.se-sec-tools{display:flex;gap:4px}
+.se-sec-tools button{border:1px solid var(--se-line);background:#fff;border-radius:8px;padding:5px 9px;font:inherit;font-size:12px;cursor:pointer;min-width:32px}
+.se-sec-tools button:disabled{opacity:.35;cursor:default}
+.se-sec-body{display:flex;flex-wrap:wrap;gap:10px}
+.se-field{display:flex;flex-direction:column;gap:4px;width:100%}
+.se-field.half{width:calc(50% - 5px)}
+.se-field>span{font-size:12px;font-weight:700;color:#172B23}
+.se-field small{font-size:11px;color:#627267}
+.se-field input,.se-field textarea{padding:10px 12px;border:1px solid var(--se-line);border-radius:10px;font:inherit;font-size:14px;width:100%;box-sizing:border-box}
+.se-field input:focus,.se-field textarea:focus{outline:none;border-color:#172B23}
+.se-img{display:flex;align-items:center;gap:10px}
+.se-img img,.se-img-none{width:72px;height:54px;border-radius:8px;object-fit:cover;background:#F1F4EF;display:flex;align-items:center;justify-content:center;font-size:11px;color:#627267}
+.se-img .btn-outline{flex:none}
+.se-x{border:0;background:#F1F4EF;color:#7F1D1D;width:28px;height:28px;border-radius:50%;cursor:pointer;flex:none;font-size:12px}
+.se-row{display:flex;gap:8px;align-items:flex-start;width:100%;padding:10px;border:1px dashed var(--se-line);border-radius:12px}
+.se-row-fields{display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:0}
+.se-add{border:1.5px dashed #C8D4C8;background:transparent;border-radius:10px;padding:9px 12px;font:inherit;font-size:13px;font-weight:700;color:#172B23;cursor:pointer;width:100%}
+.se-thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;width:100%}
+.se-thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#F1F4EF}
+.se-thumb img{width:100%;height:100%;object-fit:cover}
+.se-thumb .se-x{position:absolute;top:4px;right:4px;width:24px;height:24px;background:rgba(255,255,255,.9)}
+.se-thumb.add{border:1.5px dashed #C8D4C8;font:inherit;font-size:12px;font-weight:700;color:#172B23;cursor:pointer}
+.se-addsec{display:flex;flex-wrap:wrap;gap:8px}
+.se-addsec .btn-outline{flex:none}
+.se-preview-wrap{position:sticky;top:76px}
+.se-phone{background:#111;border-radius:40px;padding:12px;box-shadow:0 20px 50px rgba(0,0,0,.18)}
+.se-phone-screen{height:680px;overflow-y:auto;border-radius:30px;background:#F8F7F3;scrollbar-width:thin}
+.se-phone-screen .tsp{min-height:100%}
+.se-hint{text-align:center;font-size:12px;color:#627267;margin-top:8px}
+
+@media (max-width:600px){.se-field.half{width:100%}.se-templates{grid-template-columns:1fr}.se-actions{margin-left:0;width:100%}.se-actions button{flex:1;justify-content:center}}
+/* .business-main has overflow-y:auto but no fixed height, so the window scrolls and that overflow only blocks
+   position:sticky. On the shop page tab we let it overflow normally so the phone preview stays in view. */
+body:has(#view-shoppage.active) .business-main{overflow:visible}
+.se-phone-screen{height:min(680px,calc(100vh - 140px))}
+@media (max-width:1100px){.se-grid{grid-template-columns:1fr}.se-preview-wrap{position:static;max-width:380px;margin:0 auto;width:100%}.se-phone-screen{height:600px}}

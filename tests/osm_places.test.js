@@ -80,3 +80,44 @@ test('public OSM text is cleaned on import, so it cannot become a script or a fa
   assert.match(p.phone, /^[0-9+()\-\s;,]*$/, 'only phone characters: no quotes or letters that could break out of tel: links');
   assert.equal(p.website, '');
 });
+
+// Tommy: logged-in users' Saved / Trip lists keep OpenStreetMap places on the server (any device), in order.
+test('server lists keep OpenStreetMap places with their details, in order', async t => {
+  const { spawn } = require('node:child_process');
+  const { DatabaseSync } = require('node:sqlite');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'traval-osm-lists-'));
+  const file = path.join(dir, 'places.ndjson.gz');
+  fs.writeFileSync(file, zlib.gzipSync(SAMPLE.map(p => JSON.stringify(p)).join('\n') + '\n'));
+  osm.importFile(dir, file); osm.close();
+  const child = spawn(process.execPath, [path.join(__dirname, '..', 'server.js'), '0'], { env: { ...process.env, UNFOLD_DATA_DIR: dir }, stdio: ['ignore', 'pipe', 'inherit'] });
+  const url = await new Promise((resolve, reject) => {
+    let out = ''; const timer = setTimeout(() => reject(new Error('start timeout')), 15000);
+    child.stdout.on('data', c => { out += c; const m = out.match(/http:\/\/127\.0\.0\.1:(\d+)/); if (m) { clearTimeout(timer); resolve(`http://127.0.0.1:${m[1]}`); } });
+  });
+  t.after(() => { child.kill(); fs.rmSync(dir, { recursive: true, force: true }); });
+  const now = new Date().toISOString();
+  const db = new DatabaseSync(path.join(dir, 'unfold.sqlite'));
+  db.prepare("INSERT INTO places(slug,name_en,name_th,location_en,location_th,category,region,lat,lon,status,created_at,updated_at) VALUES('team-place','Team Place','ที่ทีม','Bangkok','กรุงเทพ','culture','central',13.75,100.5,'published',?,?)").run(now, now);
+  db.close();
+
+  const headers = { 'Content-Type': 'application/json', Origin: url };
+  let res = await fetch(`${url}/api/auth/register`, { method: 'POST', headers, body: JSON.stringify({ name: 'Tommy', email: 'tommy@example.com', password: 'password123' }) });
+  assert.equal(res.status, 201);
+  const cookie = res.headers.get('set-cookie').split(';')[0];
+  const put = body => fetch(`${url}/api/me/collections`, { method: 'PUT', headers: { ...headers, Cookie: cookie }, body: JSON.stringify(body) });
+
+  res = await put({ saved: ['osm-n2', 'team-place', 'osm-w1'], trip: ['osm-n4'] });
+  assert.equal(res.status, 200);
+  assert.deepEqual((await res.json()).saved, ['osm-n2', 'team-place', 'osm-w1'], 'order kept across both kinds of place');
+
+  const got = await (await fetch(`${url}/api/me/collections`, { headers: { Cookie: cookie } })).json();
+  assert.deepEqual(got.saved, ['osm-n2', 'team-place', 'osm-w1']);
+  assert.deepEqual(got.trip, ['osm-n4']);
+  assert.deepEqual(got.osmPlaces.map(p => p.id).sort(), ['osm-n2', 'osm-n4', 'osm-w1']);
+  assert.equal(got.osmPlaces.find(p => p.id === 'osm-n4').en, 'Doi Suthep');
+
+  res = await put({ saved: ['osm-n999999'], trip: [] });
+  assert.equal(res.status, 400, 'unknown OSM place is refused');
+  res = await put({ saved: ['team-place'], trip: [] });
+  assert.deepEqual((await res.json()).saved, ['team-place'], 'removing OSM places works');
+});

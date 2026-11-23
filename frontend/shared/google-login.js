@@ -1,5 +1,6 @@
 /* Tommy: Sign in with Google — login page side (owner: Tommy)
  *
+ * Used by the login page and the register page (button id="btn-google"; data-google-text="signup_with" on register).
  * When the server has a Google Client ID (GET /api/auth/google/config), this swaps the page's Google
  * button for Google's official one. Google shows its own sign-in window, gives us a signed token,
  * and we send only that token to POST /api/auth/social — the server checks it with Google
@@ -11,8 +12,15 @@
   'use strict';
   var GIS_SRC = 'https://accounts.google.com/gsi/client';
 
+  // Tommy (UX pass 2026-11-06): after signing in, go back to the page that sent the user here
+  // (e.g. /login.html?next=/business.html). Only paths on this site are accepted ("/x", never "//x" or "https:").
+  window.travalNext = function () {
+    var next = new URLSearchParams(window.location.search).get('next') || '';
+    return /^\/(?![\/\\])[\w\-./#?=&%]*$/.test(next) ? next : 'profile.html';
+  };
+
   function showError(message) {
-    var box = document.getElementById('auth-error-msg');
+    var box = document.getElementById('auth-error-msg') || document.getElementById('reg-error-msg');
     if (!box) { window.alert(message); return; }
     box.textContent = message;
     box.style.display = 'block';
@@ -40,7 +48,7 @@
       });
       var json = await res.json().catch(function () { return {}; });
       if (!res.ok) throw new Error(json.error || 'Google sign-in failed');
-      window.location.href = 'profile.html';
+      window.location.href = window.travalNext();
     } catch (err) {
       showError(err.message);
     }
@@ -67,6 +75,7 @@
     slot.style.display = 'flex';
     slot.style.justifyContent = 'center';
     slot.style.alignItems = 'center';
+    slot.style.flex = '1'; // same space as the button it replaces (register page row)
     button.hidden = true;
     button.style.display = 'none';
     button.insertAdjacentElement('afterend', slot);
@@ -75,11 +84,11 @@
       client_id: cfg.clientId,
       callback: onCredential,
       ux_mode: 'popup',
-      context: 'signin',
+      context: button.dataset.googleText === 'signup_with' ? 'signup' : 'signin',
       cancel_on_tap_outside: true
     });
     google.accounts.id.renderButton(slot, {
-      type: 'standard', theme: 'outline', size: 'large', text: 'continue_with',
+      type: 'standard', theme: 'outline', size: 'large', text: button.dataset.googleText || 'continue_with',
       shape: 'pill', logo_alignment: 'left', width: width
     });
   }

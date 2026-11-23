@@ -29,6 +29,121 @@
 
 ---
 
+## 2026-11-06 — ตรวจ UX ทุกหน้า: ใช้เป็นเองได้โดยไม่ต้องสอน  (ผู้แก้: Tommy · commit: ยังไม่ commit)
+
+**ทำไม:** เปิดทุกหน้าแบบผู้ใช้ครั้งแรก ทั้งบนมือถือและคอม แล้วพบว่าบนมือถือไปหน้าอื่นไม่ได้เลย หน้าเข้าสู่ระบบบนมือถือไม่มีช่องกรอก Business portal แสดงร้านตัวอย่างให้เจ้าของร้านใหม่ ชื่อแอปมีทั้ง "Traval" และ "unfold" และ Planner กับ Business portal ไม่มีทางเข้าจากแอป
+**รายละเอียดเต็ม (สิ่งที่พบ, สิ่งที่แก้, สิ่งที่ยังไม่แก้): `docs/ux-2026-11-06.md`**
+
+| ไฟล์ | เจ้าของ | เปลี่ยนอะไร |
+|---|---|---|
+| `frontend/traveler/app.js`, `styles.css` | Moo | `bottomNav()` แถบเมนูมือถือมีคำกำกับ (`.tabbar`) · การ์ดวิธีใช้ 4 ข้อในการ์ดต้อนรับ · การ์ด "วางแผนทริป" / "เจ้าของร้าน" ในหน้าสำรวจ + ลิงก์ในเมนู ☰ (`.overlay-extra`) · หน้าบันทึก/ทริปว่างบอกวิธีใช้ · ภาษาเริ่มตามเครื่อง · ปุ่มภาษา "ไทย/EN" + รูปโลก · เงาหลังหัวข้อหน้าแรก · `:focus-visible` · ลบข้อความ "(Nine)" |
+| `frontend/traveler/manifest.webmanifest` | Moo | ชื่อแอปบนมือถือ "Traval" |
+| `frontend/shared/site-ux.css` (ใหม่) | Tommy | หน้า login/register/forgot/profile ใช้บนมือถือ/จอเล็กได้ (เดิมล็อก 1440 px) · รูปจากเครื่องเราแทน Unsplash · focus outline |
+| `frontend/auth/login.html`, `register.html`, `forgot-password.html`, `profile.html` | Nine / Phodjanaphon | ชื่อ "Traval" · เมนูชี้หน้าจริง (`/`, `/#map`, `/#saved`, `/planner.html`) · โหลด `site-ux.css` · หลังล็อกอินไป `?next=` · profile: สถิติเป็นลิงก์จริง, การ์ด "เป็นเจ้าของร้าน?", ปุ่ม "Sign out all devices" |
+| `frontend/shared/google-login.js` | Tommy | `window.travalNext()` — ไปหน้า `?next=` อย่างปลอดภัย (เฉพาะ path ในเว็บเรา) |
+| `frontend/planner/planner.html` | Nine | ชื่อ/เมนู · "เข้าสู่ระบบ" แทน "Nine (UX/UI)" · ป้าย "แผนตัวอย่าง" (`#samplePlanNote`, หายใน `showPlan()`) · คำอธิบายโหมด · `<label for>` 7 ช่อง · การ์ดจุดแวะบนมือถือ |
+| `frontend/business/business.html` | Nine / ruttinon | `renderOwnerSteps()` ขั้นตอนต่อไป 5 ขั้นจากสถานะจริง · ลบร้าน/ตัวเลขตัวอย่าง · เมนูเรียงตามลำดับงาน, เอาลิงก์แอดมินออก · `switchView(tab)` หาปุ่มเอง · ชื่อ/ปุ่มเข้าสู่ระบบจริงในแถบซ้าย |
+| `frontend/admin/admin.html` | ruttinon | ชื่อแอป "Traval", ชื่อผู้ดูแล "admin" (เดิม "Nine (Lead Designer)") |
+| `backend/server.js` | Prom | `PAGE_FILES` + `site-ux.css` |
+
+**กระทบใคร / ต้องระวัง:** ถ้าแก้ CSS ของหน้า auth ให้ดู `site-ux.css` ด้วย (โหลดท้ายสุด จึงชนะ) · เมนู Business ห้ามเรียกปุ่มด้วยลำดับ `querySelectorAll('.nav-btn')[n]` อีก ให้ใช้ `switchView('ชื่อแท็บ')` · `bottomNav()` ถูกใช้ทุกหน้าในแอป ถ้าจะซ่อนแถบนี้ต้องมีเมนูอื่นแทนบนมือถือ
+**ทดสอบ:** `npm test` 39/39 · QA API 99/100 · QA เบราว์เซอร์ 43/45 — ข้อที่ไม่ผ่านเป็นข้อเดิมที่อธิบายไว้แล้วด้านล่าง ไม่มีข้อใหม่ · ทดสอบเพิ่ม: กดแถบเมนูมือถือครบ 5 ปุ่ม, ล็อกอินแล้วกลับ Business portal ผ่าน `?next=`, ปุ่มในขั้นตอนเปิดแท็บถูก · สแกนทุกหน้า: ไม่มีปุ่มที่ไม่มีชื่อ และไม่มีช่องกรอกที่ไม่มีป้ายกำกับ
+
+---
+
+## 2026-11-06 — หน้าร้าน SME (Shop page): เจ้าของร้านออกแบบหน้าร้านเองจากแม่แบบ, แอดมินอนุมัติครั้งแรก  (ผู้แก้: Tommy · commit: ยังไม่ commit)
+
+**ทำไม:** ฟีเจอร์ที่แอปตัวจริงต้องมี — ร้าน SME มีหน้าเว็บของตัวเองที่นักท่องเที่ยวเปิดจากแผนที่ได้เหมือนเปิดสถานที่ เจ้าของแก้เองได้ ใช้แม่แบบของเรา
+**กฎที่ทีมตัดสินใจ:** หน้าร้าน **ครั้งแรก** ต้องให้แอดมินอนุมัติ · หลังอนุมัติแล้ว เจ้าของ **แก้และเผยแพร่เองได้ทันที** · แอดมิน "ซ่อน" ได้ทุกเมื่อ (เจ้าของแก้แล้วส่งใหม่ → รออนุมัติอีกครั้ง) · รีวิวของเราแสดงเสมอ + ปุ่ม "รีวิวบน Google" **เฉพาะร้านที่เจ้าของใส่ลิงก์ Google Maps ไว้** (ร้าน SME ที่สร้างใน Traval ส่วนใหญ่ไม่มีหน้า Google)
+**ผลลัพธ์:** ในแอป รายละเอียดสถานที่ + แผ่นบนแผนที่มีปุ่ม "🏪 ดูหน้าร้าน" → `/shop/<place id>` · Business portal มีแท็บ "หน้าร้านของฉัน" (แก้ซ้าย, ดูตัวอย่างมือถือขวา) · Admin แท็บ "ตรวจสอบร้านค้า SME" มีส่วน "หน้าร้าน SME"
+**รายละเอียดเต็ม (API, ข้อมูล, ความปลอดภัย): `docs/shop-pages.md`**
+
+| ไฟล์ | เจ้าของ | เปลี่ยนอะไร |
+|---|---|---|
+| `backend/shop-pages.js` (ใหม่) | Tommy | ตาราง `shop_pages`, ตรวจข้อมูลเข้มงวด (ไม่มี HTML, รูปต้องเป็นของร้านเอง, ลิงก์ https เท่านั้น, ลิงก์ Google ต้องเป็นของ Google), API เจ้าของ / สาธารณะ / แอดมิน |
+| `backend/server.js` | Prom | `require('./shop-pages.js')` + `makeShopPages(...)` · ส่งเส้นทาง `/api/shop-pages*`, `/api/business/shop-pages*`, `/api/admin/shop-pages*` ไปที่โมดูล · หน้า `/shop/<id>` · รูปใน `/uploads/` ที่อยู่บนหน้าร้านที่เผยแพร่แล้วเปิดดูได้สาธารณะ · `PAGE_FILES` +6 ไฟล์ |
+| `frontend/shared/shop-render.js`, `shop-render.css` (ใหม่) | Tommy | วาดหน้าร้าน (แม่แบบ classic / modern / market, 5 สี, ส่วน hero / story / menu / gallery / hours / promo / contact) ใช้ร่วมกันทั้งหน้าจริงและตัวอย่างใน editor |
+| `frontend/shop/shop.html`, `shop.js` (ใหม่) | Tommy | หน้าร้านสาธารณะ: นำทาง, รีวิว Traval + ปุ่มเขียนรีวิวในแอป, รีวิวบน Google (ถ้ามี), แชร์ |
+| `frontend/business/shop-editor.js`, `shop-editor.css` (ใหม่) | Tommy | editor หน้าร้าน: เลือกแม่แบบ/สี, ลิงก์ Google, เพิ่ม/ลบ/เลื่อน/ซ่อนส่วน, อัปโหลดรูป (ย่อเป็น WebP ≤1600px ก่อนส่ง), บันทึกร่าง, ส่งตรวจ/เผยแพร่ |
+| `frontend/business/business.html` | Nine / ruttinon | +ปุ่มเมนู "หน้าร้านของฉัน", +`<section id="view-shoppage">`, โหลด css/js ข้างบน, `switchView('shoppage')` เรียก `TravalShopEditor.load()` |
+| `frontend/admin/admin-shop-pages.js` (ใหม่) + `frontend/admin/admin.html` | Tommy / ruttinon | ส่วน "หน้าร้าน SME" ในแท็บ businesses: รายการรออนุมัติ / เผยแพร่อยู่ / ซ่อน, ดูตัวอย่างแบบมือถือ, อนุมัติ, ส่งกลับ (ต้องใส่เหตุผล), ซ่อน |
+| `frontend/traveler/app.js` | Moo | `SHOP_PAGES` (โหลด `/api/shop-pages` พร้อมสถานที่), `shopPageUrl()`, `googleReviewsUrl()` · ปุ่ม "ดูหน้าร้าน" ในหน้าสถานที่ + แผ่นบนแผนที่ · ปุ่ม "รีวิวบน Google" ซ่อนสำหรับร้าน SME ที่ไม่มีลิงก์ Google · **แก้บั๊ก:** ลิงก์ `/#place=<id>` (ปุ่มแชร์) เปิดหน้า welcome แทนสถานที่ → ตอนนี้เปิดสถานที่ (`startPlace`) · **แก้บั๊ก:** เวลาเปิด-ปิดขึ้น `[object Object]` (`hoursText()`), และเลิกแสดงเวลาปลอม "เปิดทุกวัน 08:30-18:00" เมื่อไม่รู้เวลา |
+| `tests/shop_pages.test.js` (ใหม่) | Tommy | ทดสอบกฎอนุมัติ, ความปลอดภัย, รูป, ลิงก์ Google ครบทั้งวงจร |
+
+**ใช้ยังไง / ตั้งค่า:** เจ้าของร้านต้องมีธุรกิจที่อนุมัติแล้ว และเป็นเจ้าของสถานที่บนแผนที่ (ส่งร้านใหม่หรืออ้างสิทธิ์แล้วแอดมินอนุมัติ) · อนาคตถ้าจะไม่ต้องอนุมัติครั้งแรกด้วย: ตั้ง `TRAVAL_SHOP_PAGES_AUTO_APPROVE=1`
+**กระทบใคร / ต้องระวัง:** ห้ามเปลี่ยน `shop-render.js` ให้รับ HTML จากเจ้าของร้าน (ความปลอดภัยทั้งระบบพึ่งข้อนี้) · ถ้าเพิ่มส่วนใหม่ ต้องเพิ่มทั้ง `SECTION_TYPES` ใน `backend/shop-pages.js` และ `shop-render.js` · การแก้หลังอนุมัติไม่ผ่านแอดมิน → audit log มี `shop_page.publish` (+`googleChanged`) ให้ตรวจย้อนหลัง
+**ทดสอบ:** `npm test` 39/39 (+1 `shop_pages.test.js`) · เบราว์เซอร์: editor (คอม + มือถือ), หน้าร้าน 3 แม่แบบ, แอดมินดูตัวอย่าง + อนุมัติ, ปุ่มจากแอป → หน้าร้าน → กลับ
+
+---
+
+## 2026-11-06 — แก้ปัญหาจากการทดสอบทั้งระบบ รวมส่วนของเพื่อนในทีม  (ผู้แก้: Tommy · commit: fix: QA fixes across the team)
+
+**ทำไม:** ผลทดสอบ `docs/qa-2026-11-05.md` พบปัญหา 12 ข้อ ส่วนใหญ่อยู่ในไฟล์ของคนอื่น — ทีมตกลงให้แก้ได้ถ้าเขียนบอกชัดเจน
+**รายละเอียดเต็มแยกตามคน (อ่านก่อนแก้ไฟล์เหล่านี้ต่อ): `docs/handoff-2026-11-06.md`**
+
+| ไฟล์ | เจ้าของ | เปลี่ยนอะไร (สั้น) |
+|---|---|---|
+| `frontend/business/business.html` | Nine / ruttinon | ฟอร์มลงทะเบียนร้าน / โปรไฟล์ร้าน / อ้างสิทธิ์ ส่งถึงแอดมินจริงตามกฎเซิร์ฟเวอร์ + บอกสถานะจริง + อัปโหลดรูปจริง + เก็บร่างในเครื่อง · แท็บอ้างสิทธิ์แสดงได้ · escape ข้อความ · ใช้บนมือถือได้ |
+| `frontend/planner/planner.html` | Nine | ทริปที่บันทึกไว้: แสดง / เปิด / แก้ / ลบ · รายการสถานที่ในแผนจริง · แสดง `note` · ใช้บนมือถือได้ |
+| `backend/server.js` | Prom | Facebook demo + OTP (`devOtp`) ใช้ได้เฉพาะเครื่องตัวเอง (เครื่องอื่น 503) · Planner: ปลายทางมีสถานที่น้อย → เพิ่มที่ใกล้ ≤150 กม. แทนทั้งประเทศ, จับชื่อทั้งคำ, `note` |
+| `frontend/auth/profile.html` | Phodjanaphon | ตัวเลข ทริป / สถานที่ / รีวิว จากเซิร์ฟเวอร์ (`loadProfileCounts()`) |
+| `frontend/traveler/app.js` | Moo | รวมรายการผู้เยี่ยมชมเข้าบัญชีตอนล็อกอิน (`placesReady`) · ไม่กรองรายการตอนเริ่ม · ไม่รวม `SAMPLE_PLACES` กับข้อมูลจริง · ลงทะเบียน service worker · ปุ่ม "+ ทริป" + หัวใจในแผ่นแผนที่ · จุด OSM ไม่ซ้อน |
+| `frontend/traveler/sw.js` | Moo | cache ใหม่ `unfold-v2.7-offline-1`, ออฟไลน์เปิดหน้าแอปได้ทุก URL, +`google-login.js` |
+| `assets/1–3.png` → `.jpg` (+ `frontend/traveler/assets/`) | Moo | ไฟล์เป็น JPEG จริง ตั้งชื่อให้ตรง |
+| `frontend/admin/admin.html` | ruttinon | CSS มือถือเท่านั้น |
+| `frontend/shared/map-gestures.js` | Tommy | ถ่างนิ้วซูมได้แม้เริ่มบนหมุด |
+| `tests/demo_logins.test.js` (ใหม่) | Tommy | Facebook / OTP เฉพาะเครื่องตัวเอง |
+| `docs/handoff-2026-11-06.md` (ใหม่), `docs/qa-2026-11-05.md` | Tommy | บันทึกส่งต่อ + อัปเดตสถานะในรายงานทดสอบ |
+
+**กระทบใคร / ต้องระวัง:** ทดสอบ Facebook / เบอร์โทร ต้องเปิดจากเครื่องที่รันเซิร์ฟเวอร์ (`localhost` / `127.0.0.1`) · เจ้าของร้านต้องรอแอดมินอนุมัติธุรกิจก่อนส่งร้าน (กฎเซิร์ฟเวอร์เดิม — ตอนนี้หน้าเว็บบอกตรง ๆ) · ถ้าเพิ่มไฟล์ใน `sw.js` `ASSETS` ให้เปลี่ยนชื่อ `CACHE`
+**ทดสอบ:** `npm test` 38/38 · API 100/100 · เบราว์เซอร์ (มือถือ + คอม) 45/45 · ฟอร์มร้านค้าตั้งแต่สมัครจนร้านขึ้นในแอป ผ่าน
+
+---
+
+## 2026-11-05 — เก็บงานแผนที่/Google ให้ครบ: Planner, รูป Google, ปุ่มสมัครด้วย Google, หมุดร้านค้า, รายการ OSM บนเซิร์ฟเวอร์, ลบไฟล์เก่า  (ผู้แก้: Tommy · commit: feat(map): finish map & Google work)
+
+**ทำไม:** ตรวจทุกส่วนที่เกี่ยวกับแผนที่/Google ก่อนรวมเข้า main แล้วพบ:
+1. หน้า Planner กด "Generate AI Trip" แล้ว **ไม่แสดงอะไรเลย** — เซิร์ฟเวอร์ส่ง `dailyItinerary`/`places` แต่หน้าเว็บอ่าน `itinerary`/`schedule` จึงหยุดทำงานเงียบ ๆ (ที่เห็นคือแผนตัวอย่างที่เขียนตายตัวไว้)
+2. ระยะทาง/เวลาแต่ละช่วงเป็นค่าตายตัว "20 นาที (12 กม.)" · 3. ค่าเดินทางบนเซิร์ฟเวอร์ใช้สูตรแท็กซี่อีกชุด (ขาดช่วงระยะไกล, ค่าน้ำมันคนละค่า)
+4. ปุ่ม "เปิดนำทางใน Google Maps" เปิด Google Maps เปล่า · 5. "แวะร้านชุมชน" ค้นใกล้เชียงใหม่เสมอ (พิกัดเขียนตายตัว)
+6. หน้าโปรไฟล์ไม่แสดงรูป Google · 7. ปุ่ม "Google / Facebook" ในหน้าสมัครแค่พาไปหน้า login
+8. หมุดร้านค้าในหน้า Business เป็นของปลอม (สุ่มตำแหน่งรอบแม่กำปอง + รูปแผนที่ตายตัว) · 9. สถานที่ OSM ในรายการของผู้ใช้ที่ล็อกอิน เก็บแค่ในเครื่อง
+10. ไฟล์เก่าที่ไม่ใช้แล้ว + ไฟล์ `พบ` ที่ถูกสร้างใหม่ทุกครั้งที่เปิด run.bat
+
+**ผลลัพธ์:**
+- **Planner:** แสดงแผนจริงจากเซิร์ฟเวอร์ · ระยะทาง/เวลาตามถนนจริงทีละช่วง (ถ้าเซิร์ฟเวอร์เส้นทางไม่ตอบ ใช้ค่าประมาณและเขียนว่า "ประมาณ") · ค่าเดินทางสูตรเดียวกับหน้า My trips · ลิงก์ "นำทางวันนี้ใน Google Maps" ทุกวัน + ปุ่มหลักเปิดทั้งทริป · ปุ่ม "รีวิว ↗" ทุกจุด · ร้านชุมชนแนะนำจากจุดแวะจริงของแต่ละวัน กดแล้วแทรกหลังจุดที่ใกล้ที่สุดและคำนวณเส้นทางใหม่ · ปลายทาง "เชียงใหม่" หาเจอจริง (เดิมได้สถานที่ทั้งประเทศ) · สถานที่ที่เลือกจากแอป (send to planner) อยู่ในแผนเสมอ · บันทึกทริปบันทึกแผนที่เห็นบนจอ (เดิมถ้ายังไม่ generate จะบันทึกสถานที่สุ่ม) · ชื่อสถานที่ถูก escape (กันโค้ดแปลกปลอมจากข้อมูลร้าน)
+- **Google:** รูปโปรไฟล์ Google ในหน้าโปรไฟล์ · ปุ่ม "Sign up with Google" จริงในหน้าสมัคร · ถ้าตั้ง Client ID แล้ว เซิร์ฟเวอร์เปิดเบราว์เซอร์ที่ `http://localhost:5173` ให้เอง (Google ไม่รับ 127.0.0.1)
+- **Business:** แผนที่เลือกตำแหน่งจริง — ลากแผนที่ให้หมุดตรงร้าน / แตะจุด / ค้นหาชื่อสถานที่ / ปุ่ม GPS / พิมพ์ตัวเลข ทั้งหมดซิงก์กัน · ต้องปักหมุดก่อนส่ง (เดิมใส่แม่กำปองให้เอง)
+- **รายการ OSM:** บันทึกบนเซิร์ฟเวอร์ ล็อกอินเครื่องไหนก็เห็น ลำดับเหมือนเดิม · ครั้งแรกหลังอัปเดต รายการที่เคยเก็บในเครื่องจะถูกอัปโหลดให้อัตโนมัติ
+
+| ไฟล์ | เจ้าของ | เปลี่ยนอะไร |
+|---|---|---|
+| `frontend/planner/planner.html` | Nine | โหลด `trip-engine.js`, `travel-cost.js`, `maps-links.js`, `road-route.js` · เขียน `renderGeneratedPlan()` ใหม่ให้อ่าน `dailyItinerary` · ใหม่: `showPlan()`, `routePlan()`, `updatePlanBudget()`, `updateGoogleNavButton()`/`openGoogleNav()`, `addSmeStop()`, `esc()`, `destinationLabel()`, `importedPlaceIds()` · `insertStopover()` ใช้แผนจริงเมื่อมี (แผนตัวอย่างยังใช้พิกัดของแผนตัวอย่าง) · `savePlan()` ใช้ `groups` ของแผน + `budgetBreakdown` · `checkImportedPlaces()` ส่ง `mustVisit` · ปุ่มหลักมี `id="btnGoogleNav"` |
+| `backend/server.js` | Prom | `require` `travel-cost.js` + `road-route.js` · `generateAiTripPlan()`: แปลง `chiang-mai`→`chiang mai`, เก็บ `mustVisit` ครบแม้อยู่นอกปลายทาง, ระยะ/เวลาแต่ละช่วงจาก `TravalRoute.estimate` (ส่ง `legs` ต่อวัน), ค่าเดินทางจาก `TravalCost.tripCost`, รับ `destinationName` สำหรับชื่อทริป · `/api/trips/estimate-cost` ใช้ `TravalCost` (รับ `travelMinutes` เพิ่มได้) · ตารางใหม่ `user_osm_collections` + `collectionWithOsm()` · `GET /api/me/collections` ส่ง `osmPlaces` · `PUT` รับ id `osm-n/w/r…` (ตรวจกับไฟล์ OSM) · `PAGE_FILES`: +`map-picker.js`, −`planner.js`, −`planner.css`, −`planner-legacy.html`, −`google-maps-poc.html` · เปิดเบราว์เซอร์ที่ `localhost` เมื่อเปิด Google sign-in |
+| `backend/osm-places.js` | Tommy | +`getByIds()`, +`ID_PATTERN` |
+| `frontend/traveler/app.js` | Moo | `loadAccountCollections()` รับ `osmPlaces` จากเซิร์ฟเวอร์ + อัปโหลดรายการในเครื่องครั้งแรก · `persistCollections()` ส่ง OSM ด้วย · `mergeOsmLists()` ให้เซิร์ฟเวอร์เป็นหลักเมื่อมี OSM แล้ว |
+| `frontend/shared/map-picker.js` | Tommy (ใหม่) | `TravalMapPicker.attach(el, {lat, lon, zoom, onChange})` → `{set, get}` · ภาพแผนที่ OSM, ลาก/แตะ/ล้อเมาส์/สองนิ้ว/ปุ่ม +−, ค้นหาผ่าน `/api/map/search`, เครดิต OSM |
+| `frontend/business/business.html` | Nine / ruttinon | `#bizMiniMap` ใช้ `TravalMapPicker` · ใหม่: `initBizPicker()`, `setBizCoords()`, `onBizCoordTyped()` · `useCurrentGpsForBiz()` ย้ายหมุดด้วย · ลบ `onBizMapClick()` (หมุดปลอม) · ช่องพิกัดเริ่มว่าง · `submitWizard()` บังคับปักหมุด · `goToStep(2)` สร้างแผนที่ |
+| `frontend/auth/profile.html` | Phodjanaphon | `showAvatar()` แสดงรูปจาก `avatarUrl` (https เท่านั้น, ถ้าโหลดไม่ได้กลับเป็นตัวอักษร) |
+| `frontend/auth/register.html` | Phodjanaphon | ปุ่ม `id="btn-google"` + `data-google-text="signup_with"` + โหลด `/google-login.js` · ปุ่มที่สองเป็น "Facebook / Phone OTP" |
+| `frontend/shared/google-login.js` | Tommy | ใช้ได้ทั้งหน้า login และ register (ข้อความปุ่ม/context จาก `data-google-text`, ช่องแสดง error ของหน้า register) |
+| `run.bat` | Nine / ruttinon | `->` เป็น `-^>` — cmd อ่าน `>` เป็นคำสั่งเขียนไฟล์ จึงสร้างไฟล์ชื่อ `พบ` ทุกครั้ง · ลบบรรทัด POC |
+| ลบ: `frontend/poc/google-maps-poc.html`, `frontend/planner/planner-legacy.html`, `planner.js`, `planner.css`, `พบ` | ruttinon / Nine | หน้า Leaflet ทดลองเก่า, หน้า planner เดิมที่ถูกแทนแล้ว (มีบั๊กคิดราคาซ้ำ), ไฟล์ขยะ — ถ้าต้องการดูของเดิม ดูได้ใน git history |
+| `docs/prom-2026-10-24.md` | Prom | เขียนส่วนที่ 2 (Google & แผนที่) ใหม่ตามแผนปัจจุบัน, ลบลิงก์ POC |
+| `tests/planner_plan.test.js` (ใหม่), `tests/osm_places.test.js` | Tommy | +2 tests: แผน AI ใช้เครื่องมือกลาง / รายการ OSM บนเซิร์ฟเวอร์ |
+
+**กระทบใคร / ต้องระวัง:**
+- **Nine:** ข้อมูลตัวอย่างใน planner (แผนตัวอย่าง, "สถานที่ที่เลือกไว้ 4 ที่", งบ 7,400) ยังเป็นค่าตายตัวจนกว่าจะกด Generate — ไม่ได้แก้ส่วนนั้น
+- **หน้า Business บนมือถือ:** ทั้งหน้ายังไม่รองรับจอแคบ (เนื้อหากว้างแค่ ~130px) — แผนที่เลือกตำแหน่งใช้ได้บนคอม/แท็บเล็ต ต้องแก้ layout หน้านี้ก่อนจึงใช้บนมือถือได้
+- `backend/config.js` ไม่ได้ถูกใช้ (server.js มี `PAGE_FILES` ของตัวเอง) และยังมีชื่อไฟล์ที่ลบแล้ว — ลบได้ถ้าทีมไม่ใช้
+- ถ้าตั้ง `TRAVAL_GOOGLE_CLIENT_ID` เซิร์ฟเวอร์จะเปิด `http://localhost:5173` แทน `127.0.0.1`
+
+**แก้เพิ่มหลังทดสอบทั้งระบบ (ดู `docs/qa-2026-11-05.md`):** `app.js` — รวมรายการ OSM ในเครื่องแค่ครั้งแรก (`osmSynced()`, `markOsmSynced()`) กันสถานที่ที่ลบจากเครื่องอื่นกลับมา · `planner.html` — บันทึกแผนแท็กซี่เป็น `driving` (เซิร์ฟเวอร์ไม่รับ `taxi`) · เพิ่ม `docs/qa-2026-11-05.md` รายงานทดสอบ
+
+**ทดสอบ:** `npm test` 37/37 ผ่าน · เบราว์เซอร์: Planner (คอม+มือถือ) แสดงแผน/เส้นทาง/ราคา/ลิงก์ Google, ข้อความอันตรายในชื่อสถานที่ไม่ทำงาน · สมัครด้วย Google ในหน้า register → โปรไฟล์แสดงรูป Google · เพิ่มสถานที่ OSM ในเครื่อง A → ล็อกอินเครื่อง B เห็นในทริป · แผนที่เลือกตำแหน่ง: ค้นหา, ลาก (เมาส์+นิ้ว), แตะ, พิมพ์ตัวเลข, ส่งโดยไม่ปักหมุดถูกเตือน · หน้าแอปหลักไม่มี error
+
+---
+
 ## 2026-11-05 — รวม branch `moo-frontend` (Moo) เข้ากับงานของ Tommy  (ผู้แก้: Tommy · commit: Merge branch 'moo-frontend')
 
 **ทำไม:** Moo ปรับหน้า Explore ใน branch `moo-frontend` และ **คัดลอก** ไฟล์ของ Tommy มาเอง (ไม่ได้ merge) ทำให้:

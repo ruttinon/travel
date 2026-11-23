@@ -1,0 +1,47 @@
+/* GoAround — shared UX fixes for the pages outside the traveller app (owner: Tommy, 2026-11-06)
+ * Loaded (last, so it wins) by: auth/login.html, register.html, forgot-password.html, profile.html,
+ * planner/planner.html, business/business.html. See docs/ux-2026-11-06.md for the reasons.
+ * Rules are scoped to class names those pages already use, so loading it elsewhere does nothing.
+ */
+
+/* Everyone: keyboard users can see where they are */
+:focus-visible { outline: 3px solid #2563EB !important; outline-offset: 2px; }
+
+/* ---------- Sign-in pages (.unfold-canvas = the 1440px design frame) ---------- */
+/* login.html was a fixed 1440x960 frame with no phone layout: on a phone only the photo showed, not the form. */
+.coastal-escape-bg { background-image: url('/assets/terraced-fields.webp') !important; background-size: cover; background-position: center; }
+@media (max-width: 1440px) {
+  .unfold-canvas { width: 100% !important; max-width: 1440px; height: auto !important; min-height: 100vh; display: flex; flex-direction: column; }
+  .unfold-canvas > .header, .unfold-canvas > .workspace, .unfold-canvas > .footer { position: relative !important; width: 100% !important; left: auto !important; top: auto !important; }
+  .unfold-canvas > .workspace { height: auto !important; padding-bottom: 40px; }
+  .unfold-canvas .inspiration-card { flex-shrink: 1; min-width: 0; }
+  .unfold-canvas .auth-panel { flex: 1; min-width: 0; }
+}
+@media (max-width: 1100px) {
+  /* Form first. The photo is decoration; on smaller screens it pushed the form below the fold. */
+  .unfold-canvas > .workspace { flex-direction: column; padding: 8px 20px 32px !important; gap: 24px; align-items: stretch; }
+  .unfold-canvas .inspiration-card { display: none; }
+  .unfold-canvas .auth-panel { width: 100% !important; height: auto !important; padding: 0 !important; }
+  .unfold-canvas .sign-in-box { width: 100% !important; max-width: 440px; margin: 0 auto; }
+}
+@media (max-width: 600px) {
+  .unfold-canvas > .header { padding: 0 16px !important; height: 72px !important; }
+  .unfold-canvas .navigation { gap: 14px !important; }
+  .unfold-canvas .navigation .nav-link { display: none; }
+  .unfold-canvas .navigation .nav-link.keep { display: inline-flex; font-weight: 600; padding: 10px 4px; }
+  .unfold-canvas .navigation .divider { display: none; }
+  .unfold-canvas .auth-title { font-size: 34px !important; line-height: 1.15 !important; }
+  .unfold-canvas .credentials-form, .unfold-canvas .form-field, .unfold-canvas .input-wrapper,
+  .unfold-canvas .btn-submit, .unfold-canvas .btn-guest, .unfold-canvas .alternative-separator { width: 100% !important; }
+  .unfold-canvas .legal-link, .unfold-canvas .route-link a, .unfold-canvas .forgot-link { display: inline-block; padding: 8px 2px; }
+  .unfold-canvas > .footer { padding: 16px 20px !important; flex-wrap: wrap; gap: 8px; }
+}
+
+/* ---------- profile.html ---------- */
+@media (max-width: 1100px) {
+  .unfold-canvas .profile-layout { display: flex !important; flex-direction: column; width: 100% !important; height: auto !important; padding: 8px 16px 32px !important; gap: 16px !important; }
+  .unfold-canvas .profile-layout > * { width: 100% !important; height: auto !important; min-width: 0; }
+  .unfold-canvas .stats-row, .unfold-canvas .profile-stats { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; width: 100% !important; }
+}
+.unfold-canvas .user-meta { min-width: 0; }
+.unfold-canvas .user-meta p { overflow-wrap: anywhere; }
