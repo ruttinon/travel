@@ -4250,11 +4250,7 @@ input[type="search"]::-ms-clear{display:none;width:0;height:0}
 /* Keyboard users can see where they are */
 :focus-visible{outline:3px solid var(--blue,#2563EB);outline-offset:2px}
 button:focus:not(:focus-visible),a:focus:not(:focus-visible){outline:none}
-/* Welcome slides have words printed in the photos: darken behind our headline so it stays readable */
-.landing-copy h1,.landing-copy p{text-shadow:0 2px 16px #000b}
-@media(max-width:700px){.landing-shade{background:linear-gradient(180deg,#092b1a8c 0%,#0a2d1bb3 30%,#081e1499 55%,#071a13b3 100%)}}
 .language-btn,.landing-language{display:inline-flex;align-items:center;gap:5px}
-.landing-language{background:#0d2c1c99!important;color:#fff!important;border:1px solid #ffffff80!important;min-height:40px}
 .empty-howto{max-width:420px;margin:6px auto 16px;color:var(--text-secondary);font-size:14px;line-height:1.6;text-align:center}
 .empty-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .more-ways{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
@@ -4271,3 +4267,43 @@ button:focus:not(:focus-visible),a:focus:not(:focus-visible){outline:none}
 .ob-steps strong{display:block;color:var(--text-primary);font-size:13.5px}
 .ob-ok{margin-top:12px;min-height:44px}
 @media(max-width:900px){.ob-steps{grid-template-columns:1fr 1fr}}
+
+/* ===== Tommy (2026-11-23, UX pass 2 on GoAround) — see docs/ux-2026-11-23.md ===== */
+/* Phone header: 7 buttons did not fit in 390px, so "Search" was pushed off the screen.
+   The theme switch shows only the mode you can switch TO (its label says which), and the globe icon hides. */
+@media (max-width: 480px) {
+  .site-header .theme-segmented-pill .theme-seg-btn.active { display: none; }
+  .site-header .theme-segmented-pill { padding: 2px; }
+  .site-header .language-btn svg { display: none; }
+  .site-header .language-btn { padding: 6px 9px; min-width: 40px; justify-content: center; }
+}
+/* AI advisor + safety pop-ups: the ✕ was white on a white card (invisible) */
+.safety-modal-card .overlay-close { color: var(--text-primary, #12151A); background: var(--bg-wash, #F4F6F3); border-color: var(--line, #E8ECE6); flex: none; }
+/* AI advisor on phones: style buttons were 4 squeezed columns of one-word lines */
+@media (max-width: 600px) {
+  .ai-preset-row .safety-tab-pill { flex: 1 1 calc(50% - 4px); font-size: 12.5px; padding: 10px 8px; }
+}
+/* Phone bottom menu: words were 9.5px and "ทริปของฉัน" broke onto 2 lines */
+@media (max-width: 768px) {
+  .bottom-nav { padding: 6px 8px; gap: 2px; }
+  .bottom-nav button { flex: 1; width: auto; min-width: 0; border-radius: 26px; }
+  .bottom-nav button span { font-size: 11px; white-space: nowrap; }
+}
+/* How-to tips: one column on small phones so each tip reads as one line */
+@media (max-width: 480px) {
+  .ob-steps { grid-template-columns: 1fr; gap: 8px; }
+  .ob-steps li { padding: 10px 12px; }
+}
+/* Welcome (light theme, phone): the photo's printed words showed through behind our headline */
+@media (max-width: 900px) {
+  html:not([data-theme="dark"]) .landing-shade {
+    background: linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.92) 30%, rgba(255,255,255,.95) 62%, #FFFFFF 100%) !important;
+  }
+}
+/* Dark mode: the language button (EN) was grey on near-black, and the welcome tips card stayed white */
+html[data-theme="dark"] .language-btn { color: var(--text-primary); }
+html[data-theme="dark"] .onboarding-card { background: var(--bg-elevated); color: var(--text-primary); border-color: var(--line); }
+html[data-theme="dark"] .onboarding-card p { color: var(--text-secondary); }
+/* AI advisor results: the "ดู" (view) button was squeezed into a circle and read like "ๆ" */
+.ai-rec-actions .action-outline, .ai-rec-actions .action-lime { white-space: nowrap; min-width: 64px; min-height: 40px; border-radius: 99px; justify-content: center; }
+html[data-theme="dark"] .onboarding-card h3 { color: var(--text-primary); }

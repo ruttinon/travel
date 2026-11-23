@@ -714,45 +714,11 @@
         <div class="adm-card">
           <div class="card-head">
             <h2>รายการเคลื่อนไหวล่าสุด (Recent Activity)</h2>
-            <span class="card-link" onclick="switchTab('businesses', document.querySelectorAll('.nav-btn')[1])">ดูทั้งหมด →</span>
+            <a class="card-link" href="/audit.html" style="text-decoration:none;">ดูทั้งหมด →</a>
           </div>
 
           <div class="activity-list" id="activityListContainer">
-            <div class="activity-item">
-              <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=120&q=80" class="activity-img" alt="">
-              <div class="activity-info">
-                <strong>ร้านกาแฟคั่วเตาฟืนแม่กำปอง</strong>
-                <small>ส่งคำขอลงทะเบียนร้านค้า SME · แม่กำปอง เชียงใหม่</small>
-              </div>
-              <span class="status-badge pending">Pending</span>
-            </div>
-
-            <div class="activity-item">
-              <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=120&q=80" class="activity-img" alt="">
-              <div class="activity-info">
-                <strong>แท็กซี่ไม่กดมิเตอร์ วัดพระแก้ว</strong>
-                <small>นักท่องเที่ยวแจ้งเหตุขูดรีดค่าโดยสาร · พระนคร กรุงเทพฯ</small>
-              </div>
-              <span class="status-badge pending">Pending</span>
-            </div>
-
-            <div class="activity-item">
-              <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=120&q=80" class="activity-img" alt="">
-              <div class="activity-info">
-                <strong>ดอยม่อนแจ่ม วิวทะเลหมอก</strong>
-                <small>เผยแพร่สถานที่ท่องเที่ยวทางธรรมชาติ · เชียงใหม่</small>
-              </div>
-              <span class="status-badge published">Published</span>
-            </div>
-
-            <div class="activity-item">
-              <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=120&q=80" class="activity-img" alt="">
-              <div class="activity-info">
-                <strong>ครัวริมน้ำ ตลาดน้อยโบราณ</strong>
-                <small>อนุมัติโปรไฟล์ร้านค้าชุมชนเรียบร้อยแล้ว</small>
-              </div>
-              <span class="status-badge approved">Approved</span>
-            </div>
+            <p style="color:#78857B;font-size:13px;padding:8px 0;">กำลังโหลด…</p><!-- Tommy (2026-11-23): real events from the audit log (was fixed sample cards) -->
           </div>
         </div>
 
@@ -1179,6 +1145,10 @@
   <script src="/shop-render.js"></script>
   <script src="/admin-shop-pages.js"></script>
   <script>
+    // Tommy (2026-11-23): escape anything a traveller / owner typed before putting it into the page
+    function adminEsc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    function adminPhotoUrl(v, fallback) { return /^\/uploads\/[a-f0-9-]{36}\.(?:webp|png|jpg)$/.test(v || '') ? '/api/admin/business-media/' + v.split('/').pop() : fallback; }
+
     function showToast(msg) {
       const toast = document.getElementById('toastMessage');
       toast.textContent = msg;
@@ -1303,6 +1273,10 @@
         if (submissions && submissions.length > 0) {
           const container = document.getElementById('bizContainer');
           if (!container) return;
+          // Tommy (2026-11-23): everything an owner typed is escaped before it goes into the page (before, a shop name
+          // like <img onerror=…> ran code inside the admin's browser). Private photos load through the admin media route.
+          const e = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+          const adminPhoto = v => /^\/uploads\/[a-f0-9-]{36}\.(?:webp|png|jpg)$/.test(v || '') ? '/api/admin/business-media/' + v.split('/').pop() : '/assets/hero-forest.webp';
           container.innerHTML = submissions.map(s => {
             const payload = s.payload || {};
             const title = payload.th || payload.en || s.businessName || 'คำขอร้านค้า SME';
@@ -1310,23 +1284,23 @@
             const statusClass = s.status === 'approved' ? 'approved' : s.status === 'rejected' ? 'rejected' : 'pending';
             const isPending = s.status === 'pending';
             return `
-              <div class="mod-card" data-biz-status="${s.status}" id="bizCard-${s.id}">
+              <div class="mod-card" data-biz-status="${e(s.status)}" id="bizCard-${e(s.id)}">
                 <div class="mod-top">
-                  <span class="mod-category">${payload.category || 'Local SME'}</span>
-                  <span class="status-badge ${statusClass}" id="bizBadge-${s.id}">${s.status.toUpperCase()}</span>
+                  <span class="mod-category">${e(payload.category || 'Local SME')}</span>
+                  <span class="status-badge ${statusClass}" id="bizBadge-${e(s.id)}">${e(String(s.status).toUpperCase())}</span>
                 </div>
-                <img src="${payload.photo || 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80'}" class="mod-img" alt="">
-                <h3>${title}</h3>
-                <p>${desc}</p>
+                <img src="${e(adminPhoto(payload.photo))}" class="mod-img" alt="">
+                <h3>${e(title)}</h3>
+                <p>${e(desc)}</p>
                 <div class="mod-meta">
-                  👤 <strong>ร้าน:</strong> ${s.businessName || '-'}<br>
-                  📍 <strong>พิกัด GPS:</strong> ${payload.lat || '-'}, ${payload.lon || '-'} (${payload.region || 'ไทย'})<br>
-                  📄 <strong>หลักฐาน:</strong> ${s.evidence || 'เอกสารยืนยันสิทธิ์ความเป็นเจ้าของ'}
+                  👤 <strong>ร้าน:</strong> ${e(s.businessName || '-')}<br>
+                  📍 <strong>พิกัด GPS:</strong> ${e(payload.lat || '-')}, ${e(payload.lon || '-')} (${e(payload.region || 'ไทย')})<br>
+                  📄 <strong>หลักฐาน:</strong> ${e(s.evidence || 'เอกสารยืนยันสิทธิ์ความเป็นเจ้าของ')}
                 </div>
-                <div class="mod-actions" id="bizActions-${s.id}">
+                <div class="mod-actions" id="bizActions-${e(s.id)}">
                   ${isPending ? `
-                    <button class="btn-sm approve" onclick="decideBiz('${s.id}', 'approved', '${title.replace(/'/g, "\\'")}')">✓ อนุมัติ (Approve)</button>
-                    <button class="btn-sm reject" onclick="decideBiz('${s.id}', 'rejected', '${title.replace(/'/g, "\\'")}')">✕ ปฏิเสธ (Reject)</button>
+                    <button class="btn-sm approve" onclick="decideBiz('${e(s.id)}', 'approved', this.closest('.mod-card').querySelector('h3').textContent)">✓ อนุมัติ (Approve)</button>
+                    <button class="btn-sm reject" onclick="decideBiz('${e(s.id)}', 'rejected', this.closest('.mod-card').querySelector('h3').textContent)">✕ ปฏิเสธ (Reject)</button>
                   ` : `
                     <span style="font-size:12px; color:${s.status === 'approved' ? '#2E7D32' : '#9B2C2C'}; font-weight:700;">
                       ${s.status === 'approved' ? '✓ อนุมัติเรียบร้อย หมุดพร้อมแสดงบน Map' : '✕ ปฏิเสธคำขอเรียบร้อยแล้ว'}
@@ -1401,25 +1375,25 @@
             const isPending = r.status === 'pending';
             const isVerified = r.status === 'verified';
             return `
-              <div class="mod-card" id="safetyCard-${r.id}">
+              <div class="mod-card" id="safetyCard-${adminEsc(r.id)}">
                 <div class="mod-top">
-                  <span class="mod-category" style="background:#FEE2E2; color:#9B2C2C;">🚨 ${r.category || 'SAFETY'}</span>
-                  <span class="status-badge ${r.status}" id="safetyBadge-${r.id}">${r.status.toUpperCase()}</span>
+                  <span class="mod-category" style="background:#FEE2E2; color:#9B2C2C;">🚨 ${adminEsc(r.category || 'SAFETY')}</span>
+                  <span class="status-badge ${adminEsc(r.status)}" id="safetyBadge-${adminEsc(r.id)}">${adminEsc(String(r.status).toUpperCase())}</span>
                 </div>
-                <img src="${r.photo || 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=600&q=80'}" class="mod-img" alt="">
-                <h3>${r.title}</h3>
-                <p>${r.description}</p>
+                <img src="${adminEsc(adminPhotoUrl(r.photo, '/assets/hero-forest.webp'))}" class="mod-img" alt="">
+                <h3>${adminEsc(r.title)}</h3>
+                <p>${adminEsc(r.description)}</p>
                 <div class="mod-meta">
-                  📍 <strong>สถานที่:</strong> ${r.locationName || '-'} (${r.lat || '-'}, ${r.lon || '-'})<br>
-                  👤 <strong>ผู้รายงาน:</strong> ${r.userName || 'นักท่องเที่ยว'} (${r.userEmail || '-'})<br>
+                  📍 <strong>สถานที่:</strong> ${adminEsc(r.locationName || '-')} (${adminEsc(r.lat || '-')}, ${adminEsc(r.lon || '-')})<br>
+                  👤 <strong>ผู้รายงาน:</strong> ${adminEsc(r.userName || 'นักท่องเที่ยว')} (${adminEsc(r.userEmail || '-')})<br>
                   📅 <strong>วันที่เกิดเหตุ:</strong> ${new Date(r.createdAt).toLocaleDateString('th-TH')}
                 </div>
                 ${r.adminNote ? `
                   <div style="background:#F4F6F2; padding:10px 14px; border-radius:10px; font-size:11px; border-left:3px solid var(--forest);">
-                    <strong>คำแนะนำ Admin:</strong> ${r.adminNote}
+                    <strong>คำแนะนำ Admin:</strong> ${adminEsc(r.adminNote)}
                   </div>
                 ` : ''}
-                <div class="mod-actions" id="safetyActions-${r.id}">
+                <div class="mod-actions" id="safetyActions-${adminEsc(r.id)}">
                   ${isPending ? `
                     <button class="btn-sm approve" onclick="decideSafety('${r.id}', 'verified', 'ปักหมุดเตือนบนแผนที่แล้ว')">🛡️ ปักหมุดเตือน (Verify)</button>
                     <button class="btn-sm reject" onclick="decideSafety('${r.id}', 'rejected', 'ปฏิเสธรายงาน')">✕ ปฏิเสธ</button>
@@ -1499,8 +1473,8 @@
           if (tbody) {
             tbody.innerHTML = smeStats.map(s => `
               <tr style="border-bottom: 1px solid #EDF0EA;">
-                <td style="padding: 14px 20px;"><strong>${s.nameTh || s.nameEn}</strong><br><small style="color:#78857B;">${s.slug}</small></td>
-                <td style="padding: 14px 20px;"><span style="background:#E8EDE6; padding:3px 8px; border-radius:4px; font-size:11px;">${s.smeType || 'Local SME'}</span></td>
+                <td style="padding: 14px 20px;"><strong>${adminEsc(s.nameTh || s.nameEn)}</strong><br><small style="color:#78857B;">${adminEsc(s.slug)}</small></td>
+                <td style="padding: 14px 20px;"><span style="background:#E8EDE6; padding:3px 8px; border-radius:4px; font-size:11px;">${adminEsc(s.smeType || 'Local SME')}</span></td>
                 <td style="padding: 14px 20px; text-align: right; font-weight: 700;">${Number(s.views || 0).toLocaleString()}</td>
                 <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #2B6CB0;">${Number(s.directions || 0).toLocaleString()}</td>
                 <td style="padding: 14px 20px; text-align: right; font-weight: 700; color: #183E2D;">${Number(s.tripAdds || 0).toLocaleString()}</td>
@@ -1544,9 +1518,41 @@
     }
 
     // Auto initialize on load
+    // Tommy (2026-11-23): "Recent activity" from the audit log — what really happened, newest first
+    const ACTIVITY_TEXT = {
+      'business.register': ['🏪', 'ธุรกิจใหม่สมัครเข้ามา', 'pending'], 'business.decision': ['✓', 'ตัดสินคำขอธุรกิจ', 'approved'],
+      'proposal.submit': ['📍', 'เจ้าของร้านส่งร้าน/การแก้ไขให้ตรวจ', 'pending'], 'proposal.decision': ['✓', 'ตัดสินคำขอร้านบนแผนที่', 'approved'],
+      'shop_page.submit': ['🏪', 'ส่งหน้าร้านครั้งแรกให้ตรวจ', 'pending'], 'shop_page.publish': ['🏪', 'เจ้าของร้านเผยแพร่การแก้ไขหน้าร้าน', 'published'],
+      'shop_page.approved': ['✓', 'อนุมัติหน้าร้าน', 'approved'], 'shop_page.rejected': ['✕', 'ส่งหน้าร้านกลับให้แก้', 'rejected'], 'shop_page.hide': ['⛔', 'ซ่อนหน้าร้าน', 'rejected'],
+      'safety_report.create': ['🚨', 'นักท่องเที่ยวแจ้งจุดเสี่ยง', 'pending'], 'safety_report.decision': ['🛡️', 'ตัดสินรายงานจุดเสี่ยง', 'approved'],
+      'review.moderate': ['★', 'ตรวจรีวิว', 'approved'], 'place.create': ['📍', 'เพิ่มสถานที่', 'published'], 'place.update': ['✎', 'แก้ไขสถานที่', 'published'],
+      'place.archive': ['🗄', 'เก็บสถานที่เข้าคลัง', 'pending'], 'user.status': ['👤', 'เปลี่ยนสถานะบัญชีผู้ใช้', 'pending'],
+      'campaign.create': ['📣', 'สร้างแคมเปญ', 'published'], 'campaign.update': ['📣', 'แก้ไขแคมเปญ', 'published'], 'auth.social_login': ['👤', 'ผู้ใช้เข้าสู่ระบบด้วยบัญชีโซเชียล', 'approved']
+    };
+    async function loadRecentActivity() {
+      const box = document.getElementById('activityListContainer');
+      if (!box) return;
+      try {
+        const res = await fetch('/api/admin/audit?limit=40');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const events = ((await res.json()).events || []).filter(ev => ACTIVITY_TEXT[ev.action]).slice(0, 8);
+        if (!events.length) { box.innerHTML = '<p style="color:#78857B;font-size:13px;padding:8px 0;">ยังไม่มีความเคลื่อนไหว</p>'; return; }
+        box.innerHTML = events.map(ev => {
+          const [icon, text, cls] = ACTIVITY_TEXT[ev.action];
+          const after = ev.context && (ev.context.after || ev.context.status);
+          const detail = [ev.entityId, typeof after === 'string' ? after : '', ev.context && ev.context.locationName].filter(Boolean).join(' · ');
+          return `<div class="activity-item">
+            <span class="activity-img" style="display:grid;place-items:center;font-size:20px;background:#F1F4EF;">${icon}</span>
+            <div class="activity-info"><strong>${adminEsc(text)}</strong><small>${adminEsc(detail)} · ${adminEsc(new Date(ev.time).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }))}</small></div>
+            <span class="status-badge ${cls}">${adminEsc(typeof after === 'string' ? after : cls)}</span></div>`;
+        }).join('');
+      } catch (e) { box.innerHTML = '<p style="color:#9B2C2C;font-size:13px;">โหลดความเคลื่อนไหวไม่สำเร็จ</p>'; }
+    }
+
     window.addEventListener('DOMContentLoaded', async () => {
       await ensureAdminAuth();
       loadDashboardStats();
+      loadRecentActivity();
     });
 
     // User Management
@@ -1575,10 +1581,10 @@
         return `
           <tr style="border-bottom: 1px solid #EDF0EA;">
             <td style="padding: 14px 20px;">
-              <strong style="color:var(--forest);font-size:14px;">${u.name || 'ไม่ระบุชื่อ'}</strong>
+              <strong style="color:var(--forest);font-size:14px;">${adminEsc(u.name || 'ไม่ระบุชื่อ')}</strong>
               <br><small style="color:#78857B;">ID: ${u.id.slice(0, 8)}... · วันที่สมัคร: ${new Date(u.createdAt).toLocaleDateString('th-TH')}</small>
             </td>
-            <td style="padding: 14px 20px;">${u.email}</td>
+            <td style="padding: 14px 20px;">${adminEsc(u.email)}</td>
             <td style="padding: 14px 20px;">
               <span style="background:#EDF2EB;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:700;">
                 ${u.provider === 'google' ? 'Google' : u.provider === 'facebook' ? 'Facebook' : u.provider === 'phone' ? 'Phone OTP' : 'Email'}
@@ -1645,9 +1651,9 @@
         container.innerHTML = data.campaigns.map(c => `
           <div style="border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;">
             <div>
-              <span style="background:#8DE026;color:#0D2C1C;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;">${c.badgeText || 'PROMO'}</span>
-              <strong style="display:block;margin:4px 0 2px;color:var(--forest);font-size:14px;">${c.title}</strong>
-              <small style="color:#78857B;">เป้าหมาย: ${c.targetSlug || 'หน้าแรก'} · ลำดับ: ${c.priority || 10}</small>
+              <span style="background:#8DE026;color:#0D2C1C;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;">${adminEsc(c.badgeText || 'PROMO')}</span>
+              <strong style="display:block;margin:4px 0 2px;color:var(--forest);font-size:14px;">${adminEsc(c.title)}</strong>
+              <small style="color:#78857B;">เป้าหมาย: ${adminEsc(c.targetSlug || 'หน้าแรก')} · ลำดับ: ${c.priority || 10}</small>
             </div>
             <button class="btn-sm reject" onclick="deleteCampaign('${c.id}')">ลบ</button>
           </div>

@@ -67,7 +67,7 @@ function calcDistance(lat1, lon1, lat2, lon2) {
 
 const I18N={
  en:{
-   welcome:'Discover differently',enter:'Explore',skip:'Skip intro',discover:'Explore',map:'Map',saved:'Saved',trip:'My trips',profile:'Profile',menu:'Menu',
+   welcome:'Discover differently',enter:'Explore',skip:'Skip intro',discover:'Explore',map:'Map',saved:'Saved',trip:'My trips',tripShort:'Trips',profile:'Profile',menu:'Menu',
    homeEyebrow:'LOCAL FIRST DISCOVERY',homeTitle:'Go beyond\nthe ordinary.',homeDesc:'For the places worth finding and local SMEs worth supporting.',homeExplore:'Explore places',homeHint:'Support local communities.',
    exploreEyebrow:'LOCAL SME & GEMS',exploreTitle:'Somewhere new.',exploreIntro:'Discover authentic community heritage and local SMEs.',popular:'Popular places',nearby:'More to wander',showAll:'See all places',
    search:'Search places, stores, or provinces',searchShort:'Search',all:'All',sme:'★ Local SME',nature:'Nature',food:'Food',stay:'Stays',culture:'Culture',
@@ -85,7 +85,7 @@ const I18N={
    followPaused:'Follow Me paused (dragged map)',localStory:'Local Story',openNow:'Open',closedNow:'Closed',call:'Call'
  },
  th:{
-   welcome:'ค้นพบเสน่ห์ชุมชน สนับสนุนร้านค้าท้องถิ่น',enter:'เริ่มสำรวจ',skip:'ข้าม',discover:'สำรวจ',map:'แผนที่',saved:'บันทึก',trip:'ทริปของฉัน',profile:'โปรไฟล์',menu:'เมนู',
+   welcome:'ค้นพบเสน่ห์ชุมชน สนับสนุนร้านค้าท้องถิ่น',enter:'เริ่มสำรวจ',skip:'ข้าม',discover:'สำรวจ',map:'แผนที่',saved:'บันทึก',trip:'ทริปของฉัน',tripShort:'ทริป',profile:'โปรไฟล์',menu:'เมนู',
    homeEyebrow:'LOCAL FIRST DISCOVERY',homeTitle:'ออกไปเจอ\nอะไรใหม่ ๆ',homeDesc:'ค้นพบสถานที่และร้านค้าชุมชน SME ที่ควรค่าแก่การเดินทาง',homeExplore:'ค้นหาสถานที่',homeHint:'ร่วมกระจายรายได้สู่ชุมชน',
    exploreEyebrow:'เสน่ห์ท้องถิ่นรอคุณอยู่',exploreTitle:'ที่ใหม่ ๆ รอคุณอยู่',exploreIntro:'ค้นพบสถานที่และร้านค้าจากมุมมองคนท้องถิ่นแท้จริง',popular:'สถานที่น่าสนใจ',nearby:'ไปต่อที่ไหนดี',showAll:'ดูทั้งหมด',
    search:'ค้นหาสถานที่, ชื่อร้าน หรือจังหวัด',searchShort:'ค้นหา',all:'ทั้งหมด',sme:'★ ร้านค้าชุมชน SME',nature:'ธรรมชาติ',food:'ของกิน',stay:'ที่พัก',culture:'วัฒนธรรม',
@@ -1288,7 +1288,7 @@ function header(){
  </header>`;
 }
 
-const NAV=[['discover','discover','compass'],['map','map','map'],['saved','saved','heart'],['trip','trip','route'],['profile','profile','user']];
+const NAV=[['discover','discover','compass'],['map','map','map'],['saved','saved','heart'],['trip','tripShort','route'],['profile','profile','user']]; // Tommy: short word for the phone menu
 
 function bottomNav(){
  return `<nav class="bottom-nav" aria-label="Primary">
@@ -2069,7 +2069,7 @@ function placeReviewsUi(p){
           <button type="button" class="star-btn ${state.reviewRatingInput >= star ? 'active' : ''}" data-action="set-review-stars" data-stars="${star}">★</button>
         `).join('')}
       </div>
-      <textarea id="place-review-textarea" class="review-textarea-field" placeholder="${html(t('ratingPlaceholder'))}"></textarea>
+      <textarea aria-label="${html(t('ratingPlaceholder'))}" id="place-review-textarea" class="review-textarea-field" placeholder="${html(t('ratingPlaceholder'))}"></textarea>
       <div style="display:flex;justify-content:flex-end;">
         <button type="button" class="action-lime" data-action="submit-place-review" data-id="${p.id}">
           ${html(t('submitReviewBtn'))}
@@ -2171,7 +2171,7 @@ function mapPage(){
               <strong>${html(name(pick))}</strong>
               <small>${html(loc(pick))}</small>
             </div>
-            <button data-action="place" data-id="${pick.id}">${ico('arrow',19)}</button>
+            <button data-action="place" data-id="${pick.id}" aria-label="${html(state.lang==='th'?'เปิด '+name(pick):'Open '+name(pick))}">${ico('arrow',19)}</button>
           </div>
         `:''}
       </aside>
@@ -2230,7 +2230,7 @@ function collection(){
 
     <!-- Collection Search Bar -->
     <div class="collection-search-wrap">
-      <input type="search" id="collection-search-input" class="collection-search-input" placeholder="${state.lang==='th'?'🔍 ค้นหาในรายการที่บันทึกไว้...':'🔍 Search in your collection...'}" value="${html(state.collectionQuery)}" autocomplete="off"/>
+      <input type="search" id="collection-search-input" class="collection-search-input" aria-label="${state.lang==='th'?'ค้นหาในรายการที่บันทึก':'Search saved places'}" placeholder="${state.lang==='th'?'🔍 ค้นหาในรายการที่บันทึกไว้...':'🔍 Search in your collection...'}" value="${html(state.collectionQuery)}" autocomplete="off"/>
     </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0;flex-wrap:wrap;">
@@ -2654,7 +2654,7 @@ function aiModal(){
           `).join('')}
         </div>
         <div class="ai-search-box">
-          <input id="ai-query-input" type="search" value="${html(state.aiQuery)}" placeholder="${th ? 'พิมพ์จังหวัด ภาค หรือสิ่งที่อยากไป เช่น เชียงใหม่, ภูเก็ต, กาแฟ, อีสาน...' : 'Type province, region, or vibe (e.g., Chiang Mai, Phuket, coffee, north)...'}" />
+          <input id="ai-query-input" type="search" aria-label="${th ? 'ค้นหาด้วย AI' : 'Ask the AI advisor'}" value="${html(state.aiQuery)}" placeholder="${th ? 'พิมพ์จังหวัด ภาค หรือสิ่งที่อยากไป เช่น เชียงใหม่, ภูเก็ต, กาแฟ, อีสาน...' : 'Type province, region, or vibe (e.g., Chiang Mai, Phuket, coffee, north)...'}" />
           ${state.aiQuery ? `<button type="button" class="action-outline" data-action="clear-ai-query" style="padding:6px 12px;font-size:12px;">${th ? 'ล้าง' : 'Clear'}</button>` : ''}
         </div>
         <div class="ai-results-header">
@@ -2676,7 +2676,7 @@ function aiModal(){
                 <p>${html((story(p) || '').slice(0, 88))}…</p>
               </div>
               <div class="ai-rec-actions">
-                <button type="button" class="action-outline" data-action="ai-view-place" data-id="${p.id}" style="padding:6px 10px;font-size:12px;">${th ? 'ดู' : 'View'}</button>
+                <button type="button" class="action-outline" data-action="ai-view-place" data-id="${p.id}" style="padding:6px 10px;font-size:12px;">${th ? 'ดูสถานที่' : 'View'}</button>
                 <button type="button" class="action-lime" data-action="trip-toggle" data-id="${p.id}" style="padding:6px 10px;font-size:12px;">
                   ${state.trip.includes(p.id) ? (th ? '✓ ในทริป' : '✓ In Trip') : (th ? '+ ทริป' : '+ Trip')}
                 </button>

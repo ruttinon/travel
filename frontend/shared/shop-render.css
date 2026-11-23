@@ -86,3 +86,15 @@
 .tsp-t-market .tsp-menu img{border-radius:50%}
 
 @media (min-width:600px){.tsp{box-shadow:0 0 0 1px var(--tsp-line)}}
+
+/* Dark mode (Tommy 2026-11-23): follows html[data-theme="dark"] from the app (shop page, editor preview in a dark portal) */
+html[data-theme="dark"] .tsp{--tsp-ink:#E8EDE9;--tsp-soft:#A3B3A8;--tsp-bg:#0E1411;--tsp-card:#161D19;--tsp-line:#26302A}
+html[data-theme="dark"] .tsp-sec h2{color:var(--tsp-ink)}
+html[data-theme="dark"] .tsp-t-market{--tsp-bg:#15120B;--tsp-card:#1D1911;--tsp-line:#3A3222}
+html[data-theme="dark"] .tsp-t-market .tsp-sec h2{color:#fff}
+html[data-theme="dark"] .tsp-t-modern{--tsp-bg:#0B0F0D}
+html[data-theme="dark"] .tsp-price{color:var(--tsp-accent)}
+html[data-theme="dark"] .tsp-links a svg{color:var(--tsp-accent)}
+html[data-theme="dark"] .tsp-btn.ghost{color:var(--tsp-accent);border-color:var(--tsp-accent)}
+html[data-theme="dark"] .tsp-avg strong{color:var(--tsp-accent)}
+html[data-theme="dark"] .tsp-act.primary{background:var(--tsp-accent);border-color:var(--tsp-accent);color:var(--tsp-on-accent)}

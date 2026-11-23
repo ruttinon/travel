@@ -110,7 +110,8 @@ test('server: Google login needs a real token; the typed email is ignored', asyn
   t.after(async () => { srv.child.kill(); certs.close(); if (srv.child.exitCode === null) await new Promise(r => srv.child.once('exit', r)); try { fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); } catch {} });
   const post = body => fetch(`${srv.url}/api/auth/social`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: srv.url }, body: JSON.stringify(body) });
 
-  assert.deepEqual(await (await fetch(`${srv.url}/api/auth/google/config`)).json(), { clientId: CLIENT, demo: false });
+  assert.deepEqual(await (await fetch(`${srv.url}/api/auth/google/config`)).json(), { clientId: CLIENT, demo: false, demoLogins: true }); // demoLogins: this computer
+  assert.equal((await (await fetch(`${srv.url}/api/auth/google/config`, { headers: { 'x-forwarded-for': '203.0.113.9' } })).json()).demoLogins, false, 'behind a proxy (real site): no demo buttons');
 
   let res = await post({ provider: 'google', email: 'victim@gmail.com', name: 'Attacker' });
   assert.equal(res.status, 401, 'old fake login is refused');

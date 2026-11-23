@@ -430,7 +430,11 @@ function requireAdmin(req){if(!isAdmin(req))fail(401,'Sign in as an admin first'
 function checkOrigin(req){const origin=req.headers.origin;if(!origin)return;let u;try{u=new URL(origin);}catch{fail(403,'Invalid origin');}
   const host=req.headers.host;if(u.host!==host||!['http:','https:'].includes(u.protocol))fail(403,'Cross-origin requests are not allowed');
 }
-function checkHost(req){const host=(req.headers.host||'').toLowerCase();if(!/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host))fail(403,'This local server accepts localhost only');}
+// Tommy (2026-11-23): TRAVAL_LAN_TEST=1 (RUN-PHONE-TEST.bat) lets phones on the same home Wi-Fi open the app at
+// http://192.168.x.x:5173 for testing. Only private network addresses are accepted, and Admin stays on this computer.
+const LAN_TEST=process.env.TRAVAL_LAN_TEST==='1';
+const PRIVATE_HOST=/^(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(?::\d+)?$/;
+function checkHost(req){const host=(req.headers.host||'').toLowerCase();if(/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(host))return;if(LAN_TEST&&PRIVATE_HOST.test(host))return;fail(403,'This local server accepts localhost only');}
 async function jsonBody(req){
   if(!String(req.headers['content-type']||'').startsWith('application/json'))fail(415,'Send application/json');
   let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>8_000_000)fail(413,'Request too large');chunks.push(chunk);}
@@ -868,6 +872,8 @@ function generateAiTripPlan(params){
 }
 async function api(req,res,u){
   const method=req.method,route=u.pathname;
+  // Tommy: during phone testing, Admin is only reachable from this computer (it still auto-signs in with the local password)
+  if(LAN_TEST&&route.startsWith('/api/admin')&&!['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress))fail(403,'Admin works only on the computer running the server');
   if(route==='/api/health'&&method==='GET')return reply(res,200,{ok:true,version:'2.7.0',storage:'SQLite',published:db.prepare("SELECT count(*) AS n FROM places WHERE status='published'").get().n});
   if(route==='/api/places'&&method==='GET'){
     let places=getPublic.all();
@@ -1127,7 +1133,8 @@ async function api(req,res,u){
     return reply(res,200,{ok:true});
   }
   // Tommy: tells the login page whether real Google sign-in is set up (TRAVAL_GOOGLE_CLIENT_ID)
-  if(route==='/api/auth/google/config'&&method==='GET')return reply(res,200,googleAuth.publicConfig());
+  // Tommy (2026-11-23): demoLogins tells the sign-in pages whether the Facebook/phone-code demo works here (this computer only)
+  if(route==='/api/auth/google/config'&&method==='GET')return reply(res,200,{...googleAuth.publicConfig(),demoLogins:googleAuth.isLocalRequest(req)});
   if(route==='/api/auth/social'&&method==='POST'){
     checkOrigin(req);allowUserAttempt(req,'social-login');const b=await jsonBody(req);
     const provider=validString(b?.provider,20,'Provider',{required:true}).toLowerCase();
@@ -1891,7 +1898,7 @@ const server=http.createServer(async(req,res)=>{
 });
 function listen(port,remaining=12){
  server.once('error',err=>{if(err.code==='EADDRINUSE'&&remaining>0)listen(port+1,remaining-1);else{console.error('Cannot start:',err.message);process.exitCode=1;}});
- server.listen(port,'127.0.0.1',()=>{
+ server.listen(port,LAN_TEST?'0.0.0.0':'127.0.0.1',()=>{
    console.log('');console.log(`[READY] unfold v2.7  http://127.0.0.1:${server.address().port}/`);
    console.log(`[ADMIN] http://127.0.0.1:${server.address().port}/admin.html`);
    console.log(`[BUSINESS] http://127.0.0.1:${server.address().port}/business.html`);
@@ -1902,6 +1909,13 @@ function listen(port,remaining=12){
    // Tommy: Google sign-in only works on the address registered with Google (localhost), not 127.0.0.1
    const openHost=googleAuth.clientId()?'localhost':'127.0.0.1';
    if(openHost==='localhost')console.log(`[GOOGLE] Sign in with Google is ON — use http://localhost:${server.address().port}/`);
+   if(LAN_TEST){ // Tommy: show the address to type on the phone
+     const ips=Object.values(require('node:os').networkInterfaces()).flat().filter(n=>n&&n.family==='IPv4'&&!n.internal&&PRIVATE_HOST.test(n.address)).map(n=>n.address);
+     console.log('');console.log('[PHONE TEST] On a phone connected to the SAME Wi-Fi, open:');
+     for(const ip of ips)console.log(`  http://${ip}:${server.address().port}/`);
+     if(!ips.length)console.log('  (no Wi-Fi/LAN address found — is this computer on Wi-Fi?)');
+     console.log('  Google sign-in does not work on these addresses; use email + password on the phone.');
+   }
    console.log('Press Ctrl+C to stop.');
    if(process.platform==='win32'&&process.env.UNFOLD_NO_BROWSER!=='1'){
      const {execFile}=require('node:child_process');

@@ -45,3 +45,6 @@
 }
 .unfold-canvas .user-meta { min-width: 0; }
 .unfold-canvas .user-meta p { overflow-wrap: anywhere; }
+
+/* Tommy (2026-11-23): the phone-code button was squeezed to ~22px high on phones */
+#btn-phone { min-height: 48px; align-items: center; }

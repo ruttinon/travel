@@ -62,6 +62,11 @@
       var r = await fetch('/api/auth/google/config', { cache: 'no-store', credentials: 'same-origin' });
       cfg = await r.json();
     } catch (e) { return; } // server unreachable: leave the page as it is
+    // Tommy (2026-11-23): the Facebook / phone-code buttons are a demo that only works on the team's own computer.
+    // On the real site they only showed an error, so hide them there.
+    if (cfg && cfg.demoLogins === false) {
+      Array.prototype.forEach.call(document.querySelectorAll('[data-demo-login]'), function (el) { el.hidden = true; el.style.display = 'none'; });
+    }
     if (!cfg || !cfg.clientId) return; // demo mode (local only) — keep the team's button
 
     try { await loadGoogleScript(); }
